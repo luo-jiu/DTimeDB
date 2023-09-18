@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/review.dir/main.cpp.o -o review 

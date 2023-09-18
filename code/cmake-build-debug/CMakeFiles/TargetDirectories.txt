@@ -1,3 +1,0 @@
-/home/luojiu/CLionProjects/DTimeDB/cmake-build-debug/CMakeFiles/review.dir
-/home/luojiu/CLionProjects/DTimeDB/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/luojiu/CLionProjects/DTimeDB/cmake-build-debug/CMakeFiles/rebuild_cache.dir

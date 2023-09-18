@@ -1,2 +1,0 @@
-# DTimeDB
-Distributed timing databases
