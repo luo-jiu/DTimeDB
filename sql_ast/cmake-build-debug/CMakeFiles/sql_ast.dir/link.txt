@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/sql_ast.dir/main.cpp.o -o sql_ast 

@@ -1,0 +1,4 @@
+/home/luojiu/CLionProjects/sql_ast/cmake-build-debug/CMakeFiles/token.dir
+/home/luojiu/CLionProjects/sql_ast/cmake-build-debug/CMakeFiles/ast.dir
+/home/luojiu/CLionProjects/sql_ast/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/luojiu/CLionProjects/sql_ast/cmake-build-debug/CMakeFiles/rebuild_cache.dir
