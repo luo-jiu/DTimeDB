@@ -1,3 +1,0 @@
-/home/luojiu/CLionProjects/FilePointer/cmake-build-debug/CMakeFiles/FilePointer.dir
-/home/luojiu/CLionProjects/FilePointer/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/luojiu/CLionProjects/FilePointer/cmake-build-debug/CMakeFiles/rebuild_cache.dir
