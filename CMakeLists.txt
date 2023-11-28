@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 3.23)
-project(review)
+project(dtimedb)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(review main.cpp)
+add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+
+include_directories(./)
+
+file(GLOB_RECURSE SOURCES "token/*.cpp" "lexer/*.cpp" "json/*.cpp" "ast/*.cpp" "parser/*.cpp")
+
+add_executable(token ${SOURCES} token.cpp)
+add_executable(ast ${SOURCES} ast.cpp)
+
+

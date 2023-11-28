@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="dtimedb"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/home/luojiu/CLionProjects/dtimedb/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="token">
+				<Option output="/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/token" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/luojiu/CLionProjects/dtimedb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/luojiu/CLionProjects/dtimedb/."/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 token"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="token/fast">
+				<Option output="/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/token" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/luojiu/CLionProjects/dtimedb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/luojiu/CLionProjects/dtimedb/."/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 token/fast"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="ast">
+				<Option output="/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/ast" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/luojiu/CLionProjects/dtimedb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/luojiu/CLionProjects/dtimedb/."/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 ast"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="ast/fast">
+				<Option output="/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/ast" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/luojiu/CLionProjects/dtimedb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/luojiu/CLionProjects/dtimedb/."/>
+					<Add directory="/usr/include/c++/11"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/11"/>
+					<Add directory="/usr/include/c++/11/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/11/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 ast/fast"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/home/luojiu/CLionProjects/dtimedb/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/home/luojiu/CLionProjects/dtimedb/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/gmake -j16 -f &quot;/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/ast.cpp">
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/ast/node.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/ast/node.h">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/json/json.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/json/json.h">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/json/parser.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/json/parser.h">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/lexer/lexer.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/lexer/lexer.h">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/expression.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/float.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/group.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/identifier.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/infix.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/integer.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/null.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/parser.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/parser.h">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/prefix.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/program.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/select.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/statement.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/parser/string.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/token.cpp">
+			<Option target="token"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/token/token.cpp">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/token/token.h">
+			<Option target="token"/>
+			<Option target="ast"/>
+		</Unit>
+		<Unit filename="/home/luojiu/CLionProjects/dtimedb/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>
