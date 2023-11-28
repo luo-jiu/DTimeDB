@@ -1,4 +1,0 @@
-/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/CMakeFiles/token.dir
-/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/CMakeFiles/ast.dir
-/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/luojiu/CLionProjects/dtimedb/cmake-build-debug/CMakeFiles/rebuild_cache.dir
