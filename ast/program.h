@@ -18,7 +18,7 @@ namespace dt
                 json["type"] = name();
 
                 Json statements;
-                for (auto stat : m_statements)
+                for (auto & stat : m_statements)
                 {
                     statements.append(stat->json());
                 }

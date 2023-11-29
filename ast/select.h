@@ -18,7 +18,7 @@ namespace dt
                 json["type"] = name();
 
                 Json clause;
-                for (auto cla : select_clause)
+                for (auto & cla : select_clause)
                 {
                     clause.append(cla->json());
                 }
