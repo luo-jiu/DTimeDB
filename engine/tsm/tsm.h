@@ -29,6 +29,14 @@ namespace dt
             Header(int32_t magic, int8_t version): m_magic(magic), m_version(version) {}
             ~Header() = default;
 
+            Json json()
+            {
+               Json json;
+               json["magic"] = std::to_string(m_magic);
+               json["version"] = std::to_string(m_version);
+               return json;
+            }
+
         public:
             int32_t m_magic;
             int8_t m_version;
@@ -41,7 +49,15 @@ namespace dt
         {
         public:
             Footer() {}
+            Footer(int32_t offset): m_offset(offset) {}
             ~Footer() = default;
+
+            Json json()
+            {
+                Json json;
+                json["offset"] = std::to_string(m_offset);
+                return json;
+            }
 
             int64_t getOffset() { return m_offset; }
             void setOffset(int64_t offset) { m_offset = offset; }
@@ -123,55 +139,63 @@ namespace dt
         class TSM
         {
         public:
-            bool write_header_to_file(const Header & header, const string & filename);
-            bool read_header_from_file(Header & header, const string & filename);
+            // 写入读取header
+            bool write_header_to_file(const Header & header, const string & file_path);
+            bool read_header_from_file(Header & header, const string & file_path);
 
             // 写入读取data block integer & float
             template <class T>
-            bool write_data_to_file(const DataBlock<T> & dataBlock ,const string & filename) const;
+            u_int64_t write_data_to_file(const DataBlock<T> & data_block ,const string & file_path) const;
 
             template <class T>
-            bool read_data_from_file(DataBlock<T> & dataBlock, const string & filename);
+            bool read_data_from_file(DataBlock<T> & data_block, const string & file_path);
 
             // 写入读取data block string
             template <class T>
-            bool write_data_string_to_file(const DataBlock<T> & dataBlock ,const string & filename) const;
+            u_int64_t write_data_string_to_file(const DataBlock<T> & data_block , const string & file_path) const;
 
             template <class T>
-            bool read_data_string_from_file(DataBlock<T> & dataBlock, const string & filename);
+            bool read_data_string_from_file(DataBlock<T> & data_block, const string & file_path);
+
+            // 写入读取footer
+            bool write_footer_to_file(const Footer & footer, const string & file_path);
+            bool read_footer_from_file(Footer & footer, const string & file_file);
         };
 
+        /**
+         * 将数据块写入
+         * @return 返回块大小
+         */
         template <class T>
-        bool TSM::write_data_to_file(const DataBlock<T> & dataBlock ,const string & filename) const
+        u_int64_t TSM::write_data_to_file(const DataBlock<T> & data_block ,const string & file_path) const
         {
-            auto & file = FileManager::get_output_stream(filename);
+            auto & file = FileManager::get_output_stream(file_path);
             if (!file.is_open())
             {
                 std::cerr << "Error: Could not open file for writing - from engine/tsm/tsm.h" << std::endl;
-                return false;
+                return -1;
             }
-
             // 将类型 长度写入文件
-            file.write(reinterpret_cast<const char*>(&dataBlock.m_type), sizeof(dataBlock.m_type));
-            file.write(reinterpret_cast<const char*>(&dataBlock.m_length), sizeof(dataBlock.m_length));
+            file.write(reinterpret_cast<const char*>(&data_block.m_type), sizeof(data_block.m_type));
+            file.write(reinterpret_cast<const char*>(&data_block.m_length), sizeof(data_block.m_length));
             // 将时间戳写入文件
-            for (const auto & timestamp : dataBlock.m_timestamps)
+            for (const auto & timestamp : data_block.m_timestamps)
             {
                 file.write(reinterpret_cast<const char*>(&timestamp), sizeof(timestamp));
             }
             // 将数据写入文件
-            for (const auto & value : dataBlock.m_values)
+            for (const auto & value : data_block.m_values)
             {
                 file.write(reinterpret_cast<const char*>(&value), sizeof(value));
             }
             file.flush();
-            return true;
+            return sizeof(data_block);
         }
 
         template <class T>
-        bool TSM::read_data_from_file(DataBlock<T> & dataBlock, const string & filename)
+        bool TSM::read_data_from_file(DataBlock<T> & data_block, const string & file_path)
         {
-            auto & file = FileManager::get_input_stream(filename);
+            auto & file = FileManager::get_input_stream(file_path);
             if (!file.is_open())
             {
                 std::cerr << "Error: Could not open file for reading - from engine/tsm/tsm.h" << std::endl;
@@ -179,61 +203,68 @@ namespace dt
             }
 
             // 读取类型 长度
-            file.read(reinterpret_cast<char*>(&dataBlock.m_type), sizeof(dataBlock.m_type));
-            file.read(reinterpret_cast<char*>(&dataBlock.m_length), sizeof(dataBlock.m_length));
+            file.read(reinterpret_cast<char*>(&data_block.m_type), sizeof(data_block.m_type));
+            file.read(reinterpret_cast<char*>(&data_block.m_length), sizeof(data_block.m_length));
             // 读取时间戳
-            dataBlock.m_timestamps.clear();
-            auto num = dataBlock.m_length;
+            data_block.m_timestamps.clear();
+            auto num = data_block.m_length;
             for (size_t i = 0; i < num; ++i)
             {
                 high_resolution_clock::time_point timestamp;
                 file.read(reinterpret_cast<char*>(&timestamp), sizeof(timestamp));
-                dataBlock.m_timestamps.push_back(timestamp);
+                data_block.m_timestamps.push_back(timestamp);
             }
             // 读取值
-            dataBlock.m_values.clear();
+            data_block.m_values.clear();
             for (size_t i = 0; i < num; ++i)
             {
                 T value;
                 file.read(reinterpret_cast<char*>(&value), sizeof(value));
-                dataBlock.m_values.push_back(value);
+                data_block.m_values.push_back(value);
             }
             return true;
         }
 
         template <class T>
-        bool TSM::write_data_string_to_file(const DataBlock<T> & dataBlock ,const string & filename) const
+        u_int64_t TSM::write_data_string_to_file(const DataBlock<T> & data_block , const string & file_path) const
         {
-            auto & file = FileManager::get_output_stream(filename);
+            auto & file = FileManager::get_output_stream(file_path);
             if (!file.is_open())
             {
                 std::cerr << "Error: Could not open file for writing - from engine/tsm/tsm.h" << std::endl;
-                return false;
+                return -1;
             }
 
+            u_int64_t size = 8;
             // 将类型 长度写入文件
-            file.write(reinterpret_cast<const char*>(&dataBlock.m_type), sizeof(dataBlock.m_type));
-            file.write(reinterpret_cast<const char*>(&dataBlock.m_length), sizeof(dataBlock.m_length));
+            file.write(reinterpret_cast<const char*>(&data_block.m_type), sizeof(data_block.m_type));
+            file.write(reinterpret_cast<const char*>(&data_block.m_length), sizeof(data_block.m_length));
+
+            long timestamp_size = sizeof(high_resolution_clock::time_point);
             // 将时间戳写入文件
-            for (const auto & timestamp : dataBlock.m_timestamps)
+            for (const auto & timestamp : data_block.m_timestamps)
             {
-                file.write(reinterpret_cast<const char*>(&timestamp), sizeof(timestamp));
+                file.write(reinterpret_cast<const char*>(&timestamp), timestamp_size);
             }
+            size += timestamp_size * data_block.m_timestamps.size();
+
+            long value_size = sizeof(u_int16_t);
             // 将string 写入文件
-            for (const string & value : dataBlock.m_values)
+            for (const string & value : data_block.m_values)
             {
-                auto length = static_cast<int32_t>(value.length());
-                file.write(reinterpret_cast<const char*>(&length), sizeof(int32_t));
-                file.write(value.c_str(), length);
+                auto length = static_cast<u_int16_t>(value.length());
+                file.write(reinterpret_cast<const char*>(&length), sizeof(u_int16_t));  // 写大小
+                file.write(value.c_str(), length);  // 写字符串
+                size += (length + value_size);
             }
             file.flush();
-            return true;
+            return size;
         }
 
         template <class T>
-        bool TSM::read_data_string_from_file(DataBlock<T> & dataBlock, const string & filename)
+        bool TSM::read_data_string_from_file(DataBlock<T> & data_block, const string & file_path)
         {
-            auto & file = FileManager::get_input_stream(filename);
+            auto & file = FileManager::get_input_stream(file_path);
             if (!file.is_open())
             {
                 std::cerr << "Error: Could not open file for reading - from engine/tsm/tsm.h" << std::endl;
@@ -241,28 +272,29 @@ namespace dt
             }
 
             // 读取类型 长度
-            file.read(reinterpret_cast<char*>(&dataBlock.m_type), sizeof(dataBlock.m_type));
-            file.read(reinterpret_cast<char*>(&dataBlock.m_length), sizeof(dataBlock.m_length));
+            file.read(reinterpret_cast<char*>(&data_block.m_type), sizeof(data_block.m_type));
+            file.read(reinterpret_cast<char*>(&data_block.m_length), sizeof(data_block.m_length));
             // 读取时间戳
-            dataBlock.m_timestamps.clear();
-            auto num = dataBlock.m_length;
+            data_block.m_timestamps.clear();
+            auto num = data_block.m_length;
             for (size_t i = 0; i < num; ++i)
             {
                 high_resolution_clock::time_point timestamp;
                 file.read(reinterpret_cast<char*>(&timestamp), sizeof(timestamp));
-                dataBlock.m_timestamps.push_back(timestamp);
+                data_block.m_timestamps.push_back(timestamp);
             }
             // 读取值
+            data_block.m_values.clear();
             for (size_t i = 0; i < num; ++i)
             {
-                int32_t length;
-                file.read(reinterpret_cast<char*>(&length), sizeof(int32_t));
+                u_int16_t length;
+                file.read(reinterpret_cast<char*>(&length), sizeof(u_int16_t));
                 if (file.good())
                 {
                     char buffer[length + 1];
                     file.read(buffer, length);
                     buffer[length] = '\0';
-                    dataBlock.m_values.push_back(buffer);
+                    data_block.m_values.push_back(buffer);
                 }
             }
             return true;
