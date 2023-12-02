@@ -21,5 +21,6 @@ add_executable(ast ${SOURCES} ast.cpp
         pool/threadPool.h
 )
 add_executable(tsm ${SOURCES} tsm.cpp)
+add_executable(test ${SOURCES} test.cpp)
 
 
