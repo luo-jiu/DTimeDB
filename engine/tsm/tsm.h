@@ -52,21 +52,30 @@ namespace dt
                 std::cerr << "Error: Could not open file for writing - from engine/tsm/tsm.h" << std::endl;
                 return -1;
             }
+
+            u_int64_t size = 8;
+            long timestamp_size = sizeof(high_resolution_clock::time_point);
+
             // 将类型 长度写入文件
             file.write(reinterpret_cast<const char*>(&data_block.m_type), sizeof(data_block.m_type));
             file.write(reinterpret_cast<const char*>(&data_block.m_length), sizeof(data_block.m_length));
+
             // 将时间戳写入文件
             for (const auto & timestamp : data_block.m_timestamps)
             {
                 file.write(reinterpret_cast<const char*>(&timestamp), sizeof(timestamp));
             }
+            size += timestamp_size * data_block.m_timestamps.size();
+
             // 将数据写入文件
             for (const auto & value : data_block.m_values)
             {
                 file.write(reinterpret_cast<const char*>(&value), sizeof(value));
             }
+            size += 4 * data_block.m_values.size();
+
             file.flush();
-            return sizeof(data_block);
+            return size;
         }
 
         template <class T>
@@ -82,6 +91,7 @@ namespace dt
             // 读取类型 长度
             file.read(reinterpret_cast<char*>(&data_block.m_type), sizeof(data_block.m_type));
             file.read(reinterpret_cast<char*>(&data_block.m_length), sizeof(data_block.m_length));
+
             // 读取时间戳
             data_block.m_timestamps.clear();
             auto num = data_block.m_length;
@@ -91,6 +101,7 @@ namespace dt
                 file.read(reinterpret_cast<char*>(&timestamp), sizeof(timestamp));
                 data_block.m_timestamps.push_back(timestamp);
             }
+
             // 读取值
             data_block.m_values.clear();
             for (size_t i = 0; i < num; ++i)
@@ -99,6 +110,7 @@ namespace dt
                 file.read(reinterpret_cast<char*>(&value), sizeof(value));
                 data_block.m_values.push_back(value);
             }
+
             return true;
         }
 
@@ -113,11 +125,14 @@ namespace dt
             }
 
             u_int64_t size = 8;
+
             // 将类型 长度写入文件
             file.write(reinterpret_cast<const char*>(&data_block.m_type), sizeof(data_block.m_type));
             file.write(reinterpret_cast<const char*>(&data_block.m_length), sizeof(data_block.m_length));
 
             long timestamp_size = sizeof(high_resolution_clock::time_point);
+            long value_size = sizeof(u_int16_t);
+
             // 将时间戳写入文件
             for (const auto & timestamp : data_block.m_timestamps)
             {
@@ -125,7 +140,6 @@ namespace dt
             }
             size += timestamp_size * data_block.m_timestamps.size();
 
-            long value_size = sizeof(u_int16_t);
             // 将string 写入文件
             for (const string & value : data_block.m_values)
             {
@@ -134,6 +148,7 @@ namespace dt
                 file.write(value.c_str(), length);  // 写字符串
                 size += (length + value_size);
             }
+
             file.flush();
             return size;
         }
@@ -151,6 +166,7 @@ namespace dt
             // 读取类型 长度
             file.read(reinterpret_cast<char*>(&data_block.m_type), sizeof(data_block.m_type));
             file.read(reinterpret_cast<char*>(&data_block.m_length), sizeof(data_block.m_length));
+
             // 读取时间戳
             data_block.m_timestamps.clear();
             auto num = data_block.m_length;
@@ -160,6 +176,7 @@ namespace dt
                 file.read(reinterpret_cast<char*>(&timestamp), sizeof(timestamp));
                 data_block.m_timestamps.push_back(timestamp);
             }
+
             // 读取值
             data_block.m_values.clear();
             for (size_t i = 0; i < num; ++i)
@@ -174,6 +191,7 @@ namespace dt
                     data_block.m_values.push_back(buffer);
                 }
             }
+
             return true;
         }
 

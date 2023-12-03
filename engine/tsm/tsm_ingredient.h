@@ -75,7 +75,7 @@ namespace dt
             };
 
             DataBlock() {}
-            DataBlock(Type type): m_type(type) {}
+            DataBlock(Type type): m_type(type) , m_length(0){}
             ~DataBlock() = default;
 
             Json json()

@@ -26,13 +26,14 @@ namespace dt
         public:
             SkipList()
             {
-                head = new Node(high_resolution_clock::time_point(), T(), MAX_LEVEL);
+                m_head = new Node(high_resolution_clock::time_point(), T(), MAX_LEVEL);
                 srand(static_cast<unsigned int>(time(nullptr)));  // 为伪随机数生成器设置一个种子值
+                m_bottom_level_node_count = 0;
             }
 
             ~SkipList()
             {
-                Node* current = head;
+                Node* current = m_head;
                 while (current != nullptr)
                 {
                     Node* next = current->m_nexts[0];
@@ -43,7 +44,7 @@ namespace dt
 
             SkipListIterator<T> begin() const
             {
-                return SkipListIterator<T>(head->m_nexts[0]);  // 从最低层开始迭代
+                return SkipListIterator<T>(m_head->m_nexts[0]);  // 从最低层开始迭代
             }
 
             SkipListIterator<T> end() const
@@ -55,9 +56,13 @@ namespace dt
             bool get(high_resolution_clock::time_point key, T & value);
             void del(high_resolution_clock::time_point key);
 
+            high_resolution_clock::time_point min_key() const;  // 获取最小键
+            high_resolution_clock::time_point max_key() const;  // 获取最大键
+
             void traverse();
 
-        private:
+            size_t size();
+
             struct Node
             {
                 high_resolution_clock::time_point m_key;
@@ -67,7 +72,9 @@ namespace dt
                 Node(high_resolution_clock::time_point key, T value, int level): m_key(key), m_value(value), m_nexts(level, nullptr) {}
             };
 
-            Node * head;  // 头结点
+        private:
+            Node * m_head;  // 头结点
+            size_t m_bottom_level_node_count; // 计数器
 
             int random_level()
             {
@@ -104,9 +111,15 @@ namespace dt
                 return *this;
             }
 
-            T & operator*() const
+            const std::pair<high_resolution_clock::time_point, T> & operator*() const
             {
-                return current->m_value;
+                if (current == nullptr)
+                {
+                    throw std::runtime_error("Attempted to dereference a null iterator");
+                }
+                static std::pair<high_resolution_clock::time_point, T> placeholder;
+                placeholder = {current->m_key, current->m_value};
+                return placeholder;
             }
 
         private:
@@ -117,7 +130,7 @@ namespace dt
         void SkipList<T>::put(high_resolution_clock::time_point key, T & value)
         {
             std::vector<Node*> update(MAX_LEVEL, nullptr);
-            Node* current = head;
+            Node* current = m_head;
 
             for (int i = MAX_LEVEL - 1; i >= 0; --i)
             {
@@ -147,12 +160,14 @@ namespace dt
                 new_node->m_nexts[i] = update[i]->m_nexts[i];
                 update[i]->m_nexts[i] = new_node;
             }
+
+            if (level >= 1) ++m_bottom_level_node_count;  // 计数器 + 1
         }
 
         template <class T>
         bool SkipList<T>::get(high_resolution_clock::time_point key, T & value)
         {
-            Node* current = head;
+            Node* current = m_head;
             for (int i = MAX_LEVEL - 1; i >= 0; --i)
             {
                 while (current->m_nexts[i] != nullptr && current->m_nexts[i]->m_key < key)
@@ -174,7 +189,7 @@ namespace dt
         void SkipList<T>::del(high_resolution_clock::time_point key)
         {
             std::vector<Node*> update(MAX_LEVEL, nullptr);
-            Node* current = head;
+            Node* current = m_head;
 
             for (int i = MAX_LEVEL - 1; i >= 0; --i)
             {
@@ -198,13 +213,14 @@ namespace dt
                     update[i]->m_nexts[i] = current->m_nexts[i];
                 }
                 delete current;
+                --m_bottom_level_node_count;
             }
         }
 
         template <class T>
         void SkipList<T>::traverse()
         {
-            Node* current = head->m_nexts[0];
+            Node* current = m_head->m_nexts[0];
             std::cout << "SkipList Data:" << std::endl;
             while (current != nullptr)
             {
@@ -213,6 +229,46 @@ namespace dt
                 current = current->m_nexts[0];
             }
             std::cout << std::endl;
+        }
+
+        /**
+         * 获取跳表大小
+         */
+        template <class T>
+        size_t SkipList<T>::size()
+        {
+            return m_bottom_level_node_count;
+        }
+
+        /**
+         * 获取最小的键
+         */
+        template <class T>
+        high_resolution_clock::time_point SkipList<T>::min_key() const
+        {
+            if (m_head->m_nexts[0] != nullptr)
+            {
+                return m_head->m_nexts[0]->m_key;
+            }
+            return {};
+        }
+
+        /**
+         * 获取最大的键
+         */
+        template <class T>
+        high_resolution_clock::time_point SkipList<T>::max_key() const
+        {
+            Node* current = m_head;
+            while (current->m_nexts[0] != nullptr)
+            {
+                current = current->m_nexts[0];
+            }
+            if (current != m_head)
+            {
+                return current->m_key;
+            }
+            return {};
         }
     }
 }
