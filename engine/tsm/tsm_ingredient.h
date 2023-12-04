@@ -19,6 +19,7 @@ namespace dt
     {
         /**
          * 页头
+         * size: 5
          */
         class Header
         {
@@ -42,6 +43,7 @@ namespace dt
 
         /**
          * 页脚
+         * size: 8
          */
         class Footer
         {
@@ -74,7 +76,7 @@ namespace dt
                 DATA_FLOAT,
             };
 
-            DataBlock() {}
+            DataBlock(): m_size(0), m_length(0){}
             DataBlock(Type type): m_type(type) , m_length(0){}
             ~DataBlock() = default;
 
@@ -111,16 +113,25 @@ namespace dt
             bool write(high_resolution_clock::time_point timestamp, T value);
 
         public:
+            u_int32_t                                           m_size;  // 大小(不存入磁盘)
+
             Type                                                m_type;
             int32_t                                             m_length;
             std::list<high_resolution_clock::time_point>        m_timestamps;
             std::list<T>                                        m_values;
         };
 
+        /**
+         * size: 28
+         */
         class IndexEntry
         {
         public:
             IndexEntry() {}
+
+            IndexEntry(const high_resolution_clock::time_point & mMaxTime, const high_resolution_clock::time_point & mMinTime, int64_t mOffset, int32_t mSize)
+                    : m_max_time(mMaxTime), m_min_time(mMinTime), m_offset(mOffset), m_size(mSize) {}
+
             ~IndexEntry() = default;
 
 
@@ -142,16 +153,20 @@ namespace dt
             int32_t                                 m_size;  // 数据块大小
         };
 
-        class IndexBlock
+        /**
+         * size: 14 + string
+         */
+        class IndexBlockMeta
         {
         public:
+            IndexBlockMeta() {}
+
             enum Type
             {
                 DATA_INTEGER,
                 DATA_STRING,
                 DATA_FLOAT,
             };
-
 
             // get and set
             u_int32_t get_key_length() const { return m_key_length; }

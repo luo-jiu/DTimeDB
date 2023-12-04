@@ -35,8 +35,7 @@ namespace dt
             bool read_footer_from_file(Footer & footer, const string & file_file);
 
             // 生成IndexEntry
-            template <class T>
-            IndexEntry & create_index_entry(const DataBlock<T> & data_block);
+            IndexEntry & create_index_entry(high_resolution_clock::time_point max_time, high_resolution_clock::time_point min_time, int64_t offset, int32_t size);
         };
 
         /**
@@ -202,18 +201,11 @@ namespace dt
             return oss.str();
         }
 
-        template <class T>
-        IndexEntry & TSM::create_index_entry(const DataBlock<T> & data_block)
-        {
-            // 最大时间最小时间获取
-        }
-
         /**
          * 将时间戳和值写入到容器中
          * @tparam T 值类型
          * @param timestamp 时间戳
          * @param value 值
-         * @return
          */
         template <typename T>
         bool DataBlock<T>::write(

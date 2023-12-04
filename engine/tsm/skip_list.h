@@ -55,6 +55,7 @@ namespace dt
             void put(high_resolution_clock::time_point key, T & value);
             bool get(high_resolution_clock::time_point key, T & value);
             void del(high_resolution_clock::time_point key);
+            void cle();
 
             high_resolution_clock::time_point min_key() const;  // 获取最小键
             high_resolution_clock::time_point max_key() const;  // 获取最大键
@@ -131,6 +132,8 @@ namespace dt
         {
             std::vector<Node*> update(MAX_LEVEL, nullptr);
             Node* current = m_head;
+
+            std::cout << m_head->m_nexts.size() << std::endl;
 
             for (int i = MAX_LEVEL - 1; i >= 0; --i)
             {
@@ -216,6 +219,31 @@ namespace dt
                 --m_bottom_level_node_count;
             }
         }
+
+        /**
+         * 清空调跳表
+         */
+        template <class T>
+        void SkipList<T>::cle()
+        {
+            for (int i = 0; i < MAX_LEVEL; ++i) {
+                m_head->m_nexts[i] = nullptr;
+            }
+
+            Node* current = m_head->m_nexts[0];
+            while (current != nullptr)
+            {
+                Node* next = current->m_nexts[0];
+                delete current;
+                current = next;
+            }
+
+            // 重新初始化跳表状态
+            m_head->m_nexts.assign(MAX_LEVEL, nullptr);
+            m_bottom_level_node_count = 0;
+            m_head->m_value = 0;
+        }
+
 
         template <class T>
         void SkipList<T>::traverse()
