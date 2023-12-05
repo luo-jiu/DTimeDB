@@ -1,25 +1,32 @@
 #include <iostream>
-#include <fstream>
-#include <string>
+
+#include <engine/tsm/skip_list.h>
+using namespace dt::tsm;
 
 int main() {
-    std::string inputString = "hello";
+    SkipList<int> sl;
 
-    // 打开一个二进制文件以写入模式
-    std::ofstream outputFile("binary_file.bin", std::ios::binary);
+    auto time1 = std::chrono::system_clock::now();
+    auto time2 = std::chrono::system_clock::now();
+    auto time3 = std::chrono::system_clock::now();
 
-    if (!outputFile.is_open()) {
-        std::cerr << "Failed to open the file for writing." << std::endl;
-        return 1;
+    int a = 100;
+    int b = 300;
+    int c = 400;
+
+    sl.put(time1, a);
+    sl.put(time2, b);
+    sl.put(time3, c);
+
+    int value;
+    if (sl.get(time3, value)) {
+        std::cout << "Key 1 has value " << value << std::endl;
     }
 
-    // 将字符串以二进制形式写入文件
-    outputFile.write(inputString.c_str(), inputString.size());
-
-    // 关闭文件
-    outputFile.close();
-
-    std::cout << "String written to binary file." << std::endl;
+    sl.del(time2);
+    if (!sl.get(time2, value)) {
+        std::cout << "Key 1 not found" << std::endl;
+    }
 
     return 0;
 }
