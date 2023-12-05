@@ -13,14 +13,16 @@ file(GLOB_RECURSE SOURCES "token/*.cpp" "lexer/*.cpp" "json/*.cpp" "ast/*.cpp"
 
 add_executable(token ${SOURCES} token.cpp)
 add_executable(ast ${SOURCES} ast.cpp
-        engine/circularList/page/circularLIst.cpp
-        engine/circularList/page/page.cpp
-        engine/circularList/include/dataDef.h
-        engine/circularList/include/circularList.h
+        engine/circularList/controll/circularLIst.cpp
+        engine/circularList/controll/page.cpp
+        engine/circularList/include/data_def.h
+        engine/circularList/include/circular_list.h
         pool/threadPool.cpp
         pool/threadPool.h
         engine/tsm/file_manager.cpp
-        engine/test/circularListTest.cpp
+        engine/circularList/include/circular_list_struct.h
+        engine/circularList/file/file.h
+        engine/circularList/include/circular_tools.h
 )
 add_executable(tsm ${SOURCES} tsm.cpp)
 add_executable(test ${SOURCES} test.cpp)
