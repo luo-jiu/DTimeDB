@@ -72,12 +72,12 @@ bool TSM::read_footer_from_file(Footer & footer, const string & file_path)
 /**
  * 创建IndexEntry
  */
-IndexEntry & TSM::create_index_entry(
+IndexEntry* TSM::create_index_entry(
         high_resolution_clock::time_point max_time,
         high_resolution_clock::time_point min_time,
         int64_t offset,
         int32_t size)
 {
-    IndexEntry index_entry(max_time, min_time, offset, size);
-    return index_entry;
+    return new IndexEntry(max_time, min_time, offset, size);
 }
+

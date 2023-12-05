@@ -8,7 +8,6 @@ namespace dt
 {
     namespace tsm
     {
-
         class TSM
         {
         public:
@@ -16,26 +15,19 @@ namespace dt
             bool write_header_to_file(const Header & header, const string & file_path);
             bool read_header_from_file(Header & header, const string & file_path);
 
-            // 写入读取data block integer & float
+            // 写入读取data block
             template <class T>
             u_int64_t write_data_to_file(const DataBlock<T> & data_block ,const string & file_path) const;
 
             template <class T>
             bool read_data_from_file(DataBlock<T> & data_block, const string & file_path);
 
-            // 写入读取data block string
-            template <class T>
-            u_int64_t write_data_string_to_file(const DataBlock<T> & data_block , const string & file_path) const;
-
-            template <class T>
-            bool read_data_string_from_file(DataBlock<T> & data_block, const string & file_path);
-
             // 写入读取footer
             bool write_footer_to_file(const Footer & footer, const string & file_path);
             bool read_footer_from_file(Footer & footer, const string & file_file);
 
             // 生成IndexEntry
-            IndexEntry & create_index_entry(high_resolution_clock::time_point max_time, high_resolution_clock::time_point min_time, int64_t offset, int32_t size);
+            IndexEntry * create_index_entry(high_resolution_clock::time_point max_time, high_resolution_clock::time_point min_time, int64_t offset, int32_t size);
         };
 
         /**
@@ -113,8 +105,8 @@ namespace dt
             return true;
         }
 
-        template <class T>
-        u_int64_t TSM::write_data_string_to_file(const DataBlock<T> & data_block , const string & file_path) const
+        template <>
+        u_int64_t TSM::write_data_to_file(const DataBlock<string> & data_block , const string & file_path) const
         {
             auto & file = FileManager::get_output_stream(file_path);
             if (!file.is_open())
@@ -152,8 +144,8 @@ namespace dt
             return size;
         }
 
-        template <class T>
-        bool TSM::read_data_string_from_file(DataBlock<T> & data_block, const string & file_path)
+        template <>
+        bool TSM::read_data_from_file(DataBlock<string> & data_block, const string & file_path)
         {
             auto & file = FileManager::get_input_stream(file_path);
             if (!file.is_open())
@@ -218,6 +210,9 @@ namespace dt
             }
             m_timestamps.push_back(timestamp);
             m_values.push_back(value);
+
+            m_size += (8 + sizeof(value));
+
             return true;
         }
     }

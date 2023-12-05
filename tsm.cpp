@@ -5,16 +5,13 @@ using namespace dt::tsm;
 
 int main()
 {
-    SkipList<int> sl;
     Controller<int> controller;
-//    DataBlock<int> dataBlock(DataBlock<int>::DATA_INTEGER);
 
     // 向跳表插入随机时间戳和节点
     for (int i = 0; i < 100; ++i)
     {
         int num = rand();
-//        controller.write(Tool::random_time(false), num);
-        sl.put(Tool::random_time(false), num);
+        controller.write(Tool::random_time(false), num);
     }
 
 //    Json json = dataBlock_01.json();
@@ -46,7 +43,7 @@ int main()
     {
         std::cout << readHeader.json() << std::endl;
     }
-    for (int i = 0; i < 1; ++i)
+    for (int i = 0; i < 10; ++i)
     {
         if (tsm.read_data_from_file(readDataBlock, file_path))
         {

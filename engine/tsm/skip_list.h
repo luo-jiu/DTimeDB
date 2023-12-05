@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cstdlib>
+#include <iostream>
 
 #include <chrono>
 using namespace std::chrono;
