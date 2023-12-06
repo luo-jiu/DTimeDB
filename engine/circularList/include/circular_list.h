@@ -23,6 +23,13 @@ namespace circularList
     public:
 
     };
+    //所有页通用结构
+    class BlockHeader{
+    private:
+        uint32_t m_block_size;
+
+
+    };
     template<class E>
     class Block
     {

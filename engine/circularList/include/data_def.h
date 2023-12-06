@@ -4,7 +4,7 @@
 
 #ifndef DTIMEDB_DATA_DEF_H
 #define DTIMEDB_DATA_DEF_H
-enum class DataType{
+enum class DATA_TYPE{
     INTEGER,
     DOUBLE,
     STRING,
@@ -16,13 +16,13 @@ enum class DataType{
     CHAR,
 };
 
-enum PageType{
+enum Page_TYPE{
     INDEX,
     DATA,
     LOG
 };
 //
-enum Token{
+enum TOKEN{
     STATUS,
 };
 #endif //DTIMEDB_DATA_DEF_H

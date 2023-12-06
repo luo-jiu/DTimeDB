@@ -12,9 +12,8 @@ file(GLOB_RECURSE SOURCES "token/*.cpp" "lexer/*.cpp" "json/*.cpp" "ast/*.cpp"
         "parser/*.cpp" "engine/tsm/*.cpp" "engine/circularList/*.cpp")
 
 add_executable(token ${SOURCES} token.cpp)
-<<<<<<< HEAD
 add_executable(ast ${SOURCES} ast.cpp
-        engine/circularList/controll/circularLIst.cpp
+        engine/circularList/controll/circularList.cpp
         engine/circularList/controll/page.cpp
         engine/circularList/include/data_def.h
         engine/circularList/include/circular_list.h
@@ -24,10 +23,12 @@ add_executable(ast ${SOURCES} ast.cpp
         engine/circularList/include/circular_list_struct.h
         engine/circularList/file/file.h
         engine/circularList/include/circular_tools.h
+        engine/circularList/test/CircularListTest.cpp
+        engine/circularList/include/circular_list_header.h
 )
-=======
-add_executable(ast ${SOURCES} ast.cpp)
->>>>>>> 7aacdfd7f8c549b769de8f77644b52ed9c1dff9c
+
+#add_executable(ast ${SOURCES} ast.cpp)
+
 add_executable(tsm ${SOURCES} tsm.cpp)
 add_executable(test ${SOURCES} test.cpp)
 
