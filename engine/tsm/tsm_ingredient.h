@@ -128,13 +128,10 @@ namespace dt
         {
         public:
             IndexEntry() {}
-
             IndexEntry(const high_resolution_clock::time_point & mMaxTime, const high_resolution_clock::time_point & mMinTime, int64_t mOffset, int32_t mSize)
                     : m_max_time(mMaxTime), m_min_time(mMinTime), m_offset(mOffset), m_size(mSize) {}
 
             ~IndexEntry() = default;
-
-
 
             // get and set
             const high_resolution_clock::time_point & get_max_time() const { return m_max_time;}
@@ -154,13 +151,11 @@ namespace dt
         };
 
         /**
-         * size: 14 + string
+         * size: 12 + string
          */
         class IndexBlockMeta
         {
         public:
-            IndexBlockMeta() {}
-
             enum Type
             {
                 DATA_INTEGER,
@@ -168,9 +163,13 @@ namespace dt
                 DATA_FLOAT,
             };
 
+            IndexBlockMeta() {}
+            IndexBlockMeta(Type type): m_type(type){}
+            ~IndexBlockMeta() {}
+
             // get and set
-            u_int32_t get_key_length() const { return m_key_length; }
-            void set_key_length(u_int32_t key_length) { m_key_length = key_length; }
+            u_int16_t get_key_length() const { return m_key_size; }
+            void set_key_length(u_int16_t key_length) { m_key_size = key_length; }
             const string &get_key() const { return m_key; }
             void set_key(const string & key) { m_key = key; }
             Type get_type() const { return m_type; }
@@ -179,10 +178,33 @@ namespace dt
             void set_count(u_int16_t count) { m_count = count; }
 
         private:
-            u_int32_t                   m_key_length;
+            u_int16_t                   m_key_size;
             string                      m_key;  // seriesKey + fieldKey
             Type                        m_type;
-            u_int16_t                   m_count;
+            u_int16_t                   m_count;  // entry count
         };
+
+        /**
+         * 将时间戳和值写入到容器中
+         * @tparam T 值类型
+         * @param timestamp 时间戳
+         * @param value 值
+         */
+        template <typename T>
+        bool DataBlock<T>::write(
+                high_resolution_clock::time_point timestamp,
+                T value)
+        {
+            if (timestamp.time_since_epoch() == high_resolution_clock::duration::zero() || std::is_same<T, std::nullptr_t>::value)
+            {
+                return false;
+            }
+            m_timestamps.push_back(timestamp);
+            m_values.push_back(value);
+
+            m_size += (8 + sizeof(value));
+
+            return true;
+        }
     }
 }
