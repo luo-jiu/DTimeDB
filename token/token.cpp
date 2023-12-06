@@ -138,13 +138,13 @@ Token::Type Token::look_up(const string & literal)
  */
 void Token::show() const
 {
-    printf("type=%d name=%s literal=%s\n", m_type, name().c_str(), literal().c_str());
+    printf("m_type=%d name=%s literal=%s\n", m_type, name().c_str(), literal().c_str());
 }
 
 Json Token::json() const
 {
     Json json;
-    json["type"] = name();
+    json["m_type"] = name();
     json["name"] = m_literal;
     return json;
 }

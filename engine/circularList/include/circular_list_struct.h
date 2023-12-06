@@ -16,6 +16,7 @@
 using namespace std::chrono;
 using namespace std;
 using namespace luo::json;
+
 const uint32_t PAGE_SIZE=4096;
 namespace circular_list
 {
@@ -23,20 +24,21 @@ namespace circular_list
     class Meta
     {
     private:
-        uint32_t id;
-        char *page_name;
-        Meta *next_row;
+        uint32_t        m_id;
+        char            *m_page_name;
+        Meta            *m_next_row;
     public:
+
         Meta(){}
         Meta(uint32_t new_id,const char *new_page_name)
         {
-            id=new_id;
-            page_name=new char [strlen(new_page_name)+1];
-            next_row= nullptr;
+            m_id=new_id;
+            m_page_name=new char [strlen(new_page_name)+1];
+            m_next_row= nullptr;
         }
         ~Meta()
         {
-            free(page_name);
+            free(m_page_name);
         }
     };
     class Row
@@ -47,13 +49,12 @@ namespace circular_list
         DATA_TYPE type;
         union
         {
-            int intValue;
-            double doubleValue;
-            char charValue;
-            string* stringValue;
+            int         intValue;
+            double      doubleValue;
+            char        charValue;
+            string*     stringValue;
         };
         Row* next_row;
-
     public:
         Row(uint32_t meta_id, const char *page_name, Timestamp _time, DATA_TYPE _type): meta(new Meta(meta_id, page_name)), timestamp(_time), type(_type), next_row(nullptr){
             switch (type) {
@@ -73,6 +74,8 @@ namespace circular_list
                     break;
             }
         }
+        ~Row()=default;
+        Row(){}
         size_t estimateRowSize();
         void calculate_row_size(Row& row);
         bool drop_from_pages(Row& row);
@@ -81,37 +84,37 @@ namespace circular_list
     class PageHead
     {
     private:
-        uint32_t         page_id;
-        char            *block_name;
-        char            *page_name;
-        Page_TYPE       type;
-        PageHead        *next_page;
+        uint32_t          m_page_id;
+        char             *m_block_name;
+        char             *m_page_name;
+        Page_TYPE         m_type;
+        PageHead         *m_next_page;
     public:
         PageHead(){}
-        PageHead(uint32_t _page_id,char *_block_name, char *_page_name, Page_TYPE _type): type(_type), next_page(nullptr){
-            block_name= strdup(_block_name);
-            page_name= strdup(_page_name);
+        PageHead(uint32_t _page_id,char *_block_name, char *_page_name, Page_TYPE _type): m_type(_type), m_next_page(nullptr){
+            m_block_name= strdup(_block_name);
+            m_page_name= strdup(_page_name);
         }
         ~PageHead()=default;
     };
     class PageTail
     {
     private:
-        int32_t offset;
+        int32_t m_offset;
     public:
-        PageTail(int32_t _offset):offset(_offset){}
+        PageTail(int32_t _offset): m_offset(_offset){}
         ~PageTail()=default;
     };
 
     class Page
     {
     private:
-        PageHead *page_head;
-        vector<Row> rows;
-        PageTail *page_tail;
+        PageHead            *m_page_head;
+        vector<Row>          m_rows;
+        PageTail            *m_page_tail;
     public:
         Page(){}
-        Page(PageHead *pageHead,PageTail *pageTail):page_head(pageHead),page_tail(pageTail){}
+        Page(PageHead *pageHead,PageTail *pageTail): m_page_head(pageHead), m_page_tail(pageTail){}
         ~Page()=default;
         bool insert_row(const Row& new_row);
         bool drop_row(int *row_id);
