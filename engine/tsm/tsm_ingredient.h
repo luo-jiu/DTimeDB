@@ -8,10 +8,12 @@ using namespace std::chrono;
 
 #include <engine/tsm/file_manager.h>
 
+#include <memory>
 #include <iostream>
 #include <fstream>
 #include <list>
 #include <iomanip>
+#include <utility>
 
 namespace dt
 {
@@ -164,12 +166,14 @@ namespace dt
             };
 
             IndexBlockMeta() {}
-            IndexBlockMeta(Type type): m_type(type){}
+            IndexBlockMeta(u_int16_t key_size, string key, Type type): m_key_size(key_size), m_key(std::move(key)), m_type(type){}
             ~IndexBlockMeta() {}
 
             // get and set
             u_int16_t get_key_length() const { return m_key_size; }
-            void set_key_length(u_int16_t key_length) { m_key_size = key_length; }
+            void set_key_length(u_int16_t key_length) {
+                m_key_size = key_length;
+            }
             const string &get_key() const { return m_key; }
             void set_key(const string & key) { m_key = key; }
             Type get_type() const { return m_type; }

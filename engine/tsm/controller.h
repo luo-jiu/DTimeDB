@@ -1,11 +1,12 @@
 #pragma once
 
+#include <deque>
 #include <memory>
 #include <thread>
 
 #include <engine/tsm/skip_list.h>
 #include <engine/tsm/tsm.h>
-#include <deque>
+
 
 namespace dt
 {
@@ -21,42 +22,45 @@ namespace dt
         class Controller
         {
         public:
-            Controller(): m_exist_index_meta(false), m_data_offset(0), m_index_offset(0) {}
-            Controller(string & file_path): m_file_path(file_path), m_exist_index_meta(false), m_data_offset(0), m_index_offset(0){}
+            Controller(): m_tsm(), m_entry_count(0), m_exist_index_meta(false), m_data_offset(0), m_index_offset(0) {}
+            Controller(string & file_path): m_file_path(file_path), m_entry_count(0), m_exist_index_meta(false), m_data_offset(0), m_index_offset(0){}
             ~Controller() = default;
 
-            void set_file_path(string & file_path);  // 设置路径
+            void set_file_path(string & file_path);
+            void set_measurement(string & measurement);
+            void set_field(string & field);
 
             void write(high_resolution_clock::time_point timestamp, T value);
-            void write_data();
+            void write_file();
+            void flush_write_file();
 
         private:
-            void push_data_to_deque(DataBlock<T> data_block);
-            DataBlock<T> pop_data_from_deque();
-            void push_index_to_deque(IndexEntry index_block);
-            IndexEntry pop_index_from_deque();
+            void push_data_to_deque(std::shared_ptr<DataBlock<T>> data_block);
+            std::shared_ptr<DataBlock<T>> pop_data_from_deque();
+            void push_index_to_deque(std::shared_ptr<IndexEntry> & index_block);
+            std::shared_ptr<IndexEntry> pop_index_from_deque();
 
         private:
             TSM                                             m_tsm;
             SkipList<T>                                     m_sl;
-
-            std::unique_ptr<DataBlock<T>>                   m_current_data;
-
-            bool                                            m_exist_index_meta;  // 判断是否有index_meta
-            int64_t                                         m_data_offset;  // 数据偏移量
-            int64_t                                         m_index_offset;  // 索引偏移量
-            string                                          m_file_path;  // TSM 文件路径
             std::mutex                                      m_data_lock;
             std::mutex                                      m_index_lock;
-            std::deque<DataBlock<T>>                        m_data_deque;
-            std::deque<IndexEntry>                          m_index_deque;
+
+            std::shared_ptr<DataBlock<T>>                   m_current_data;
+            bool                                            m_exist_index_meta;  // 判断是否有index_meta
+            size_t                                          m_entry_count;       // 默认10 个
+            int64_t                                         m_data_offset;       // 数据偏移量
+            int64_t                                         m_index_offset;      // 索引偏移量
+            string                                          m_file_path;         // TSM 文件路径
+            string                                          m_measurement;       // 测量值
+            string                                          m_field;             // 字段
+
+            std::deque<std::shared_ptr<DataBlock<T>>>       m_data_deque;
+            std::deque<std::shared_ptr<IndexEntry>>         m_index_deque;
         };
 
         /**
-         * 将数据组织好
-         * @tparam T
-         * @param timestamp
-         * @param value
+         * 将DataBlock 组织好
          */
         template <class T>
         void Controller<T>::write(high_resolution_clock::time_point timestamp, T value)
@@ -66,7 +70,7 @@ namespace dt
                 // 确保m_current_data 不为空
                 if (!m_current_data)
                 {
-                    m_current_data = std::make_unique<DataBlock<T>>();
+                    m_current_data = std::make_shared<DataBlock<T>>();
                 }
 
                 // 写入DataBlock
@@ -79,33 +83,66 @@ namespace dt
                     }
                 }
                 m_current_data->m_length = m_sl.size();  // 设置大小
-                push_data_to_deque(*m_current_data);  // 存放在队列中
-                m_current_data = std::make_unique<DataBlock<T>>();  // 重置m_current_data 以便接收新数据
+                push_data_to_deque(m_current_data);  // 存放在队列中
+                m_current_data = std::make_shared<DataBlock<T>>();  // 重置m_current_data 以便接收新数据
                 m_sl.cle();  // 清空跳表
             }
             m_sl.put(timestamp, value);
         }
 
         /**
-         * 写入DataBlock 和 IndexBlock
-         * @tparam T
+         * 写入DataBlock 和IndexBlock
+         * 
+         * 这个落盘函数会在DataBlock 数量达到10 的时候才会落盘
          */
         template <class T>
-        void Controller<T>::write_data()
+        void Controller<T>::write_file()
         {
-            if (!m_exist_index_meta)  // 没有index_meta
+            if (!m_exist_index_meta || m_entry_count > 9)  // 没有index_meta 或者 已满
             {
+                // 创建index_meta
+                std::shared_ptr<IndexBlockMeta> e;
+                if (std::is_same<T, int>::value)
+                {
+                    e = m_tsm.create_index_meta(IndexBlockMeta::Type::DATA_INTEGER, m_measurement, m_field);
+                }
+                else if (std::is_same<T, string>::value)
+                {
+                    e = m_tsm.create_index_meta(IndexBlockMeta::Type::DATA_STRING, m_measurement, m_field);
+                }
+                else if (std::is_same<T, float>::value)
+                {
+                    e = m_tsm.create_index_meta(IndexBlockMeta::Type::DATA_FLOAT, m_measurement, m_field);
+                }
+                // 写入index_meta
+                m_tsm.write_index_meta_to_file(e, m_file_path, m_index_offset);
+                m_exist_index_meta = true;
 
+                std::shared_ptr<IndexBlockMeta> e1(new IndexBlockMeta());
+                m_tsm.read_index_meta_from_file(e1, m_file_path, m_index_offset);
             }
+
             // 刷入data_block 和 index_entry
             m_tsm.write_data_to_file(pop_data_from_deque(), m_file_path, m_data_offset);
+            m_tsm.write_index_entry_to_file(pop_index_from_deque(), m_file_path, m_index_offset);
+
+            // 修改偏移量
+        }
+        
+        /**
+         * 无论有多少DataBlock 都会进行落盘 
+         */
+        template <class T>
+        void Controller<T>::flush_write_file()
+        {
+            
         }
 
         /**
          * 放置数据
          */
         template <class T>
-        void Controller<T>::push_data_to_deque(DataBlock<T> data_block)
+        void Controller<T>::push_data_to_deque(std::shared_ptr<DataBlock<T>> data_block)
         {
             std::lock_guard<std::mutex> lock(m_data_lock);  // 互斥锁
             m_data_deque.push_back(data_block);
@@ -115,31 +152,31 @@ namespace dt
          * 获取数据
          */
         template <class T>
-        DataBlock<T> Controller<T>::pop_data_from_deque()
+        std::shared_ptr<DataBlock<T>> Controller<T>::pop_data_from_deque()
         {
             std::lock_guard<std::mutex> lock(m_data_lock);
             if (!m_data_deque.empty())
             {
-                DataBlock<T> data_block = m_data_deque.front();
+                std::shared_ptr<DataBlock<T>> data_block = m_data_deque.front();
                 m_data_deque.pop_front();
                 return data_block;
             }
         }
 
         template <class T>
-        void Controller<T>::push_index_to_deque(IndexEntry index_block)
+        void Controller<T>::push_index_to_deque(std::shared_ptr<IndexEntry> & index_block)
         {
             std::lock_guard<std::mutex> lock(m_index_lock);
             m_index_deque.push_back(index_block);
         }
 
         template <class T>
-        IndexEntry Controller<T>::pop_index_from_deque()
+        std::shared_ptr<IndexEntry> Controller<T>::pop_index_from_deque()
         {
             std::lock_guard<std::mutex> lock(m_index_lock);
             if (!m_index_deque.empty())
             {
-                DataBlock<T> index_block = m_index_deque.front();
+                std::shared_ptr<IndexEntry> index_block = m_index_deque.front();
                 m_index_deque.pop_front();
                 return index_block;
             }
@@ -149,6 +186,18 @@ namespace dt
         void Controller<T>::set_file_path(string & file_path)
         {
             m_file_path = file_path;
+        }
+
+        template <class T>
+        void Controller<T>::set_measurement(string & measurement)
+        {
+            m_measurement = measurement;
+        }
+
+        template <class T>
+        void Controller<T>::set_field(string & field)
+        {
+            m_field = field;
         }
     }
 }

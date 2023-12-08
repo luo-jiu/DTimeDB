@@ -134,8 +134,6 @@ namespace dt
             std::vector<Node*> update(MAX_LEVEL, nullptr);
             Node* current = m_head;
 
-            std::cout << m_head->m_nexts.size() << std::endl;
-
             for (int i = MAX_LEVEL - 1; i >= 0; --i)
             {
                 while (current->m_nexts[i] != nullptr && current->m_nexts[i]->m_key < key)

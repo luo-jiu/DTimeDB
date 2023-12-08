@@ -5,14 +5,22 @@ using namespace dt::tsm;
 
 int main()
 {
+    string measurement = "school,class=高一2班";
+    string field = "温度";
+    string file_path = "data.tsm";
     Controller<int> controller;
 
+    controller.set_measurement(measurement);
+    controller.set_field(field);
+    controller.set_file_path(file_path);
     // 向跳表插入随机时间戳和节点
     for (int i = 0; i < 100; ++i)
     {
         int num = rand();
         controller.write(Tool::random_time(false), num);
     }
+
+    controller.write_file();
 
 //    Json json = dataBlock_01.json();
 //    std::ofstream ofs("./../tsm.json");
