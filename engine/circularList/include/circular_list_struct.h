@@ -5,7 +5,7 @@
 #ifndef DTIMEDB_CIRCULARLIST_STRUCT_H
 #define DTIMEDB_CIRCULARLIST_STRUCT_H
 #include "circular_tools.h"
-#define BLOCK_MAX_PAGES 100
+
 #include <chrono>
 #include <cstring>
 #include <cstdint>
@@ -30,22 +30,20 @@ namespace circular_list
     public:
 
         Meta(){}
-        Meta(uint32_t new_id,const char *new_page_name)
-        {
-            m_id=new_id;
-            m_page_name=new char [strlen(new_page_name)+1];
-            m_next_row= nullptr;
+        Meta(uint32_t new_id, const char *new_page_name) : m_next_row(nullptr) {
+            m_id = new_id;
+            m_page_name = new char[strlen(new_page_name) + 1];
+            strcpy(m_page_name, new_page_name);
         }
-        ~Meta()
-        {
-            free(m_page_name);
+// Meta 类的析构函数实现
+        ~Meta() {
+            delete[] m_page_name;
         }
     };
-    class Row
+    //行存储的数据 结构，fields
+    class Fields
     {
-    private:
-        Meta *meta;
-        Timestamp timestamp;
+    public:
         DATA_TYPE type;
         union
         {
@@ -54,48 +52,43 @@ namespace circular_list
             char        charValue;
             string*     stringValue;
         };
-        Row* next_row;
-    public:
-        Row(uint32_t meta_id, const char *page_name, Timestamp _time, DATA_TYPE _type): meta(new Meta(meta_id, page_name)), timestamp(_time), type(_type), next_row(nullptr){
-            switch (type) {
-                case DATA_TYPE::INTEGER:
-                    intValue = 0; //整数类型
-                    break;
-                case DATA_TYPE::DOUBLE:
-                    doubleValue = 0.0; //浮点数类型
-                    break;
-                case DATA_TYPE::CHAR:
-                    charValue = '\0'; //字符类型
-                    break;
-                case DATA_TYPE::STRING:
-                    stringValue = new std::string(); //动态分配内存
-                    break;
-                default:
-                    break;
-            }
+        Fields():stringValue(nullptr){}
+        ~Fields(){
+            delete[] stringValue;
         }
+    };
+    class Row
+    {
+    private:
+        Meta                    meta;
+        Timestamp               timestamp;
+        vector<Fields>          fields;
+        Row*                    next_row;
+    public:
+        Row(Meta& _meta){}
         ~Row()=default;
         Row(){}
-        size_t estimateRowSize();
+        size_t estimateRowSize() const;
+        void addField(DATA_TYPE type,const char *value);
         void calculate_row_size(Row& row);
         bool drop_from_pages(Row& row);
     };
 
     class PageHead
     {
-    private:
-        uint32_t          m_page_id;
-        char             *m_block_name;
-        char             *m_page_name;
-        Page_TYPE         m_type;
-        PageHead         *m_next_page;
-    public:
         PageHead(){}
         PageHead(uint32_t _page_id,char *_block_name, char *_page_name, Page_TYPE _type): m_type(_type), m_next_page(nullptr){
             m_block_name= strdup(_block_name);
             m_page_name= strdup(_page_name);
         }
         ~PageHead()=default;
+    public:
+        uint32_t          m_page_id;
+        char             *m_block_name;
+        char             *m_page_name;
+        Page_TYPE         m_type;
+        PageHead         *m_next_page;
+
     };
     class PageTail
     {
@@ -116,9 +109,17 @@ namespace circular_list
         Page(){}
         Page(PageHead *pageHead,PageTail *pageTail): m_page_head(pageHead), m_page_tail(pageTail){}
         ~Page()=default;
-        bool insert_row(const Row& new_row);
+        bool init_page(uint32_t pageId, const char *blockName, const char *pageName, Page_TYPE type);
+        bool add_row(const Row& new_row);
         bool drop_row(int *row_id);
-        void select_row();
+        const Row& getRow(size_t index);
+        bool createPage();
+        bool getPage();
+        bool deletePage();
+        bool updatPage();
+        Page *getNextPage(){
+            return reinterpret_cast<Page *>(m_page_head ? m_page_head->m_next_page : nullptr);
+        }
     };
 
 

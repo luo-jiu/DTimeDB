@@ -21,10 +21,13 @@ add_executable(ast ${SOURCES} ast.cpp
         pool/threadPool.h
         engine/tsm/file_manager.cpp
         engine/circularList/include/circular_list_struct.h
-        engine/circularList/file/file.h
         engine/circularList/include/circular_tools.h
         engine/circularList/test/CircularListTest.cpp
         engine/circularList/include/circular_list_header.h
+        engine/circularList/file/circular_list_file_manager.cpp
+        engine/circularList/file/circular_list_file_manager.h
+        engine/circularList/file/circular_list_file_manager.cpp
+        engine/circularList/include/circular_skip_list.h
 )
 
 #add_executable(ast ${SOURCES} ast.cpp)
