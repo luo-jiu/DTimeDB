@@ -6,8 +6,8 @@ using namespace dt::tsm;
 
 #include <fstream>
 #include <random>
-
-// 生成一个随机时间戳
+#include "engine/circularList/include/circular_list_header.h"
+ //生成一个随机时间戳
 std::chrono::system_clock::time_point random_time()
 {
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();  // 获取当前时间点
@@ -28,6 +28,15 @@ std::chrono::system_clock::time_point random_time()
 
 int main()
 {
+//    Timestamp timestamp;
+//    time_t res= timestamp.getTimestamp();
+//    time_t con=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+//    if (res==con){
+//        cout<<"right"<<endl;
+//    } else{
+//        cout<<"wrong"<<endl;
+//    }
+
     DataBlock<int> dataBlock(DataBlock<int>::DATA_INTEGER);
 
     SkipList<int> sl;
@@ -109,5 +118,6 @@ int main()
     {
         std::cout << readFooter.json() << std::endl;
     }
+
     return 0;
 }

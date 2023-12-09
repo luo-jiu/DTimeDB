@@ -21,7 +21,7 @@ enum Page_TYPE{
     DATA,
     LOG
 };
-//
+//信息传输标识
 enum TOKEN{
     STATUS,
 };

@@ -35,7 +35,7 @@ namespace circular_list
             m_page_name = new char[strlen(new_page_name) + 1];
             strcpy(m_page_name, new_page_name);
         }
-// Meta 类的析构函数实现
+    // Meta 类的析构函数实现
         ~Meta() {
             delete[] m_page_name;
         }
@@ -65,24 +65,24 @@ namespace circular_list
         vector<Fields>          fields;
         Row*                    next_row;
     public:
-        Row(Meta& _meta){}
+        Row(const Meta& _meta,const Timestamp _timestamp):meta(_meta),timestamp(_timestamp),next_row(nullptr){}
         ~Row()=default;
         Row(){}
         size_t estimateRowSize() const;
         void addField(DATA_TYPE type,const char *value);
         void calculate_row_size(Row& row);
-        bool drop_from_pages(Row& row);
     };
 
     class PageHead
     {
+    public:
         PageHead(){}
         PageHead(uint32_t _page_id,char *_block_name, char *_page_name, Page_TYPE _type): m_type(_type), m_next_page(nullptr){
             m_block_name= strdup(_block_name);
             m_page_name= strdup(_page_name);
         }
         ~PageHead()=default;
-    public:
+    private:
         uint32_t          m_page_id;
         char             *m_block_name;
         char             *m_page_name;
@@ -109,24 +109,26 @@ namespace circular_list
         Page(){}
         Page(PageHead *pageHead,PageTail *pageTail): m_page_head(pageHead), m_page_tail(pageTail){}
         ~Page()=default;
+        int getSize();
         bool init_page(uint32_t pageId, const char *blockName, const char *pageName, Page_TYPE type);
         bool add_row(const Row& new_row);
         bool drop_row(int *row_id);
         const Row& getRow(size_t index);
         bool createPage();
-        bool getPage();
-        bool deletePage();
-        bool updatPage();
-        Page *getNextPage(){
-            return reinterpret_cast<Page *>(m_page_head ? m_page_head->m_next_page : nullptr);
-        }
     };
 
-
+    //索引页结构
     class  IndexPageHeader{
 
     };
     class IndexPage{
+
+    };
+    //日志页结构
+    class LogPageHeader{
+
+    };
+    class LogPage{
 
     };
 }

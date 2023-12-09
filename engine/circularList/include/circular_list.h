@@ -20,35 +20,40 @@ using namespace circular_list;
 #define BLOCK_MAX_PAGES 100
 namespace circularList
 {
-    class CircularList
-    {
-    public:
 
-    };
-    //所有页通用结构
+    //Block头信息，存储页
     class BlockHeader{
     private:
         uint32_t            m_block_size;
-
-
+        int                 current_page_index;
     };
-    template<class E>
+    //Block体，存储分页数据，数据在环形链表组织成页后页满存储如Block，Block进行持久化操作
     class Block
     {
-        Block(const char *file_name)
-        {
-            file.open(file_name,std::ios::out | std::ios::binary);
-            if (!file.is_open()){
-                std::cerr<<"Error opening file."<<std::endl;
-            }
-        }
-        ~Block(){
-            file.close();
-        }
+    public:
         void writePage(const Page& page);
+        bool getPage();
+        bool deletePage(const PageHead& header);
 
     public:
-        std::ofstream        file;
+        BlockHeader         header;
+        vector<Page>        pages;
+    };
+    //环形链表结构，当每一页存满以后存入块中，块进行落盘存储操作
+    struct CircularListNode{
+        Page                page;
+        CircularListNode    *next;
+        CircularListNode(const Page& _page):page(_page),next(nullptr){}
+    };
+    class CircularList
+    {
+    public:
+        void addDataToNode();
+        void writePageToBlock();
+    private:
+        static const size_t     MAX_PAGES= 8;       //存储最大页数
+        CircularListNode        *head;              //存储头结点
+        size_t                  page_count;         //存储页数
     };
 }
 
