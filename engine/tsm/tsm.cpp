@@ -1,95 +1,188 @@
 #include <engine/tsm/tsm.h>
 using namespace dt::tsm;
 
-template <>
-u_int64_t TSM::write_data_to_file<string>(
-        const std::shared_ptr<DataBlock<string>> & data_block ,
+/**
+ * 将TSM Header 写入到文件
+ */
+bool TSM::write_header_to_file(const Header & header, const string & file_path)
+{
+    auto & file = FileManager::get_output_stream(file_path);
+    if (!file.is_open())
+    {
+        std::cerr << "Error: Could not open file for writing - from engine/tsm_/write.cpp" << std::endl;
+        return false;
+    }
+    file.write(reinterpret_cast<const char*>(&header), sizeof(header));
+
+    file.flush();
+    return true;
+}
+
+/**
+ * 将TSM Header 读取到内存
+ */
+bool TSM::read_header_from_file(Header & header, const string & file_path)
+{
+    auto & file = FileManager::get_input_stream(file_path);
+    if (!file.is_open())
+    {
+        std::cerr << "Error: Could not open file for reading - from engine/tsm_/write.cpp" << std::endl;
+        return false;
+    }
+
+    file.read(reinterpret_cast<char*>(&header), sizeof(header));
+    return true;
+}
+
+u_int64_t TSM::write_data_to_file(
+        const std::shared_ptr<DataBlock> & data_block ,
         const string & file_path,
         int64_t offset) const
 {
     auto & file = FileManager::get_output_stream(file_path);
     if (!file.is_open())
     {
-        std::cerr << "Error: Could not open file for writing - from engine/tsm/tsm.h" << std::endl;
+        std::cerr << "Error: Could not open file for writing - from engine/tsm_/tsm_.h" << std::endl;
         return -1;
     }
-    file.seekp(offset);
+    file.seekp(offset);  // 移动到指定位置
 
-    u_int64_t size = 8;
+    int _size;
 
     // 将类型 长度写入文件
     file.write(reinterpret_cast<const char*>(&data_block->m_type), sizeof(data_block->m_type));
     file.write(reinterpret_cast<const char*>(&data_block->m_length), sizeof(data_block->m_length));
 
-    long timestamp_size = sizeof(high_resolution_clock::time_point);
-    long value_size = sizeof(u_int16_t);
-
     // 将时间戳写入文件
+    _size = sizeof(high_resolution_clock::time_point);
     for (const auto & timestamp : data_block->m_timestamps)
     {
-        file.write(reinterpret_cast<const char*>(&timestamp), timestamp_size);
+        file.write(reinterpret_cast<const char*>(&timestamp), _size);
     }
-    size += timestamp_size * data_block->m_timestamps.size();
 
-    // 将string 写入文件
-    for (const string & value : data_block->m_values)
+    // 将数据写入文件
+    if (data_block->m_type == DataBlock::Type::DATA_STRING)
     {
-        auto length = static_cast<u_int16_t>(value.length());
-        file.write(reinterpret_cast<const char*>(&length), sizeof(u_int16_t));  // 写大小
-        file.write(value.c_str(), length);  // 写字符串
-        size += (length + value_size);
+        _size = sizeof(u_int16_t);
+        for (const string & value : data_block->m_values)
+        {
+            auto length = static_cast<u_int16_t>(value.length());
+            file.write(reinterpret_cast<const char*>(&length), _size);  // 写大小
+            file.write(value.c_str(), length);  // 写字符串
+        }
+
+        file.flush();
+        return data_block->m_size + 4 * data_block->m_values.size();
+    }
+    else if (data_block->m_type == DataBlock::Type::DATA_FLOAT)
+    {
+        float _data;
+        _size = sizeof(float);
+        for (const auto & value : data_block->m_values)
+        {
+            _data = stof(value);
+            file.write(reinterpret_cast<const char*>(&_data), _size);
+        }
+    }
+    else if (data_block->m_type == DataBlock::Type::DATA_INTEGER)
+    {
+        int _data;
+        _size = sizeof(int);
+        for (const auto & value : data_block->m_values)
+        {
+            _data = stoi(value);
+            file.write(reinterpret_cast<const char*>(&_data), _size);
+        }
+    }
+    else
+    {
+        std::cerr << "Error : Unknown type - from engine/tsm/tsm.cpp" << std::endl;
     }
 
     file.flush();
-    return size;
+    return data_block->m_size;
 }
 
-template <>
-bool TSM::read_data_from_file<string>(
-        DataBlock<string> & data_block,
+bool TSM::read_data_from_file(
+        std::shared_ptr<DataBlock> & data_block,
         const string & file_path,
         int64_t offset)
 {
     auto & file = FileManager::get_input_stream(file_path);
     if (!file.is_open())
     {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm/tsm.h" << std::endl;
+        std::cerr << "Error: Could not open file for reading - from engine/tsm_/tsm_.h" << std::endl;
         return false;
     }
     file.seekg(offset);
 
     // 读取类型 长度
-    file.read(reinterpret_cast<char*>(&data_block.m_type), sizeof(data_block.m_type));
-    file.read(reinterpret_cast<char*>(&data_block.m_length), sizeof(data_block.m_length));
+    file.read(reinterpret_cast<char*>(&data_block->m_type), sizeof(data_block->m_type));
+    file.read(reinterpret_cast<char*>(&data_block->m_length), sizeof(data_block->m_length));
+
+    int _size;
 
     // 读取时间戳
-    data_block.m_timestamps.clear();
-    auto num = data_block.m_length;
+    data_block->m_timestamps.clear();
+    auto num = data_block->m_length;
+    _size = sizeof(high_resolution_clock::time_point);
     for (size_t i = 0; i < num; ++i)
     {
         high_resolution_clock::time_point timestamp;
-        file.read(reinterpret_cast<char*>(&timestamp), sizeof(timestamp));
-        data_block.m_timestamps.push_back(timestamp);
+        file.read(reinterpret_cast<char*>(&timestamp), _size);
+        data_block->m_timestamps.push_back(timestamp);
     }
 
     // 读取值
-    data_block.m_values.clear();
-    for (size_t i = 0; i < num; ++i)
+    data_block->m_values.clear();
+    if (data_block->m_type == DataBlock::Type::DATA_STRING)
     {
-        u_int16_t length;
-        file.read(reinterpret_cast<char*>(&length), sizeof(u_int16_t));
-        if (file.good())
+        for (size_t i = 0; i < num; ++i)
         {
-            char buffer[length + 1];
-            file.read(buffer, length);
-            buffer[length] = '\0';
-            data_block.m_values.push_back(buffer);
+            u_int16_t length;
+            file.read(reinterpret_cast<char*>(&length), sizeof(u_int16_t));
+            if (file.good())
+            {
+                char buffer[length + 1];
+                file.read(buffer, length);
+                buffer[length] = '\0';
+                data_block->m_values.push_back(buffer);
+            }
         }
     }
+    else if (data_block->m_type == DataBlock::Type::DATA_INTEGER)
+    {
+        int _value;
+        string _data;
+        _size = sizeof(int);
+        for (size_t i = 0; i < num; ++i)
+        {
+            file.read(reinterpret_cast<char*>(&_value), _size);
+            _data = std::to_string(_value);
+            data_block->m_values.push_back(_data);
+        }
+    }
+    else if (data_block->m_type == DataBlock::Type::DATA_FLOAT)
+    {
+        float _value;
+        string _data;
+        _size = sizeof(float);
+        for (size_t i = 0; i < num; ++i)
+        {
+            file.read(reinterpret_cast<char*>(&_value), _size);
+            _data = std::to_string(_value);
+            data_block->m_values.push_back(_data);
+        }
+    }
+    else
+    {
+        std::cerr << "Error : Unknown type - from /engin/tsm/tsm.cpp" << std::endl;
+    }
+
     return true;
 }
 
-bool TSM::write_index_entry_to_file(
+u_int64_t TSM::write_index_entry_to_file(
         const std::shared_ptr<IndexEntry> & index_entry,
         const string & file_path,
         int64_t offset) const
@@ -97,7 +190,7 @@ bool TSM::write_index_entry_to_file(
     auto & file = FileManager::get_output_stream(file_path);
     if (!file.is_open())
     {
-        std::cerr << "Error: Could not open file for writing - from engine/tsm/tsm.h" << std::endl;
+        std::cerr << "Error: Could not open file for writing - from engine/tsm_/tsm_.h" << std::endl;
         return false;
     }
     file.seekp(offset);
@@ -117,17 +210,18 @@ bool TSM::write_index_entry_to_file(
 }
 
 bool TSM::read_index_entry_from_file(
-        IndexEntry & index_entry,
+        std::shared_ptr<IndexEntry> & index_entry,
         const string & file_path,
         int64_t offset)
 {
     auto & file = FileManager::get_input_stream(file_path);
     if (!file.is_open())
     {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm/tsm.h" << std::endl;
+        std::cerr << "Error: Could not open file for reading - from engine/tsm_/tsm_.h" << std::endl;
         return false;
     }
     file.seekg(offset);
+
 }
 
 bool TSM::write_index_meta_to_file(
@@ -138,7 +232,7 @@ bool TSM::write_index_meta_to_file(
     auto & file = FileManager::get_output_stream(file_path);
     if (!file.is_open())
     {
-        std::cerr << "Error: Could not open file for writing - from engine/tsm/tsm.h" << std::endl;
+        std::cerr << "Error: Could not open file for writing - from engine/tsm_/tsm_.h" << std::endl;
         return false;
     }
     file.seekp(offset);
@@ -164,7 +258,7 @@ bool TSM::read_index_meta_from_file(
     auto & file = FileManager::get_input_stream(file_path);
     if (!file.is_open())
     {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm/tsm.h" << std::endl;
+        std::cerr << "Error: Could not open file for reading - from engine/tsm_/tsm_.h" << std::endl;
         return false;
     }
     file.seekg(offset);
@@ -190,46 +284,6 @@ bool TSM::read_index_meta_from_file(
     return true;
 }
 
-template <typename T>
-string DataBlock<T>::my_to_string(const T& value) {
-    std::ostringstream oss;
-    oss << value;
-    return oss.str();
-}
-
-/**
- * 将TSM Header 写入到文件
- */
-bool TSM::write_header_to_file(const Header & header, const string & file_path)
-{
-    auto & file = FileManager::get_output_stream(file_path);
-    if (!file.is_open())
-    {
-        std::cerr << "Error: Could not open file for writing - from engine/tsm/write.cpp" << std::endl;
-        return false;
-    }
-    file.write(reinterpret_cast<const char*>(&header), sizeof(header));
-
-    file.flush();
-    return true;
-}
-
-/**
- * 将TSM Header 读取到内存
- */
-bool TSM::read_header_from_file(Header & header, const string & file_path)
-{
-    auto & file = FileManager::get_input_stream(file_path);
-    if (!file.is_open())
-    {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm/write.cpp" << std::endl;
-        return false;
-    }
-
-    file.read(reinterpret_cast<char*>(&header), sizeof(header));
-    return true;
-}
-
 /**
  * 将TSM Footer 写到末尾
  */
@@ -238,7 +292,7 @@ bool TSM::write_footer_to_file(const Footer & footer, const string & file_path)
     auto & file = FileManager::get_output_stream(file_path);
     if (!file.is_open())
     {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for reading - from engine/tsm_/write.cpp" << std::endl;
         return false;
     }
     file.seekp(0, std::ios::end);  // 跳转到文件末尾
@@ -256,7 +310,7 @@ bool TSM::read_footer_from_file(Footer & footer, const string & file_path)
     auto & file = FileManager::get_input_stream(file_path);
     if (!file.is_open())
     {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for reading - from engine/tsm_/write.cpp" << std::endl;
         return false;
     }
     file.seekg(-8, std::ios::end);  // 跳转到Footer 开头
@@ -307,7 +361,7 @@ std::shared_ptr<IndexBlockMeta> TSM::create_index_meta(
         }
         default:
         {
-            std::cerr << "Error : Type '" << type << "' does not meet - from engine/tsm/tsm.cpp" << std::endl;
+            std::cerr << "Error : Type '" << type << "' does not meet - from engine/tsm_/tsm_.cpp" << std::endl;
             return nullptr;
         }
     }
