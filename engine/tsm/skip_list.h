@@ -146,8 +146,16 @@ namespace dt
             current = current->m_nexts[0];
             if (current != nullptr && current->m_key == key)
             {
-                value = current->m_value;  // 如果键已存在，更新值
-                return;
+//                if (std::is_same<std::string, T>::value)
+//                {
+//                    value.assign(current->m_value);
+//                    return;
+//                }
+//                else
+//                {
+                    value = current->m_value;  // 如果键已存在，更新值
+                    return;
+//                }
             }
 
             int level = random_level();

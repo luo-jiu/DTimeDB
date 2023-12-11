@@ -1,9 +1,16 @@
-#pragma once
+#ifndef DTIMEDB_TEST_TOOL_H
+#define DTIMEDB_TEST_TOOL_H
 
 #include <random>
 #include <iostream>
+using std::string;
+
 #include <chrono>
 using namespace std::chrono;
+
+#include <engine/tsm/tsm_ingredient.h>
+
+
 
 namespace dt
 {
@@ -16,7 +23,22 @@ namespace dt
         {
         public:
             static system_clock::time_point random_time(bool mode);
+            static void write_string_skip_list(SkipList<string> & sl, int num, bool timer);
+            static void write_integer_skip_list(SkipList<string> & sl, int num, bool timer);
+            static void write_float_skip_list(SkipList<string> & sl, int num, bool timer);
+
+            static void transfer(SkipList<string> & sl, std::shared_ptr<DataBlock> & data_block, bool timer);
+
+            static void start();
+            static void end();
+
+        private:
+            static high_resolution_clock::time_point m_start;
+            static high_resolution_clock::time_point m_end;
         };
+
+        high_resolution_clock::time_point Tool::m_start = system_clock::now();
+        high_resolution_clock::time_point Tool::m_end = system_clock::now();
 
         /**
          * 生成随机时间戳
@@ -42,5 +64,79 @@ namespace dt
 
             return random_time_point;
         }
+
+        void Tool::write_string_skip_list(SkipList<string> & sl, int nums, bool timer)
+        {
+            if (timer) start();
+            for (size_t i = 0; i < nums; ++i)
+            {
+                auto _num = rand();
+                auto _data = std::to_string(_num);
+                sl.put(random_time(false), _data);
+            }
+            if (timer) end();
+        }
+
+        void Tool::write_integer_skip_list(SkipList<string> & sl, int nums, bool timer)
+        {
+            if (timer) start();
+            for (size_t i = 0; i < nums; ++i)
+            {
+                auto random_int = rand();
+                auto _num = std::to_string(random_int);
+                sl.put(random_time(false), _num);
+            }
+            if (timer) end();
+        }
+
+        void Tool::write_float_skip_list(SkipList<string> & sl, int nums, bool timer)
+        {
+            if (timer) start();
+            for (size_t i = 0; i < nums; ++i)
+            {
+                auto random_int = rand();
+                float min = 0.0f;
+                float max = 10.0f;
+                float random_float = min + static_cast<float>(random_int) / (RAND_MAX / (max - min));
+                auto _num = std::to_string(random_float);
+
+                sl.put(random_time(false), _num);
+            }
+            if (timer) end();
+        }
+
+        void Tool::transfer(SkipList<string> & sl, std::shared_ptr<DataBlock> & data_block, bool timer)
+        {
+            if (timer) start();
+            for (auto it = sl.begin(); it != sl.end(); ++it)  // 迭代器
+            {
+                if (it != sl.end())  // 校验
+                {
+                    auto key_value = *it;
+                    data_block->write(key_value.first, key_value.second);
+                }
+            }
+            if (timer) end();
+        }
+
+        /**
+         * 计算执行时间
+         */
+        void Tool::start()
+        {
+            m_start = system_clock::now();
+        }
+
+        void Tool::end()
+        {
+            m_end = system_clock::now();
+            // 计算时间差
+            auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(m_end - m_start);
+            double seconds = static_cast<double>(duration_ms.count()) / 1000000.0;
+            // 打印运行时间
+            std::cout << "代码块运行时间: " << seconds << " 秒; " << duration_ms.count() << " 微秒" << std::endl;
+        }
     }
 }
+
+#endif //DTIMEDB_TEST_TOOL_H

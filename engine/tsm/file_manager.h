@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DTIMEDB_FILE_MANAGER_H
+#define DTIMEDB_FILE_MANAGER_H
 
 #include <iostream>
 #include <fstream>
@@ -12,7 +13,6 @@ namespace dt
         class FileManager
         {
         public:
-
             static std::ifstream & get_input_stream(const std::string & file_path);
             static std::ofstream & get_output_stream(const std::string & file_path);
 
@@ -34,3 +34,5 @@ namespace dt
         };
     }
 }
+
+#endif //DTIMEDB_FILE_MANAGER_H

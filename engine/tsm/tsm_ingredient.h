@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DTIMEDB_TSM_INGREDIENT_H
+#define DTIMEDB_TSM_INGREDIENT_H
 
 #include <json/json.h>
 using namespace luo::json;
@@ -38,7 +39,7 @@ namespace dt
                 return json;
             }
 
-        public:
+        private:
             int32_t m_magic;
             int8_t m_version;
         };
@@ -63,11 +64,11 @@ namespace dt
 
             int64_t getOffset() { return m_offset; }
             void setOffset(int64_t offset) { m_offset = offset; }
+
         private:
             int64_t m_offset;
         };
 
-        template <class T>
         class DataBlock
         {
         public:
@@ -109,10 +110,8 @@ namespace dt
                 return json;
             }
 
-            string my_to_string(const T& value);
-            void setLength(int32_t length) { m_length = length; }
-
-            bool write(high_resolution_clock::time_point timestamp, T value);
+            string my_to_string(const string & value);
+            bool write(high_resolution_clock::time_point timestamp, const string & value);
 
         public:
             u_int32_t                                           m_size;  // 大小(不存入磁盘)
@@ -120,7 +119,7 @@ namespace dt
             Type                                                m_type;
             int32_t                                             m_length;
             std::list<high_resolution_clock::time_point>        m_timestamps;
-            std::list<T>                                        m_values;
+            std::list<string>                                   m_values;
         };
 
         /**
@@ -187,28 +186,7 @@ namespace dt
             Type                        m_type;
             u_int16_t                   m_count;  // entry count
         };
-
-        /**
-         * 将时间戳和值写入到容器中
-         * @tparam T 值类型
-         * @param timestamp 时间戳
-         * @param value 值
-         */
-        template <typename T>
-        bool DataBlock<T>::write(
-                high_resolution_clock::time_point timestamp,
-                T value)
-        {
-            if (timestamp.time_since_epoch() == high_resolution_clock::duration::zero() || std::is_same<T, std::nullptr_t>::value)
-            {
-                return false;
-            }
-            m_timestamps.push_back(timestamp);
-            m_values.push_back(value);
-
-            m_size += (8 + sizeof(value));
-
-            return true;
-        }
     }
 }
+
+#endif //DTIMEDB_TSM_INGREDIENT_H
