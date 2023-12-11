@@ -9,20 +9,22 @@ namespace dt
     {
         class TSM {
         public:
+            TSM() : m_file_manager(20) {}
+
             // 写入读取header
             bool write_header_to_file(const Header & header, const string & file_path);
             bool read_header_from_file(Header & header, const string & file_path);
 
             // 写入读取data block
-            u_int64_t write_data_to_file(const std::shared_ptr<DataBlock> & data_block, const string & file_path, int64_t offset) const;
+            u_int64_t write_data_to_file(const std::shared_ptr<DataBlock> & data_block, const string & file_path, int64_t offset);
             bool read_data_from_file(std::shared_ptr<DataBlock> & data_block, const string & file_path, int64_t offset);
 
             // 写入读取index entry
-            u_int64_t write_index_entry_to_file(const std::shared_ptr<IndexEntry> & index_entry, const string & file_path, int64_t offset) const;
+            u_int64_t write_index_entry_to_file(const std::shared_ptr<IndexEntry> & index_entry, const string & file_path, int64_t offset);
             bool read_index_entry_from_file(std::shared_ptr<IndexEntry> & index_entry, const string & file_path, int64_t offset);
 
             // 写入读取index meta
-            bool write_index_meta_to_file(const std::shared_ptr<IndexBlockMeta> & index_meta, const string & file_path, int64_t offset) const;
+            bool write_index_meta_to_file(const std::shared_ptr<IndexBlockMeta> & index_meta, const string & file_path, int64_t offset);
             bool read_index_meta_from_file(std::shared_ptr<IndexBlockMeta> & index_meta, const string & file_path, int64_t offset);
 
             // 写入读取footer
@@ -34,6 +36,16 @@ namespace dt
 
             // 生成IndexBlockMeta
             std::shared_ptr<IndexBlockMeta> create_index_meta(IndexBlockMeta::Type type, const string & measurement, const string & field);
+
+            // 生成完整的TSM File
+            bool create_tsm(const string & file_path);
+
+            void set_size(u_int64_t size) { m_tsm_size = size; }
+
+        private:
+            FileManager m_file_manager;
+
+            u_int64_t m_tsm_size;  // TSM size
         };
     }
 }

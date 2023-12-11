@@ -1,116 +1,98 @@
 #include <engine/tsm/file_manager.h>
 using namespace dt::tsm;
 
-std::unordered_map<std::string, std::ifstream> FileManager::m_input_stream = {
-};
+/**
+ * 获取文件io 流
+ */
+std::shared_ptr<std::fstream> FileManager::get_file_stream(
+        const std::string &file_path)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto it = m_file_stream.find(file_path);
+    if (it != m_file_stream.end() && !it->second.in_use) {
+        it->second.in_use = true;
+        update_usage_order(file_path);
+        return it->second.stream;  // 找到io 流且未被使用
+    }
 
-std::unordered_map<std::string, std::ofstream> FileManager::m_output_stream = {
-};
+    // 未找到io 流，准备创建
+    if (m_file_stream.size() >= m_max_size)  // 是否超过容积
+    {
+        evict_least_used();  // 移出链表尾部不常用的io 流
+    }
 
-std::mutex FileManager::m_mutex;
+    auto stream = std::make_shared<std::fstream>(file_path, std::ios::in | std::ios::out | std::ios::binary);
+    if (!stream->is_open()) {
+        std::cerr << "Error opening file " << file_path << std::endl;
+        return nullptr;
+    }
+    m_usage_order.push_front(file_path);
+    m_file_stream[file_path] = {stream, m_usage_order.begin(), true};
+    return stream;
+}
+
+void FileManager::release_file_stream(const std::string & file_path)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto it = m_file_stream.find(file_path);
+    if (it != m_file_stream.end())
+    {
+        it->second.in_use = false;
+        update_usage_order(file_path);
+    }
+}
+
+void FileManager::close_file_stream(const std::string & file_path)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto it = m_file_stream.find(file_path);
+    if (it != m_file_stream.end())
+    {
+        it->second.stream->close();
+        m_usage_order.erase(it->second.it);
+        m_file_stream.erase(file_path);
+    }
+}
 
 /**
- * 获取输入流
+ * 重置文件指针位置
+ * (没有则创建)
  */
-std::ifstream & FileManager::get_input_stream(const std::string & file_path)
+void FileManager::reset_file_stream(const std::string & file_path)
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    if (m_input_stream.find(file_path) == m_input_stream.end())  // 不存在该io 流
+    auto stream = get_file_stream(file_path);
+    if (stream)
     {
-        m_input_stream[file_path] = std::ifstream(file_path, std::ios::binary);  // 创建
+        stream->seekg(0, std::ios::beg);
+        stream->seekp(0, std::ios::beg);
+        if (stream->fail())
+        {
+            std::cerr << "Failed to reset stream for " << file_path << std::endl;
+        }
+        release_file_stream(file_path);
     }
-    return m_input_stream[file_path];
-}
-
-/**
- * 获取输出流
- */
-std::ofstream & FileManager::get_output_stream(const std::string & file_path)
-{
-    std::lock_guard<std::mutex> lock(m_mutex);
-    if (m_output_stream.find(file_path) == m_output_stream.end())  // 不存在该io 流
+    else
     {
-        m_output_stream[file_path] = std::ofstream(file_path, std::ios::binary);  // 创建
+        std::cerr << "Failed to get file stream for " << file_path << std::endl;
     }
-    return m_output_stream[file_path];
 }
 
-/*
- * 创建输入输出流
- */
-void FileManager::create_input_and_output_stream(
-        const std::string & file_path)
+void FileManager::update_usage_order(const std::string & file_path)
 {
-    create_input_stream(file_path);
-    create_output_stream(file_path);
-}
-
-bool FileManager::create_input_stream(const std::string & file_path)
-{
-    std::lock_guard<std::mutex> lock(m_mutex);
-    auto it = m_input_stream.find(file_path);
-    if (it == m_input_stream.end())  // 没有打开
+    auto it = m_file_stream.find(file_path);
+    if (it != m_file_stream.end())
     {
-        try
-        {
-            m_input_stream[file_path].open(file_path);
-            if (!m_input_stream[file_path].is_open())  // 检验文件是否被打开
-            {
-                throw std::runtime_error("Error opening file: " + file_path);
-            }
-        }
-        catch (const std::exception & e)
-        {
-            std::cerr << e.what() << std::endl;
-            return false;
-        }
+        m_usage_order.erase(it->second.it);
+        m_usage_order.push_front(file_path);
+        it->second.it = m_usage_order.begin();
     }
-    return true;
 }
 
-bool FileManager::create_output_stream(const std::string & file_path)
+void FileManager::evict_least_used()
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    auto it = m_output_stream.find(file_path);
-    if (it == m_output_stream.end())
+    if (!m_usage_order.empty())
     {
-        try
-        {
-            m_output_stream[file_path].open(file_path);
-            if (!m_output_stream[file_path].is_open())
-            {
-                throw std::runtime_error("Error opening file: " + file_path);
-            }
-        }
-        catch (const std::exception & e)
-        {
-            std::cerr << e.what() << std::endl;
-            return false;
-        }
+        const auto & least_used_path = m_usage_order.back();
+        close_file_stream(least_used_path);
     }
-    return true;
-}
-
-void FileManager::release_input_stream(const std::string & file_path)
-{
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_input_stream.erase(file_path);
-}
-
-void FileManager::release_output_stream(const std::string & file_path)
-{
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_output_stream.erase(file_path);
-}
-
-void FileManager::close_input_stream(const std::string & file_path)
-{
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_input_stream[file_path].close();
-}
-
-void FileManager::close_output_stream(const std::string & file_path)
-{
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_output_stream[file_path].close();
 }

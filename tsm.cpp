@@ -3,17 +3,24 @@
 #include <engine/tsm/header.h>
 using namespace dt::tsm;
 
+string file_path  = "data.tsm";
+
 int main()
 {
     SkipList<string> sl;
-    std::shared_ptr<DataBlock> block(new DataBlock());
     TSM tsm;
+
+    Header header(520, 1);
+    std::shared_ptr<DataBlock> block(new DataBlock());
+    Footer footer;
 
     // 写入数据
     block->m_type = DataBlock::Type::DATA_STRING;
+
     Tool::write_float_skip_list(sl, 10, true);
     Tool::transfer(sl, block, true);
-    tsm.write_data_to_file(block, "data.tsm", 0);
+    tsm.write_header_to_file(header, file_path);
+    tsm.write_data_to_file(block, file_path, 0);
 
     // 读取数据
     std::shared_ptr<DataBlock> new_block(new DataBlock());

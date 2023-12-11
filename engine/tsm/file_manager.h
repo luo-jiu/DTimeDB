@@ -1,10 +1,14 @@
 #ifndef DTIMEDB_FILE_MANAGER_H
 #define DTIMEDB_FILE_MANAGER_H
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <unordered_map>
 #include <mutex>
+#include <stdexcept>
+#include <optional>
+#include <memory>
+#include <list>
 
 namespace dt
 {
@@ -13,24 +17,30 @@ namespace dt
         class FileManager
         {
         public:
-            static std::ifstream & get_input_stream(const std::string & file_path);
-            static std::ofstream & get_output_stream(const std::string & file_path);
+            FileManager(size_t max_size) : m_max_size(max_size) {}
 
-            static void create_input_and_output_stream(const std::string & file_path);
-
-            static bool create_input_stream(const std::string & file_path);
-            static bool create_output_stream(const std::string & file_path);
-
-            static void release_input_stream(const std::string & file_path);
-            static void release_output_stream(const std::string & file_path);
-
-            static void close_input_stream(const std::string & file_path);
-            static void close_output_stream(const std::string & file_path);
+            std::shared_ptr<std::fstream> get_file_stream(const std::string & file_path);
+            void release_file_stream(const std::string & file_path);
+            void close_file_stream(const std::string & file_path);
+            void reset_file_stream(const std::string & file_path);
 
         private:
-            static std::unordered_map<std::string, std::ifstream> m_input_stream;
-            static std::unordered_map<std::string, std::ofstream> m_output_stream;
-            static std::mutex m_mutex;
+            void update_usage_order(const std::string & file_path);
+            void evict_least_used();
+
+        private:
+            struct FileStreamInfo
+            {
+                std::shared_ptr<std::fstream> stream;
+                std::list<std::string>::iterator it;
+                bool in_use;
+            };
+
+            size_t m_max_size;  // io 流数量上限
+            std::mutex m_mutex;
+
+            std::unordered_map<std::string, FileStreamInfo> m_file_stream;
+            std::list<std::string> m_usage_order;
         };
     }
 }
