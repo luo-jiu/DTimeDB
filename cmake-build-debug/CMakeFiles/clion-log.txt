@@ -1,4 +1,0 @@
-/home/luojiu/下载/软件杂物/clion-2022.2.5/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/usr/bin/gmake -G "CodeBlocks - Unix Makefiles" -S /home/luojiu/桌面/dtimeDb/DTimeDB -B /home/luojiu/桌面/dtimeDb/DTimeDB/cmake-build-debug
--- Configuring done
--- Generating done
--- Build files have been written to: /home/luojiu/桌面/dtimeDb/DTimeDB/cmake-build-debug
