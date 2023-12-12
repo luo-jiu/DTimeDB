@@ -4,121 +4,169 @@
 
 #include <iostream>
 #include <vector>
-#include <fstream>
+#include <cstdint>
+#include <cstring>
 
 // 定义行的数据结构
 struct Row {
-    int id;
+    int timestamp;
     std::string data;
 
-    Row(int _id, const std::string& _data) : id(_id), data(_data) {}
+    Row(int _timestamp, const std::string& _data) : timestamp(_timestamp), data(_data) {}
 };
 
-// 定义数据库页的结构体
-struct DatabasePage {
+// 定义页头的数据结构
+struct PageHeader {
+    uint32_t pageId;        // 页标识符
+    uint16_t pageType;      // 页类型
+    uint16_t pageSize;      // 页大小
+    uint32_t dataOffset;    // 数据偏移
+    uint16_t recordCount;   // 数据记录数
+    uint32_t checksum;      // 校验和
+    uint64_t timestamp;     // 时间戳
+};
+
+// 定义页尾的数据结构
+struct PageFooter {
+    uint32_t checksum;      // 校验和
+};
+
+// 定义页的数据结构
+struct Page {
     static const size_t PageSize = 4096;  // 页的大小为4KB
-    std::vector<Row> rows;  // 页内存储的行数据
+    PageHeader header;                     // 页头
+    // ... 其他数据成员
+    PageFooter footer;                     // 页尾
+
+    // 计算页的校验和
+    uint32_t calculateChecksum() const {
+        uint32_t checksum = 0;
+        const uint8_t* dataPtr = reinterpret_cast<const uint8_t*>(this);
+        for (size_t i = 0; i < PageSize; ++i) {
+            checksum += dataPtr[i];
+        }
+        return checksum;
+    }
+
+    // 验证页的完整性
+    bool validateIntegrity() const {
+        return header.checksum == calculateChecksum();
+    }
 
     // 添加行到页
-    bool addRow(const Row& row) {
-        // 检查是否有足够的空间添加行
-        if (getSize() + sizeof(Row) <= PageSize) {
-            rows.push_back(row);
-            return true;
-        }
-        return false;
-    }
+    void addRow(const Row& row) {
+        // ... 添加行到页的逻辑
 
-    // 获取页的大小
-    size_t getSize() const {
-        return rows.size() * sizeof(Row);
-    }
+        // 更新页头信息
+        header.recordCount++;
+        header.dataOffset += row.data.size();
 
-    // 将页的数据写入磁盘
-    void writePageToDisk(size_t pageIndex) {
-        // 假设每个页写入一个文件
-        std::ofstream file("page_" + std::to_string(pageIndex) + ".bin", std::ios::binary);
-        if (file.is_open()) {
-            // 写入页的数据
-            for (const auto& row : rows) {
-                file.write(reinterpret_cast<const char*>(&row), sizeof(Row));
-            }
-            file.close();
-            std::cout << "Page " << pageIndex << " written to disk.\n";
-        } else {
-            std::cerr << "Error writing to disk.\n";
-        }
+        // 更新页尾的校验和
+        footer.checksum = calculateChecksum();
     }
 };
 
 // 定义环形链表的节点
 struct ListNode {
-    DatabasePage data;    // 数据库页
-    ListNode* next;       // 下一个节点
+    Page data;          // 数据库页
+    ListNode* next;     // 下一个节点
 
-    ListNode(const DatabasePage& _data) : data(_data), next(nullptr) {}
+    ListNode(const Page& _data) : data(_data), next(nullptr) {}
 };
 
 // 定义环形链表的结构体
-struct CircularLinkedList {
-    static const size_t MaxPages = 5;  // 环形链表的最大页数
-    ListNode* head;                     // 链表头
-    size_t pageCount;                   // 当前链表中的页数
+class CircularLinkedList {
+private:
+    ListNode* head;    // 链表头
+    size_t maxSize;    // 环形链表的最大大小
 
-    CircularLinkedList() : head(nullptr), pageCount(0) {}
+public:
+    CircularLinkedList(size_t _maxSize) : head(nullptr), maxSize(_maxSize) {}
 
     // 添加行到环形链表
     void addRowToCircularLinkedList(const Row& row) {
-        if (!head || !head->data.addRow(row)) {
+        if (!head || head->data.header.recordCount >= Page::PageSize) {
             // 如果链表为空或者当前页已满，创建新的节点
-            ListNode* newNode = new ListNode(DatabasePage());
+            ListNode* newNode = new ListNode(Page());
             newNode->next = head;
 
-            // 更新链表头和页数
+            // 更新链表头
             head = newNode;
-            ++pageCount;
         }
 
         // 添加行到当前页
         head->data.addRow(row);
+
+        // 检查是否超过最大大小，如果是，移除最后一个节点
+        if (size() > maxSize) {
+            ListNode* lastNode = head;
+            while (lastNode->next != nullptr && lastNode->next != head) {
+                lastNode = lastNode->next;
+            }
+
+            if (lastNode->next != nullptr) {
+                ListNode* temp = lastNode->next;
+                lastNode->next = temp->next;
+                delete temp;
+            }
+        }
     }
 
-    // 将环形链表的数据写入磁盘
-    void writeCircularLinkedListToDisk() {
+    // 输出所有行数据
+    void printAllRows() const {
+        std::cout << "All Rows:\n";
         ListNode* current = head;
-        size_t pageIndex = 0;
 
         do {
-            // 将页的数据写入磁盘
-            current->data.writePageToDisk(pageIndex);
+            // 输出当前页的所有行数据
+            for (const auto& row : current->data.header.recordCount) {
+                std::cout << "Timestamp: " << row.timestamp << ", Data: " << row.data << "\n";
+            }
 
             // 移动到下一个节点
             current = current->next;
-            ++pageIndex;
 
         } while (current != head);  // 循环链表
+    }
 
-        // 释放链表节点的内存
-        while (head) {
-            ListNode* temp = head;
-            head = head->next;
-            delete temp;
-        }
+    // 获取环形链表的大小
+    size_t size() const {
+        size_t count = 0;
+        ListNode* current = head;
+
+        do {
+            ++count;
+            current = current->next;
+        } while (current != head);
+
+        return count;
     }
 };
 
 int main() {
-    // 创建环形链表存储引擎
-    CircularLinkedList circularLinkedList;
+    Page page;
+    Row row1(1, "Data 1");
+    Row row2(2, "Data 2");
 
-    // 添加一些行到环形链表
-    for (int i = 0; i < 20; ++i) {
-        Row row(i, "Data for row " + std::to_string(i));
-        circularLinkedList.addRowToCircularLinkedList(row);
+    page.addRow(row1);
+    page.addRow(row2);
+
+    // 获取页头数据
+    PageHeader pageHeader = page.header;
+    std::cout << "Page ID: " << pageHeader.pageId << "\n";
+    std::cout << "Page Type: " << pageHeader.pageType << "\n";
+    // ... 其他页头数据
+
+    // 获取页尾数据
+    PageFooter pageFooter = page.footer;
+    std::cout << "Footer Checksum: " << pageFooter.checksum << "\n";
+
+    // 验证页的完整性
+    if (page.validateIntegrity()) {
+        std::cout << "Page integrity is valid.\n";
+    } else {
+        std::cerr << "Page integrity check failed.\n";
     }
-
-    // 将环形链表的数据写入磁盘
-    circularLinkedList.writeCircularLinkedListToDisk();
 
     return 0;
 }

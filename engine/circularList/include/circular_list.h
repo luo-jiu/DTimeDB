@@ -18,27 +18,36 @@ using namespace luo::json;
 using namespace std;
 using namespace circular_list;
 #define BLOCK_MAX_PAGES 100
-namespace circularList
+namespace circular_list
 {
-
+/**
+ * block相当于数据库，页相当于表，行为行信息
+ */
     //Block头信息，存储页
     class BlockHeader{
     private:
-        uint32_t            m_block_size;
-        int                 current_page_index;
+        string              m_block_name;
+        string              m_block_version;
+        string              m_block_owner;
+    public:
+        BlockHeader(){}
     };
     //Block体，存储分页数据，数据在环形链表组织成页后页满存储如Block，Block进行持久化操作
     class Block
     {
     public:
+        bool isFull()const;
+        //将页写入块内存
         void writePage(const Page& page);
         bool getPage();
         bool deletePage(const PageHead& header);
+        void stroeToFile(const string& file_name);
 
     public:
         BlockHeader         header;
         vector<Page>        pages;
     };
+
     //环形链表结构，当每一页存满以后存入块中，块进行落盘存储操作
     struct CircularListNode{
         Page                page;
@@ -48,8 +57,11 @@ namespace circularList
     class CircularList
     {
     public:
-        void addDataToNode();
-        void writePageToBlock();
+        //
+        bool createPage(const string &page_name);
+        void addRowToCircularList(const Row& row);
+        void writePageToBlock(Page *page,Block *block);
+        bool isFull();
     private:
         static const size_t     MAX_PAGES= 8;       //存储最大页数
         CircularListNode        *head;              //存储头结点

@@ -5,7 +5,6 @@
 #ifndef DTIMEDB_CIRCULARLIST_STRUCT_H
 #define DTIMEDB_CIRCULARLIST_STRUCT_H
 #include "circular_tools.h"
-
 #include <chrono>
 #include <cstring>
 #include <cstdint>
@@ -35,57 +34,40 @@ namespace circular_list
             m_page_name = new char[strlen(new_page_name) + 1];
             strcpy(m_page_name, new_page_name);
         }
-    // Meta 类的析构函数实现
+        // Meta 类的析构函数实现
         ~Meta() {
             delete[] m_page_name;
         }
     };
-    //行存储的数据 结构，fields
-    class Fields
-    {
-    public:
-        DATA_TYPE type;
-        union
-        {
-            int         intValue;
-            double      doubleValue;
-            char        charValue;
-            string*     stringValue;
-        };
-        Fields():stringValue(nullptr){}
-        ~Fields(){
-            delete[] stringValue;
-        }
+    //表结构，列
+    struct Column{
+        string          name;
+        DATA_TYPE       type;
+        Column(const string &_name,const DATA_TYPE &_type):name(_name),type(_type){};
     };
     class Row
     {
     private:
         Meta                    meta;
         Timestamp               timestamp;
-        vector<Fields>          fields;
+        vector<string>          values;             //列值
         Row*                    next_row;
     public:
-        Row(const Meta& _meta,const Timestamp _timestamp):meta(_meta),timestamp(_timestamp),next_row(nullptr){}
-        ~Row()=default;
-        Row(){}
-        size_t estimateRowSize() const;
-        void addField(DATA_TYPE type,const char *value);
-        void calculate_row_size(Row& row);
+        Row(Meta &_meta,Timestamp &_timestamp):meta(_meta),timestamp(_timestamp),next_row(nullptr){}
+        //构造行数据
+        void add_field(DATA_TYPE type,const char *value);
+        //计算行大小
+        size_t calculate_row_size()const;
     };
 
     class PageHead
     {
     public:
-        PageHead(){}
-        PageHead(uint32_t _page_id,char *_block_name, char *_page_name, Page_TYPE _type): m_type(_type), m_next_page(nullptr){
-            m_block_name= strdup(_block_name);
-            m_page_name= strdup(_page_name);
-        }
-        ~PageHead()=default;
+
     private:
         uint32_t          m_page_id;
-        char             *m_block_name;
-        char             *m_page_name;
+        string            m_page_name;
+        uint16_t          m_page_size;
         Page_TYPE         m_type;
         PageHead         *m_next_page;
 
@@ -93,23 +75,21 @@ namespace circular_list
     class PageTail
     {
     private:
-        int32_t m_offset;
+        uint32_t           m_offset;
     public:
         PageTail(int32_t _offset): m_offset(_offset){}
         ~PageTail()=default;
     };
 
-    class Page
+    struct Page
     {
-    private:
-        PageHead            *m_page_head;
-        vector<Row>          m_rows;
-        PageTail            *m_page_tail;
-    public:
-        Page(){}
-        Page(PageHead *pageHead,PageTail *pageTail): m_page_head(pageHead), m_page_tail(pageTail){}
-        ~Page()=default;
-        int getSize();
+        static const size_t         PAGESIZE=4096;
+        PageHead                    m_page_head;
+        vector<Row>                 m_rows;
+        PageTail                    m_page_tail;
+
+        uint32_t calculateChecksum() const;
+        bool verifyCompleteness()const;
         bool init_page(uint32_t pageId, const char *blockName, const char *pageName, Page_TYPE type);
         bool add_row(const Row& new_row);
         bool drop_row(int *row_id);

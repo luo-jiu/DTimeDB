@@ -12,7 +12,6 @@ namespace circular_list{
     {
     private:
 
-
     public:
 
     };

@@ -15,35 +15,26 @@ using namespace circular_list;
      /**
      * 对于行的操作
      */
-     //计算行的大小
-     size_t Row::estimateRowSize() const {
-         size_t row_size = sizeof(Meta) + sizeof(Timestamp);
-         for (const Fields &field: fields) {
-             row_size += sizeof(field);
-         }
-         return row_size;
-     }
-
      //将数据加入到行里
-     void Row::addField(DATA_TYPE type, const char *value) {
-         Fields field;
-         field.type = type;
-         switch (type) {
-             case DATA_TYPE::INTEGER:
-                 field.intValue = stoi(value);
-                 break;
-             case DATA_TYPE::DOUBLE:
-                 field.doubleValue = stod(value);
-                 break;
-             case DATA_TYPE::STRING:
-//                 field.stringValue=new char[strlen(value)+1];
-//                 strcpy(field.stringValue,value);
-         }
-         fields.push_back(field);
+     /**
+      * 每添加一个field就调用一次这个函数
+      * @param type
+      * @param value
+      */
+     void Row::add_field(DATA_TYPE type, const char *value) {
+         values.push_back(value);
      }
      //计算每行的数据大小
-     void Row::calculate_row_size(circular_list::Row &row) {
-
+     /**
+      * 有可能会有内存对齐的问题，测试以下看看行不行
+      * @return 每行的数据大小
+      */
+     size_t Row::calculate_row_size()const {
+         size_t size=sizeof(meta)+sizeof(timestamp)+sizeof(next_row);
+         for (const auto& value:values) {
+             size+= value.size();
+         }
+         return size;
      }
      //
  }
