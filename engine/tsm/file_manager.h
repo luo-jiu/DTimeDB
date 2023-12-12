@@ -10,39 +10,36 @@
 #include <memory>
 #include <list>
 
-namespace dt
+namespace dt::tsm
 {
-    namespace tsm
+    class FileManager
     {
-        class FileManager
+    public:
+        FileManager(size_t max_size) : m_max_size(max_size) {}
+
+        std::shared_ptr<std::fstream> get_file_stream(const std::string & file_path);
+        void release_file_stream(const std::string & file_path);
+        void close_file_stream(const std::string & file_path);
+        void reset_file_stream(const std::string & file_path);
+
+    private:
+        void update_usage_order(const std::string & file_path);
+        void evict_least_used();
+
+    private:
+        struct FileStreamInfo
         {
-        public:
-            FileManager(size_t max_size) : m_max_size(max_size) {}
-
-            std::shared_ptr<std::fstream> get_file_stream(const std::string & file_path);
-            void release_file_stream(const std::string & file_path);
-            void close_file_stream(const std::string & file_path);
-            void reset_file_stream(const std::string & file_path);
-
-        private:
-            void update_usage_order(const std::string & file_path);
-            void evict_least_used();
-
-        private:
-            struct FileStreamInfo
-            {
-                std::shared_ptr<std::fstream> stream;
-                std::list<std::string>::iterator it;
-                bool in_use;
-            };
-
-            size_t m_max_size;  // io 流数量上限
-            std::mutex m_mutex;
-
-            std::unordered_map<std::string, FileStreamInfo> m_file_stream;
-            std::list<std::string> m_usage_order;
+            std::shared_ptr<std::fstream> stream;
+            std::list<std::string>::iterator it;
+            bool in_use;
         };
-    }
+
+        size_t m_max_size;  // io 流数量上限
+        std::mutex m_mutex;
+
+        std::unordered_map<std::string, FileStreamInfo> m_file_stream;
+        std::list<std::string> m_usage_order;
+    };
 }
 
 #endif //DTIMEDB_FILE_MANAGER_H

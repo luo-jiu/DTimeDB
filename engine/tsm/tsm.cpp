@@ -34,7 +34,7 @@ bool TSM::read_header_from_file(
         std::cerr << "Error: Could not open file for reading - from engine/tsm_/write.cpp" << std::endl;
         return false;
     }
-
+    file->seekg(0);  // 移动至开头
     file->read(reinterpret_cast<char*>(&header), sizeof(header));
     m_file_manager.release_file_stream(file_path);
     return true;
@@ -385,7 +385,10 @@ std::shared_ptr<IndexBlockMeta> TSM::create_index_meta(
 /**
  * 创建TSM File
  */
-bool TSM::create_tsm(const string & file_path)
+bool TSM::create_tsm(
+        const Header & header,
+        const Footer & footer,
+        const string & file_path)
 {
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
@@ -393,9 +396,12 @@ bool TSM::create_tsm(const string & file_path)
         std::cerr << "Error: Could not open file for reading - from engine/tsm_/write.cpp" << std::endl;
         return false;
     }
-    file->seekg(0);
+    file->seekg(0);  // 文件指针移到开头
+    file->write(reinterpret_cast<const char*>(&header), sizeof(header));  // 写入header
+    file->seekp(4 * 1024 * 1024);
+    file->write(reinterpret_cast<const char*>(&footer), sizeof(footer));  // 写入footer
+    file->flush();
+
     m_file_manager.release_file_stream(file_path);
-
-//    write_header_to_file();
-
+    return true;
 }
