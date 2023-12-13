@@ -65,11 +65,11 @@ namespace circular_list
     public:
 
     private:
-        uint32_t          m_page_id;
-        string            m_page_name;
-        uint16_t          m_page_size;
-        Page_TYPE         m_type;
-        PageHead         *m_next_page;
+        uint32_t                           m_page_id;                           //页id
+        string                               m_page_name;                      //页名（表名
+        uint16_t                           m_page_size;                        //页大小
+        PAGE_TYPE                   m_type;                                //页类型
+        Timestamp                       timestamp;                            //时间戳
 
     };
     class PageTail
@@ -81,16 +81,17 @@ namespace circular_list
         ~PageTail()=default;
     };
 
-    struct Page
+    class Page
     {
-        static const size_t         PAGESIZE=4096;
-        PageHead                    m_page_head;
-        vector<Row>                 m_rows;
-        PageTail                    m_page_tail;
+    public:
+        static const size_t             PAGESIZE=4096;
+        PageHead                        m_page_head;
+        vector<Row>                   m_rows;
+        PageTail                          m_page_tail;
 
         uint32_t calculateChecksum() const;
         bool verifyCompleteness()const;
-        bool init_page(uint32_t pageId, const char *blockName, const char *pageName, Page_TYPE type);
+        bool init_page(uint32_t pageId, const char *blockName, const char *pageName, PAGE_TYPE type);
         bool add_row(const Row& new_row);
         bool drop_row(int *row_id);
         const Row& getRow(size_t index);

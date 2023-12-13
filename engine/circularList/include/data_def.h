@@ -16,7 +16,7 @@ enum class DATA_TYPE{
     CHAR,
 };
 //页类型
-enum Page_TYPE{
+enum class PAGE_TYPE{
     INDEX,
     DATA,
     LOG

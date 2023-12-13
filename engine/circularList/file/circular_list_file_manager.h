@@ -13,7 +13,7 @@ namespace circular_list{
     private:
 
     public:
-
+        bool ::
     };
 }
 #endif //DTIMEDB_CIRCULAR_LIST_FILE_MANAGER_H

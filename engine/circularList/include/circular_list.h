@@ -38,11 +38,11 @@ namespace circular_list
     public:
         bool isFull()const;
         //将页写入块内存
-        void writePage(const Page& page);
+        bool write_page_to_file(const PageHead &head,const string &file_path);
         bool getPage();
         bool deletePage(const PageHead& header);
-        void stroeToFile(const string& file_name);
-
+        void storeToFile(const string& file_name);
+        bool create_page(const string &page_name);
     public:
         BlockHeader         header;
         vector<Page>        pages;

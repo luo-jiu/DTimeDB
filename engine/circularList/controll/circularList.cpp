@@ -3,12 +3,11 @@
 //
 #include "engine/circularList/include/circular_list_header.h"
 namespace circular_list{
-    bool CircularList::createPage() {
-        //当链表内页不满的话
-        if (!isFull()){
+    bool Block::create_page(const std::string &page_name) {
 
-        }
-        return false;
+    }
+    bool CircularList::createPage(const std::string &page_name) {
+
     }
     void CircularList::writePageToBlock(Page *page,Block *block) {
 

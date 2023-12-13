@@ -23,7 +23,7 @@ bool Page::drop_row(int *row_id)
 const Row& Page::getRow(size_t index){
 
 }
-bool Page::init_page(uint32_t pageId, const char *blockName, const char *pageName, Page_TYPE type){
+bool Page::init_page(uint32_t pageId, const char *blockName, const char *pageName, PAGE_TYPE type){
 
 }
 bool Page::createPage() {
