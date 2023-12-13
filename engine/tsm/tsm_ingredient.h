@@ -113,6 +113,8 @@ namespace dt::tsm
 
     public:
         int32_t                                             m_size;  // 大小(不存入磁盘)
+        high_resolution_clock::time_point                   m_max_timestamp;
+        high_resolution_clock::time_point                   m_min_timestamp;
 
         Type                                                m_type;
         int32_t                                             m_length;
@@ -171,7 +173,7 @@ namespace dt::tsm
         void set_key_length(u_int16_t key_length) {
             m_key_size = key_length;
         }
-        const string &get_key() const { return m_key; }
+        const string & get_key() const { return m_key; }
         void set_key(const string & key) { m_key = key; }
         Type get_type() const { return m_type; }
         void set_type(Type type) { m_type = type; }

@@ -21,7 +21,7 @@ namespace dt::tsm
     {
     public:
         static system_clock::time_point random_time(bool mode);
-        static void test_data(Write & m_write, int num, bool timer, bool pri, string & file_path);
+        static void test_data(Write & m_write, int num, bool timer, bool pri,string & field_name, string & file_path);
 
         static int rand_int();
 
@@ -75,26 +75,20 @@ namespace dt::tsm
     /**
      * 生成随机类型随机时间戳的数据
      */
-    void Tool::test_data(Write & write, int num, bool timer, bool pri, string & file_path)
+    void Tool::test_data(
+            Write & write,
+            int num,
+            bool timer,
+            bool pri,
+            string & field_name,
+            string & file_path)
     {
         if (timer) start();
         for (size_t i = 0; i < num; ++i)
         {
             int random_seconds = rand_int();
             auto _data = std::to_string(random_seconds);
-
-            if (i % 3 == 0)
-            {
-                write.write(random_time(pri), _data, file_path, DataBlock::DATA_STRING);
-            }
-            else if (i % 3 == 1)
-            {
-                write.write(random_time(pri), _data, file_path, DataBlock::DATA_INTEGER);
-            }
-            else if (i % 3 == 2)
-            {
-                write.write(random_time(pri), _data, file_path, DataBlock::DATA_FLOAT);
-            }
+            write.write(random_time(pri), _data, file_path, DataBlock::DATA_STRING, field_name);
         }
         if (timer) end();
     }
@@ -139,7 +133,10 @@ namespace dt::tsm
         if (timer) end();
     }
 
-    void Tool::transfer(SkipList<string> & sl, std::shared_ptr<DataBlock> & data_block, bool timer)
+    void Tool::transfer(
+            SkipList<string> & sl,
+            std::shared_ptr<DataBlock> & data_block,
+            bool timer)
     {
         if (timer) start();
         for (auto it = sl.begin(); it != sl.end(); ++it)  // 迭代器

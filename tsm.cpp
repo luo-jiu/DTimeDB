@@ -5,20 +5,25 @@
 using namespace dt::tsm;
 
 string file_path  = "data.tsm";
+string measurement = "school";
+string file_name = "temperature";
 
 int main()
 {
-    Write write;
+    Write write(measurement);
 
-//    std::thread monitor_thread(write.);
-//    monitor_thread.detach();
+    // 开启异步刷新线程
+
 
     TSM tsm;
     Header header(20, 1);
     Footer footer;
     tsm.create_tsm(header, footer, file_path);  // 创建 tsm
 
-    Tool::test_data(write, 100, true, false, file_path);  // 写入数据
+    Tool::test_data(write, 100, true, false, file_name, file_path);  // 写入数据
+
+    std::thread flush_thread(&Write::flush_disk, &write);
+    flush_thread.detach();
 
     std::shared_ptr<DataBlock> block(new DataBlock());
 //    Tool::write_integer_skip_list(sl, 100, false);

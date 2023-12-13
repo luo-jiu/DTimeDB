@@ -15,20 +15,24 @@ namespace dt::tsm
     {
     public:
         Field() : m_status(false) {}
-        Field(DataBlock::Type type) : m_type(type), m_status(false) {}
+        Field(DataBlock::Type type, string field_name) : m_type(type), m_field_name(field_name), m_status(false) {}
         void write(high_resolution_clock::time_point timestamp, string & data);
         bool get_status() const { return m_status; }
 
-    private:
+        bool get_data_status();
+        bool get_index_status();
+        int get_index_deque_size();
         void push_data_to_deque(std::shared_ptr<DataBlock> data_block);
         std::shared_ptr<DataBlock> pop_data_from_deque();
         void push_index_to_deque(std::shared_ptr<IndexEntry> & index_block);
         std::shared_ptr<IndexEntry> pop_index_from_deque();
 
-    private:
+    public:
+        string                                      m_field_name;    // 字段名
         DataBlock::Type                             m_type;          // 字段数据类型
+
+    private:
         SkipList<string>                            m_sl;            // 跳表
-        TSM                                         m_tsm;
 
         bool                                        m_status;        // 状态
 

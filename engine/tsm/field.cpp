@@ -39,13 +39,12 @@ void Field::write(
             }
             _data_size += 12 * m_sl.size();
         }
-
-        m_current_data->m_length = m_sl.size();  // 设置大小
-        m_current_data->m_size = _data_size;
-        auto m_current_index = m_tsm.create_index_entry(m_sl.max_key(), m_sl.min_key(), 0, m_current_data->m_size);
+        m_current_data->m_max_timestamp = m_sl.max_key();
+        m_current_data->m_min_timestamp = m_sl.max_key();
+        m_current_data->m_size = _data_size;  // 设置大小
+        m_current_data->m_length = m_sl.size();  // 设置长度
 
         push_data_to_deque(m_current_data);  // 存放在队列中
-        push_index_to_deque(m_current_index);
         m_current_data = std::make_shared<DataBlock>();  // 重置m_current_data 以便接收新数据
         m_sl.cle();  // 清空跳表
     }
@@ -91,3 +90,22 @@ std::shared_ptr<IndexEntry> Field::pop_index_from_deque()
         return index_block;
     }
 }
+
+bool Field::get_data_status()
+{
+    std::lock_guard<std::mutex> lock(m_data_lock);
+    return m_data_deque.empty();
+}
+
+bool Field::get_index_status()
+{
+    std::lock_guard<std::mutex> lock(m_index_lock);
+    return m_index_deque.empty();
+}
+
+int Field::get_index_deque_size()
+{
+    std::lock_guard<std::mutex> lock(m_index_lock);
+    return m_index_deque.size();
+}
+
