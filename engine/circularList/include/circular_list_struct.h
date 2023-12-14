@@ -25,14 +25,31 @@ namespace circular_list
     private:
         uint32_t        m_id;
         char            *m_page_name;
-        Meta            *m_next_row;
     public:
-
+        //访问私有字段
+        uint32_t  get_id()const{
+            return m_id;
+        }
+        char*  get_page_name()const{
+            return m_page_name;
+        }
         Meta(){}
-        Meta(uint32_t new_id, const char *new_page_name) : m_next_row(nullptr) {
+        Meta(uint32_t new_id, const char *new_page_name)  {
             m_id = new_id;
             m_page_name = new char[strlen(new_page_name) + 1];
             strcpy(m_page_name, new_page_name);
+        }
+        //复制构造函数
+        Meta(const Meta &meta):m_id(meta.m_id),m_page_name(new char [strlen(meta.m_page_name)+1]){
+            strcpy(m_page_name,meta.m_page_name);
+        }
+        //operator
+        Meta &operator=(const Meta &meta){
+            if (this != &meta){
+                m_id=meta.m_id;
+                m_page_name=meta.m_page_name;
+            }
+            return *this;
         }
         // Meta 类的析构函数实现
         ~Meta() {
@@ -48,26 +65,30 @@ namespace circular_list
     class Row
     {
     private:
-        Meta                    meta;
-        Timestamp               timestamp;
-        vector<string>          values;             //列值
-        Row*                    next_row;
+        Meta                            meta;
+        Timestamp                   timestamp;
+        vector<Column>          column;            //列名
+        vector<string>              values;             //列值
+        Row*                           next_row;
     public:
-        Row(Meta &_meta,Timestamp &_timestamp):meta(_meta),timestamp(_timestamp),next_row(nullptr){}
+        Row(Meta &_meta,Timestamp &_timestamp): meta(_meta), timestamp(_timestamp), next_row(nullptr){}
         //构造行数据
         void add_field(DATA_TYPE type,const char *value);
         //计算行大小
         size_t calculate_row_size()const;
+        void display_row()const;
+        ~Row()= default;
     };
 
     class PageHead
     {
     public:
-
+        PageHead(uint32_t _page_id,const char *_page_name,uint32_t _page_size,PAGE_TYPE _page_type)
+        : m_page_id(_page_id), m_page_name(_page_name), m_page_size(_page_size), m_type(_page_type), timestamp() {}
     private:
         uint32_t                           m_page_id;                           //页id
         string                               m_page_name;                      //页名（表名
-        uint16_t                           m_page_size;                        //页大小
+        uint32_t                           m_page_size;                        //页大小
         PAGE_TYPE                   m_type;                                //页类型
         Timestamp                       timestamp;                            //时间戳
 
@@ -79,23 +100,26 @@ namespace circular_list
     public:
         PageTail(int32_t _offset): m_offset(_offset){}
         ~PageTail()=default;
+        uint32_t calculateOffest() const;
     };
 
     class Page
     {
-    public:
         static const size_t             PAGESIZE=4096;
         PageHead                        m_page_head;
         vector<Row>                   m_rows;
         PageTail                          m_page_tail;
-
-        uint32_t calculateChecksum() const;
-        bool verifyCompleteness()const;
+    public:
+        Page(uint32_t _page_id,const char *_page_name,uint32_t _page_size,PAGE_TYPE _page_type,uint32_t _offset)
+        : m_page_head(_page_id,_page_name,_page_size,_page_type),
+        m_page_tail(_offset){}
+        ~Page()=default;
+        size_t calculate_page_size() const;
+        //初始化页面
         bool init_page(uint32_t pageId, const char *blockName, const char *pageName, PAGE_TYPE type);
         bool add_row(const Row& new_row);
         bool drop_row(int *row_id);
         const Row& getRow(size_t index);
-        bool createPage();
     };
 
     //索引页结构

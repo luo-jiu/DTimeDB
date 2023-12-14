@@ -6,14 +6,15 @@
 #define DTIMEDB_TOOLS_H
 #include "chrono"
 using namespace std;
+
 /**
- * 时间戳数据类型，默认导入时间戳
+ * 时间戳数据类型，默认导入时间戳，目前精度为秒，可以升级为纳秒
  */
 class Timestamp{
 private:
     time_t timestamp;
 public:
-    Timestamp():timestamp(chrono::system_clock::to_time_t(chrono::system_clock::now())){}
+    Timestamp() : timestamp(chrono::system_clock::to_time_t(chrono::system_clock::now())){}
     time_t getTimestamp() const{
         return timestamp;
     }

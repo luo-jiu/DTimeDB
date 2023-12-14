@@ -54,18 +54,19 @@ namespace circular_list
         CircularListNode    *next;
         CircularListNode(const Page& _page):page(_page),next(nullptr){}
     };
+
     class CircularList
     {
     public:
         //
-        bool createPage(const string &page_name);
+        void  insert_page(const PageHead &pageHead);
         void addRowToCircularList(const Row& row);
         void writePageToBlock(Page *page,Block *block);
         bool isFull();
     private:
-        static const size_t     MAX_PAGES= 8;       //存储最大页数
-        CircularListNode        *head;              //存储头结点
-        size_t                  page_count;         //存储页数
+        static const size_t                 MAX_PAGES= 8;           //存储最大页数
+        CircularListNode                 *head;                             //存储头结点
+        size_t                                  page_count;                     //存储页数
     };
 }
 

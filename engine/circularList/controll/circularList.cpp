@@ -6,7 +6,7 @@ namespace circular_list{
     bool Block::create_page(const std::string &page_name) {
 
     }
-    bool CircularList::createPage(const std::string &page_name) {
+    void CircularList::insert_page(const circular_list::PageHead &pageHead) {
 
     }
     void CircularList::writePageToBlock(Page *page,Block *block) {

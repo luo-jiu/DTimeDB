@@ -36,5 +36,11 @@ using namespace circular_list;
          }
          return size;
      }
-     //
+     //输出行数据
+     void Row::display_row() const {
+         cout<<"Row ID: "<<meta.get_id()<<"TimeStamp: "<<timestamp.getTimestamp();
+         for (const auto &value: values) {
+             cout<<"Value: "<<value<<endl;
+         }
+     }
  }
