@@ -44,87 +44,106 @@ void Write::flush_disk()
      * 判断有没有满足要求需要刷盘的数据
      * 1. data队列里面有块就可以刷写了
      */
-     while (true)
+     int i = 100;
+     while (i--)
      {
-         if (fields_empty())  // 如果有字段
+         if (!fields_empty())  // 如果有字段
          {
-             for(auto it = m_fields.begin(); it != m_fields.end(); ++it)  // 遍历每个字段
+             for(auto & m_field : m_fields)  // 遍历每个字段
              {
-                 // 先判断meta 数量是否达标
-                 int _entry_size = it->second->get_index_deque_size();
-                 if (_entry_size >= 10)
+                 int _entry_size;
+                 while (!m_field.second->get_data_status() || m_field.second->get_index_deque_size() > 9)  // 有data block，准备刷入磁盘
                  {
-                     /**
-                      * 生成meta 刷盘
-                      * 然后entry 刷写到磁盘(拿取的时候就清空了)
-                      */
-                     std::shared_ptr<IndexBlockMeta> _meta(new IndexBlockMeta());
-                     if (it->second->m_type == DataBlock::DATA_STRING)
+                     _entry_size = m_field.second->get_index_deque_size();
+                     std::cout << "Index deque size:" << _entry_size << std::endl;
+                     if (m_field.second->get_index_deque_size() > 9)  // 先判断meta 数量是否达标
                      {
-                         _meta = m_tsm.create_index_meta(IndexBlockMeta::Type::DATA_STRING, m_measurement, it->second->m_field_name);
-                     }
-                     else if (it->second->m_type == DataBlock::DATA_INTEGER)
-                     {
-                         _meta = m_tsm.create_index_meta(IndexBlockMeta::Type::DATA_INTEGER, m_measurement, it->second->m_field_name);
-                     }
-                     else if (it->second->m_type == DataBlock::Type::DATA_FLOAT)
-                     {
-                         _meta = m_tsm.create_index_meta(IndexBlockMeta::Type::DATA_FLOAT, m_measurement, it->second->m_field_name);
-                     }
-                     _meta->set_count(10);
+                         std::cout << "meta数量达标" << std::endl;
 
-                     int _index_size = (12 + m_measurement.length() + it->second->m_field_name.length()) + _entry_size * 28;
-                     m_tail_offset -= _index_size;  // 前移到指定位置开始写入
-
-                     while (it->second->get_index_status())  // 如果有 entry
-                     {
-                         auto _entry = it->second->pop_index_from_deque();
-                         m_tsm.write_index_entry_to_file(_entry, "data.tsm", m_tail_offset);
-                         m_tail_offset += 28;  // 后移指针
-                     }
-                     m_tsm.write_index_meta_to_file(_meta, "data.tsm", m_tail_offset);  // 写入meta
-
-                     m_tail_offset -= _index_size;  // 写入后指针发生变化还需要重新移位
-                 }
-
-                 while (it->second->get_data_status())  // 有data block，准备刷入磁盘
-                 {
-                     auto data_block = it->second->pop_data_from_deque();  // 获取块
-
-                     /**
-                      * 判断该TSM 是否还能写入
-                      * 余量(head - tail)[已知] -
-                      *    index_block(entry_size * entry_num[数量已知&动态不固定] + meta)[已知] >
-                      *    data_block.size[已知]
-                      */
-                     if (m_tail_offset - m_head_offset - _entry_size * 28 + m_measurement.length() + it->second->m_field_name.length() > data_block->m_size)
-                     {
                          /**
-                          * 余量足够先生成entry
-                          * 然后将data_block 刷写到磁盘
+                          * 生成meta 刷盘
+                          * 然后entry 刷写到磁盘(拿取的时候就清空了)
+                          */
+                         std::shared_ptr<IndexBlockMeta> _meta(new IndexBlockMeta());
+                         if (m_field.second->m_type == DataBlock::DATA_STRING)
+                         {
+                             _meta = m_tsm.create_index_meta(IndexBlockMeta::Type::DATA_STRING, m_measurement, m_field.second->m_field_name);
+                         }
+                         else if (m_field.second->m_type == DataBlock::DATA_INTEGER)
+                         {
+                             _meta = m_tsm.create_index_meta(IndexBlockMeta::Type::DATA_INTEGER, m_measurement, m_field.second->m_field_name);
+                         }
+                         else if (m_field.second->m_type == DataBlock::Type::DATA_FLOAT)
+                         {
+                             _meta = m_tsm.create_index_meta(IndexBlockMeta::Type::DATA_FLOAT, m_measurement, m_field.second->m_field_name);
+                         }
+                         _meta->set_count(10);
+
+                         int _index_size = (12 + m_measurement.length() + m_field.second->m_field_name.length()) + _entry_size * 28;
+                         m_tail_offset -= _index_size;  // 前移到指定位置开始写入
+
+                         int _count = 0;
+                         while (!m_field.second->get_index_status() && _count++ < 10)  // 如果有 entry
+                         {
+                             auto entry = m_field.second->pop_index_from_deque();
+                             m_tsm.write_index_entry_to_file(entry, "data.tsm", m_tail_offset);
+                             m_tail_offset += 28;  // 后移指针
+                         }
+                         m_tsm.write_index_meta_to_file(_meta, "data.tsm", m_tail_offset);  // 写入meta
+                         m_tail_offset += (12 + m_measurement.length() + m_field.second->m_field_name.length());
+                         m_tail_offset -= _index_size;  // 写入后指针发生变化还需要重新移位
+
+                         // 写了meta 后就需要更新footer 的索引
+                         Footer _footer(m_tail_offset);
+                         m_tsm.write_footer_to_file(_footer, "data.tsm");
+                     }
+                     else if (!m_field.second->get_data_status())  // 有块
+                     {
+                         std::cout << "有data block数量达标" << std::endl;
+                         auto data_block = m_field.second->pop_data_from_deque();  // 获取块
+
+                         /**
+                          * 判断该TSM 是否还能写入
+                          * 余量(head - tail)[已知] -
+                          *    index_block(entry_size * entry_num[数量已知&动态不固定] + meta)[已知] >
+                          *    data_block.size[已知]
                           */
 
-                         // 创建entry
-                         auto _entry = m_tsm.create_index_entry(data_block->m_max_timestamp, data_block->m_min_timestamp, m_head_offset, data_block->m_size);
-                         it->second->push_index_to_deque(_entry);  // 存入队列(数量肯定不达标的，达标早写入了)
+                         if (m_tail_offset - m_head_offset - _entry_size * 28 + m_measurement.length() + m_field.second->m_field_name.length() > data_block->m_size)
+                         {
+                             /**
+                              * 余量足够先生成entry
+                              * 然后将data_block 刷写到磁盘
+                              */
+                             std::cout << "余量足够" << std::endl;
 
-                         // 刷盘
-                         m_tsm.write_data_to_file(data_block, "data.tsm", m_head_offset);
+                             // 创建entry
+                             auto _entry = m_tsm.create_index_entry(data_block->m_max_timestamp, data_block->m_min_timestamp, m_head_offset, data_block->m_size);
+                             m_field.second->push_index_to_deque(_entry);  // 存入队列
 
-                         // 修改头偏移量
-                         m_head_offset += data_block->m_size;
-                     }
-                     else
-                     {
-                         /**
-                          * 余量不足先把之前的meta, entry写入
-                          * 然后开启一个新的TSM File
-                          */
+                             // 刷盘
+                             m_tsm.write_data_to_file(data_block, "data.tsm", m_head_offset);
+                             std::cout << "data block刷盘" << std::endl;
 
+                             // 修改头偏移量
+                             m_head_offset += data_block->m_size;
+                         }
+                         else
+                         {
+                             /**
+                              * 余量不足先把之前的meta, entry写入
+                              * 然后开启一个新的TSM File
+                              */
+                             std::cout << "余量不足" << std::endl;
 
+                         }
                      }
                  }
              }
+         }
+         else
+         {
+            std::cout << "hx" << "\n";
          }
      }
 }

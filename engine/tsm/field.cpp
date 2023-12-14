@@ -5,6 +5,7 @@ void Field::write(
         high_resolution_clock::time_point timestamp,
         string & data)
 {
+    m_sl.put(timestamp, data);
     if (m_sl.size() >= 10)  // 跳表数量大于 10
     {
         // 确保m_current_data 不为空
@@ -14,7 +15,7 @@ void Field::write(
         }
 
         // 写入DataBlock
-        int32_t _data_size;
+        int32_t _data_size = 0;
         if (m_type == DataBlock::Type::DATA_STRING)  // string
         {
             for (auto it = m_sl.begin(); it != m_sl.end(); ++it)  // 迭代器
@@ -48,7 +49,7 @@ void Field::write(
         m_current_data = std::make_shared<DataBlock>();  // 重置m_current_data 以便接收新数据
         m_sl.cle();  // 清空跳表
     }
-    m_sl.put(timestamp, data);
+
 }
 
 /**
