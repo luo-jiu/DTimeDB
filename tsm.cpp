@@ -10,18 +10,20 @@ string file_name = "temperature";
 
 int main()
 {
-//    Write write(measurement);
-//
-//    // 开启异步刷新线程
+    Write write(measurement);
+
+    // 开启异步刷新线程
     TSM tsm;
-//    Header header(20, 1);
-//    Footer footer;
-//    tsm.create_tsm(header, footer, file_path);  // 创建 tsm
-//
+    Header header(20, 1);
+    Footer footer;
+    tsm.create_tsm(header, footer, file_path);  // 创建 tsm
+
+    std::thread flush_thread(&Write::flush_disk, &write);
+
+    Tool::test_data(write, 20, true, false, file_name, file_path);  // 写入数据
 //    Tool::test_data(write, 100, true, false, file_name, file_path);  // 写入数据
-//
-//    std::thread flush_thread(&Write::flush_disk, &write);
-//    flush_thread.join();
+
+    flush_thread.join();
 ////    write.flush_disk();
 //    std::cout << "main" << std::endl;
 

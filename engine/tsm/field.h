@@ -16,7 +16,7 @@ namespace dt::tsm
     public:
         Field() : m_status(false) {}
         Field(DataBlock::Type type, string field_name) : m_type(type), m_field_name(field_name), m_status(false) {}
-        void write(high_resolution_clock::time_point timestamp, string & data);
+        string write(high_resolution_clock::time_point timestamp, string & data);
         bool get_status() const { return m_status; }
 
         bool get_data_status();
@@ -28,21 +28,23 @@ namespace dt::tsm
         std::shared_ptr<IndexEntry> pop_index_from_deque();
 
     public:
-        string                                      m_field_name;    // 字段名
-        DataBlock::Type                             m_type;          // 字段数据类型
+        string                                      m_field_name;           // 字段名
+        DataBlock::Type                             m_type;                 // 字段数据类型
+        high_resolution_clock::time_point           m_index_last_time;      // 索引刷盘计时器
 
     private:
-        SkipList<string>                            m_sl;            // 跳表
+        SkipList<string>                            m_sl;                   // 跳表
 
-        bool                                        m_status;        // 状态
+        bool                                        m_status;               // 状态
+        high_resolution_clock::time_point           m_sl_last_time;         // 跳表刷块计时器
 
         std::mutex                                  m_data_lock;
         std::mutex                                  m_index_lock;
 
-        std::shared_ptr<DataBlock>                  m_current_data;  // 当前块
+        std::shared_ptr<DataBlock>                  m_current_data;         // 当前块
 
-        std::deque<std::shared_ptr<DataBlock>>      m_data_deque;    // data 队列
-        std::deque<std::shared_ptr<IndexEntry>>     m_index_deque;   // index 队列
+        std::deque<std::shared_ptr<DataBlock>>      m_data_deque;           // data 队列
+        std::deque<std::shared_ptr<IndexEntry>>     m_index_deque;          // index 队列
     };
 }
 
