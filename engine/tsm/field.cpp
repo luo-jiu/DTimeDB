@@ -6,11 +6,22 @@ string Field::write(
         string & data)
 {
     m_sl.put(timestamp, data);
-    auto current_time = std::chrono::system_clock::now();
+
+    if(m_sl.size() == 1)
+    {
+        m_sl_last_time = high_resolution_clock::now();
+        std::cout << "初始化/重置m_sl_last_time" << std::endl;
+    }
 
     // 跳表数量大于 10 || (跳表组织时间大于1s && 跳表有数据)
-    if (m_sl.size() >= 10 || m_sl_last_time - current_time >= std::chrono::seconds(1) && m_sl.size())
+    auto current_time = std::chrono::system_clock::now();
+    if (m_sl.size() >= 10 || (current_time - m_sl_last_time >= seconds(1) && !m_sl.empty()))
     {
+        if (current_time - m_sl_last_time >= std::chrono::seconds(1) && !m_sl.empty())
+        {
+            std::cout << "跳表超过1s直接刷入" << std::endl;
+        }
+
         // 确保m_current_data 不为空
         if (!m_current_data)
         {
@@ -52,7 +63,6 @@ string Field::write(
 
         m_current_data = std::make_shared<DataBlock>();  // 重置m_current_data 以便接收新数据
         m_sl.cle();  // 清空跳表
-        m_sl_last_time = high_resolution_clock::now();  // 重置跳表组织时间
 
         // 需要给write.h 中的m_fields_list中添加映射
         return m_field_name;

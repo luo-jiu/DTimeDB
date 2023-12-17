@@ -56,6 +56,8 @@ namespace dt::tsm
         void del(high_resolution_clock::time_point key);
         void cle();
 
+        bool empty();
+
         high_resolution_clock::time_point min_key() const;  // 获取最小键
         high_resolution_clock::time_point max_key() const;  // 获取最大键
 
@@ -144,16 +146,8 @@ namespace dt::tsm
         current = current->m_nexts[0];
         if (current != nullptr && current->m_key == key)
         {
-//                if (std::is_same<std::string, T>::value)
-//                {
-//                    value.assign(current->m_value);
-//                    return;
-//                }
-//                else
-//                {
-                value = current->m_value;  // 如果键已存在，更新值
-                return;
-//                }
+            value = current->m_value;  // 如果键已存在，更新值
+            return;
         }
 
         int level = random_level();
@@ -248,6 +242,11 @@ namespace dt::tsm
         m_bottom_level_node_count = 0;
     }
 
+    template <class T>
+    bool SkipList<T>::empty()
+    {
+        return !m_bottom_level_node_count;
+    }
 
     template <class T>
     void SkipList<T>::traverse()

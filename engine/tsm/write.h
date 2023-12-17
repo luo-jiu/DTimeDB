@@ -23,10 +23,11 @@ namespace dt::tsm
     {
     public:
         Write() {}
-        Write(string & measurement) : m_measurement(measurement), m_head_offset(8), m_tail_offset(4 * 1024 * 1024), m_margin(4 * 1024 * 1024), m_is_ready(0) {}
+        Write(string & measurement) : m_measurement(measurement), m_head_offset(8), m_tail_offset(4 * 1024 * 1024), m_margin(4 * 1024 * 1024), m_is_ready(0){}
 
         void write(high_resolution_clock::time_point, string & data, const string & file_path, DataBlock::Type type, string & field_name);
         void flush_disk();
+        void flush_all_sl();
 
         // field_list (都是线程安全的)
         void push_back_field_list(const string & field);
@@ -35,7 +36,7 @@ namespace dt::tsm
         int size_field_list();
 
     private:
-        void flush_entry_disk(string & field_name);
+        void flush_entry_disk(string & field_name, bool is_remove);
 
         std::shared_ptr<Field> get_field(string & field_name, const string & type);
         bool fields_empty();

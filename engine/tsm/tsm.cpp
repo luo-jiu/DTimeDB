@@ -200,9 +200,8 @@ u_int64_t TSM::write_index_entry_to_file(
         std::cerr << "Error: Could not open file for writing - from engine/tsm_/tsm_.h" << std::endl;
         return false;
     }
-    std::cout << file->tellg() << std::endl;
+
     file->seekp(offset);
-    std::cout << file->tellg() << std::endl;
 
     long timestamp_size = sizeof(high_resolution_clock::time_point);
     file->write(reinterpret_cast<const char*>(&index_entry->get_max_time()), timestamp_size);
@@ -309,9 +308,9 @@ bool TSM::write_footer_to_file(
         std::cerr << "Error: Could not open file for reading - from engine/tsm_/write.cpp" << std::endl;
         return false;
     }
-    std::cout << file->tellg() << std::endl;
+
     file->seekp(8 + 4 * 1024 * 1024);  // 跳转到文件末尾
-    std::cout << file->tellg() << std::endl;
+
     file->write(reinterpret_cast<const char*>(&footer), sizeof(footer));
 
     file->flush();

@@ -14,7 +14,7 @@ namespace dt::tsm
     class Field
     {
     public:
-        Field() : m_status(false) {}
+        Field() = default;
         Field(DataBlock::Type type, string field_name) : m_type(type), m_field_name(field_name), m_status(false) {}
         string write(high_resolution_clock::time_point timestamp, string & data);
         bool get_status() const { return m_status; }

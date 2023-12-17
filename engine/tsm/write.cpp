@@ -67,7 +67,6 @@ void Write::flush_disk()
              {
                  m_cv.wait(lock, [&] {return m_is_ready;});  // 进入等待
              }
-
         }
 
         // 激活说明有字段了
@@ -75,27 +74,6 @@ void Write::flush_disk()
         {
             auto _field_name = pop_front_field_list();
             auto _field = m_field_map[_field_name];  // 通过映射拿到对应field
-
-            /**
-             * 拿到field 先不急，判断meta 到没到刷盘时机
-             *
-             * #原因:
-             * 1. 此时已经有data_block 刷入磁盘但是entry 还在内存，但是不满足数量
-             *     的刷盘条件
-             *
-             * #备注:
-             * 这里添加了一个维护的map，告诉这个线程哪里有还未刷盘的 entry
-             *      目的是最后TSM 不够用时能找到对应的field 进行统一刷盘
-             *
-             * 所以在TSM 容量足够的时候，刷写完entry 后记得将set 元素移除,因为有条件
-             *      _field->get_index_deque_size() > 9；保证数量永远只会低于这个数
-             *      所以刷写完后直接将set 中的元素移除
-             */
-            auto current_time = std::chrono::high_resolution_clock::now();
-            if (_field->get_index_deque_size() > 9 || (current_time - _field->m_index_last_time >= std::chrono::seconds(10) && !_field->get_index_status()))
-            {
-                flush_entry_disk(_field_name);
-            }
 
             /**
              * 现在开始处理消息队列的data_block
@@ -149,7 +127,13 @@ void Write::flush_disk()
                     // 创建entry [唯一生成]
                     auto _entry = m_tsm.create_index_entry(_data_block->m_max_timestamp, _data_block->m_min_timestamp, m_head_offset, _data_block->m_size);
                     _field->push_index_to_deque(_entry);  // 存入队列
-                    m_index_set.insert(_field_name);  // 表示这个字段有entry 未写入
+
+                    auto it = m_index_set.find(_field_name);
+                    if(it == m_index_set.end())  // 第一次放入块对其初始化计时器
+                    {
+                        m_index_set.insert(_field_name);  // 表示这个字段有entry 未写入
+                        _field->m_index_last_time = high_resolution_clock::now();
+                    }
 
                     // 刷盘
                     m_tsm.write_data_to_file(_data_block, "data.tsm", m_head_offset);
@@ -164,7 +148,7 @@ void Write::flush_disk()
                     // 准备全部刷盘
                     for (string _field_name_temp : m_index_set)  // 遍历set
                     {
-                        flush_entry_disk(_field_name_temp);  // 全部去刷盘
+                        flush_entry_disk(_field_name_temp, false);  // 全部去刷盘
                         m_index_set.erase(_field_name_temp);  // 移除
                     }
 
@@ -184,9 +168,40 @@ void Write::flush_disk()
             }
         }
 
-        if (!m_index_set.empty())
+        if (!m_index_set.empty())  // 检验现存的 entry
         {
+            std::list<string> flush_complete_field;
+            for (auto _field_name_temp : m_index_set)  // 遍历set
+            {
+                auto _field = m_field_map[_field_name_temp];  // 通过映射拿到对应field
 
+                /**
+                 * 拿到field 先不急，判断meta 到没到刷盘时机
+                 *
+                 * #原因:
+                 * 1. 此时已经有data_block 刷入磁盘但是entry 还在内存，但是不满足数量
+                 *     的刷盘条件
+                 *
+                 * #备注:
+                 * 这里添加了一个维护的set，告诉这个线程哪里有还未刷盘的 entry
+                 *      目的是最后TSM 不够用时能找到对应的field 进行统一刷盘
+                 *
+                 * 所以在TSM 容量足够的时候，刷写完entry 后记得将set 元素移除,因为有条件
+                 *      _field->get_index_deque_size() > 9；保证数量永远只会低于这个数
+                 *      所以刷写完后直接将set 中的元素移除
+                 */
+                auto current_time = high_resolution_clock::now();
+                if (_field->get_index_deque_size() > 9 || (current_time - _field->m_index_last_time >= std::chrono::seconds(10) && !_field->get_index_status()))
+                {
+                    flush_entry_disk(_field_name_temp, false);
+                    flush_complete_field.push_back(_field_name_temp);
+                }
+            }
+
+            for (const string& it : flush_complete_field)
+            {
+                m_index_set.erase(it);
+            }
         }
 
         {
@@ -199,7 +214,7 @@ void Write::flush_disk()
      }
 }
 
-void Write::flush_entry_disk(string & field_name)
+void Write::flush_entry_disk(string & field_name, bool is_remove)
 {
     auto _field = m_field_map[field_name];  // 通过映射拿到对应field
 
@@ -248,11 +263,19 @@ void Write::flush_entry_disk(string & field_name)
     Footer _footer(m_tail_offset);
     m_tsm.write_footer_to_file(_footer, "data.tsm");
 
-    // 写完后将m_index_set 中的字段直接移除，表示目前这个字段没有entry 待刷入了
-    m_index_set.erase(field_name);
+    if (is_remove)
+    {
+        // 写完后将m_index_set 中的字段直接移除，表示目前这个字段没有entry 待刷入了
+        m_index_set.erase(field_name);
+    }
 
     // 重置刷入时间
     _field->m_index_last_time = high_resolution_clock::now();
+}
+
+void Write::flush_all_sl()
+{
+
 }
 
 std::shared_ptr<Field> Write::get_field(

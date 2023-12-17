@@ -1,2 +1,2 @@
-SELECT id,name,age FROM luo WHERE id > 11 OR age < 22
-select * from teacher where age > 33
+SELECT id,name,age FROM luo WHERE id > 11 OR ()
+
