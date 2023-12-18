@@ -4,6 +4,7 @@
 #include <ast/float.h>
 #include <ast/identifier.h>
 #include <ast/infix.h>
+#include <ast/insert.h>
 #include <ast/integer.h>
 #include <ast/node.h>
 #include <ast/null.h>

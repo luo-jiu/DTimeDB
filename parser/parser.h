@@ -64,7 +64,9 @@ namespace dt
             std::shared_ptr<Expression> parse_string();
             std::shared_ptr<Expression> parse_null();
             std::shared_ptr<Expression> parse_identifier();
+
             std::shared_ptr<Expression> parse_select();
+            std::shared_ptr<Expression> parse_insert();
 
             // 中缀表达式
             std::shared_ptr<Expression> parse_infix(const std::shared_ptr<Expression> &left);

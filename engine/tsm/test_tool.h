@@ -88,7 +88,7 @@ namespace dt::tsm
         {
             int random_seconds = rand_int();
             auto _data = std::to_string(random_seconds);
-            write.write(random_time(pri), _data, file_path, DataBlock::DATA_STRING, field_name);  // 写入结束
+            write.write(random_time(pri), _data, DataBlock::DATA_STRING, field_name, file_path);  // 写入结束
         }
 
         // 跳表可能还有没写完的数据

@@ -27,6 +27,7 @@ std::map<Token::Type, string> Token::m_names = {
         {TOKEN_RPAREN,          ")"},
         {TOKEN_COMMA,           ","},
         {TOKEN_SEMICOLON,       ";"},
+        {TOKEN_TIMESTAMP,       "timestamp"},
 
         {TOKEN_IDENTIFIER,      "identifier"},
         {TOKEN_NULL,            "null"},
@@ -35,12 +36,13 @@ std::map<Token::Type, string> Token::m_names = {
         {TOKEN_TABLE,           "table"},
         {TOKEN_USE,             "use"},
         {TOKEN_CREATE,          "create"},
-        {TOKEN_DELETE,          "delete"},
+        {TOKEN_INSERT,          "insert"},
+        {TOKEN_INTO,            "into"},
         {TOKEN_UPDATE,          "update"},
         {TOKEN_SELECT,          "select"},
 
-        {TOKEN_FROM,            "from"},
-        {TOKEN_WHERE,           "where"},
+        {TOKEN_FROM,            "m_from"},
+        {TOKEN_WHERE,           "m_where"},
         {TOKEN_TTL,             "ttl"},
         {TOKEN_TIME,            "time"},
 };
@@ -54,13 +56,15 @@ std::map<string, Token::Type> Token::m_keywords = {
         {"table",           TOKEN_TABLE},
         {"use",             TOKEN_USE},
         {"engine",          TOKEN_ENGINE},
+
         {"create",          TOKEN_CREATE},
-        {"delete",          TOKEN_DELETE},
+        {"insert",          TOKEN_INSERT},
+        {"into",            TOKEN_INTO},
         {"update",          TOKEN_UPDATE},
         {"select",          TOKEN_SELECT},
 
-        {"from",            TOKEN_FROM},
-        {"where",           TOKEN_WHERE},
+        {"from",          TOKEN_FROM},
+        {"where",         TOKEN_WHERE},
         {"ttl",             TOKEN_TTL},
         {"time",            TOKEN_TIME},
 

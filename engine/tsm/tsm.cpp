@@ -11,7 +11,7 @@ bool TSM::write_header_to_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
         return false;
     }
     file->write(reinterpret_cast<const char*>(&header), sizeof(header));
@@ -31,7 +31,7 @@ bool TSM::read_header_from_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/write.cpp" << std::endl;
         return false;
     }
     file->seekg(0);  // 移动至开头
@@ -48,7 +48,7 @@ u_int64_t TSM::write_data_to_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - from engine/tsm_/tsm_.h" << std::endl;
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/tsm_.h" << std::endl;
         return -1;
     }
     file->seekp(offset);  // 移动到指定位置
@@ -102,7 +102,7 @@ u_int64_t TSM::write_data_to_file(
     }
     else
     {
-        std::cerr << "Error : Unknown type - from engine/tsm/tsm.cpp" << std::endl;
+        std::cerr << "Error : Unknown type - m_from engine/tsm/tsm.cpp" << std::endl;
     }
 
     file->flush();
@@ -118,7 +118,7 @@ bool TSM::read_data_from_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm_/tsm_.h" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/tsm_.h" << std::endl;
         return false;
     }
     file->seekg(offset);
@@ -183,7 +183,7 @@ bool TSM::read_data_from_file(
     }
     else
     {
-        std::cerr << "Error : Unknown type - from /engin/tsm/tsm.cpp" << std::endl;
+        std::cerr << "Error : Unknown type - m_from /engin/tsm/tsm.cpp" << std::endl;
     }
     m_file_manager.release_file_stream(file_path);
     return true;
@@ -197,7 +197,7 @@ u_int64_t TSM::write_index_entry_to_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - from engine/tsm_/tsm_.h" << std::endl;
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/tsm_.h" << std::endl;
         return false;
     }
 
@@ -226,7 +226,7 @@ bool TSM::read_index_entry_from_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm_/tsm_.h" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/tsm_.h" << std::endl;
         return false;
     }
     file->seekg(offset);
@@ -241,7 +241,7 @@ bool TSM::write_index_meta_to_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - from engine/tsm_/tsm_.h" << std::endl;
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/tsm_.h" << std::endl;
         return false;
     }
     file->seekp(offset);
@@ -268,7 +268,7 @@ bool TSM::read_index_meta_from_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm_/tsm_.h" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/tsm_.h" << std::endl;
         return false;
     }
     file->seekg(offset);
@@ -305,7 +305,7 @@ bool TSM::write_footer_to_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/write.cpp" << std::endl;
         return false;
     }
 
@@ -326,7 +326,7 @@ bool TSM::read_footer_from_file(Footer & footer, const string & file_path)
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/write.cpp" << std::endl;
         return false;
     }
     file->seekg(-8, std::ios::end);  // 跳转到Footer 开头
@@ -378,7 +378,7 @@ std::shared_ptr<IndexBlockMeta> TSM::create_index_meta(
         }
         default:
         {
-            std::cerr << "Error : Type '" << type << "' does not meet - from engine/tsm_/tsm_.cpp" << std::endl;
+            std::cerr << "Error : Type '" << type << "' does not meet - m_from engine/tsm_/tsm_.cpp" << std::endl;
             return nullptr;
         }
     }
@@ -395,7 +395,7 @@ bool TSM::create_tsm(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/write.cpp" << std::endl;
         return false;
     }
     file->seekg(0);  // 文件指针移到开头

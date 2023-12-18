@@ -9,7 +9,8 @@ add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 include_directories(./)
 
 file(GLOB_RECURSE SOURCES "token/*.cpp" "lexer/*.cpp" "json/*.cpp" "ast/*.cpp"
-        "parser/*.cpp" "engine/tsm/*.cpp" "engine/circularList/*.cpp")
+        "parser/*.cpp" "engine/tsm/*.cpp" "engine/circularList/*.cpp" "executor/*.cpp"
+        "file_manager/*.cpp" "object/*.cpp" "evaluator/*.cpp" "")
 
 add_executable(token ${SOURCES} token.cpp)
 add_executable(ast ${SOURCES} ast.cpp)

@@ -41,6 +41,7 @@ namespace dt
                 TOKEN_RPAREN,          // )
                 TOKEN_COMMA,           // ,
                 TOKEN_SEMICOLON,       // ;
+                TOKEN_TIMESTAMP,       // timestamp
 
                 TOKEN_IDENTIFIER,      // identifier 标识符
                 TOKEN_NULL,            // null
@@ -50,13 +51,15 @@ namespace dt
                 TOKEN_ENGINE,          // engine
                 TOKEN_USE,             // use
                 TOKEN_CREATE,          // create
-                TOKEN_DELETE,          // delete
+
+                TOKEN_INSERT,          // insert
+                TOKEN_INTO,            // into
                 TOKEN_UPDATE,          // update
                 TOKEN_SELECT,          // select
 
                 TOKEN_TTL,             // ttl
-                TOKEN_FROM,            // from
-                TOKEN_WHERE,           // where
+                TOKEN_FROM,            // m_from
+                TOKEN_WHERE,           // m_where
                 TOKEN_TIME,            // time
 
             };

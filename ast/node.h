@@ -28,8 +28,7 @@ namespace dt
                 NODE_EXPRESSION_STATEMENT,
                 NODE_PROGRAM,
                 NODE_SELECT,
-                NODE_FROM,
-                NODE_WHERE,
+                NODE_INSERT,
             };
 
             Node() {}

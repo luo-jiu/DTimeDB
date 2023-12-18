@@ -25,7 +25,7 @@ namespace dt::tsm
         Write() {}
         Write(string & measurement) : m_measurement(measurement), m_head_offset(8), m_tail_offset(4 * 1024 * 1024), m_margin(4 * 1024 * 1024), m_is_ready(0){}
 
-        void write(high_resolution_clock::time_point, string & data, const string & file_path, DataBlock::Type type, string & field_name);
+        void write(high_resolution_clock::time_point timestamp, string & data, DataBlock::Type type, string & field_name, const string & file_path);
         void flush_disk();
         void flush_all_sl();
 

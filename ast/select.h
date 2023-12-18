@@ -2,35 +2,33 @@
 
 #include <ast/node.h>
 
-namespace dt
+namespace dt::ast
 {
-    namespace ast
+    class Select : public Expression
     {
-        class Select : public Expression
+    public:
+        Select(): Expression(NODE_SELECT) {}
+        ~Select() {}
+
+        virtual Json json()
         {
-        public:
-            Select(): Expression(NODE_SELECT) {}
-            ~Select() {}
+            Json json;
+            json["type"] = name();
 
-            virtual Json json()
+            Json clause;
+            for (auto & cla : fields)
             {
-                Json json;
-                json["type"] = name();
-
-                Json clause;
-                for (auto & cla : select_clause)
-                {
-                    clause.append(cla->json());
-                }
-                json["select_clause"] = clause;
-                json["from"] = from->json();
-                json["where"] = where->json();
-                return json;
+                clause.append(cla->json());
             }
-        public:
-            std::list<std::shared_ptr<Expression>>      select_clause;
-            std::shared_ptr<Expression>                 from;
-            std::shared_ptr<Expression>                 where;
-        };
-    }
+            json["fields"] = clause;
+            json["from"] = m_from->json();
+            json["where"] = m_where->json();
+            return json;
+        }
+
+    public:
+        std::list<std::shared_ptr<Expression>>      fields;
+        std::shared_ptr<Expression>                 m_from;
+        std::shared_ptr<Expression>                 m_where;
+    };
 }

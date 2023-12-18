@@ -4,9 +4,9 @@ using namespace dt::tsm;
 void Write::write(
         high_resolution_clock::time_point timestamp,
         string & data,
-        const string & file_path,
         DataBlock::Type type,
-        string & field_name)
+        string & field_name,
+        const string & file_path)
 {
     std::shared_ptr<Field> _field(new Field());
     switch(type)

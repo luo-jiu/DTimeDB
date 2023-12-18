@@ -273,7 +273,7 @@ bool Lexer::is_letter(char ch)
 
 /**
  * 获取数字
- * eg: ... where age < 30;
+ * eg: ... m_where age < 30;
  * 获取30
  */
 string Lexer::read_number()
