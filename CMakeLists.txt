@@ -32,6 +32,8 @@ add_executable(ast ${SOURCES} ast.cpp
         engine/circularList/controll/page_manager.cpp
         pool/buffer_pool.cpp
         pool/buffer_pool.h
+        engine/circularList/file/load_disk.cpp
+        engine/circularList/file/load_disk.h
 )
 
 #add_executable(ast ${SOURCES} ast.cpp)

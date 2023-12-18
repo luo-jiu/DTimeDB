@@ -9,9 +9,9 @@
 
 #include <engine/circularList/include/circular_list_header.h>
 using namespace std;
-using namespace circular_list;
+using namespace clt;
 
- namespace circular_list {
+ namespace clt {
      /**
      * 对于行的操作
      */
@@ -38,9 +38,11 @@ using namespace circular_list;
      }
      //输出行数据
      void Row::display_row() const {
-         cout<<"Row ID: "<<meta.get_id()<<"TimeStamp: "<<timestamp.getTimestamp();
+         cout<<"Row ID: "<<meta.get_id()<<" TimeStamp: "<<timestamp.getTimestamp();
+         cout<<" Value: ";
          for (const auto &value: values) {
-             cout<<"Value: "<<value<<endl;
+             cout<<" "<<value;
          }
+         std::cout << std::endl;
      }
  }

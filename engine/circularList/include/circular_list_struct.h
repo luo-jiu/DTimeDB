@@ -15,9 +15,9 @@
 using namespace std::chrono;
 using namespace std;
 using namespace luo::json;
-
+constexpr size_t BLOCK_SIZE=16384;
 const uint32_t PAGE_SIZE=4096;
-namespace circular_list
+namespace clt
 {
     //行头，包括行id，页名,以及下一行的位置
     class Meta
@@ -57,10 +57,18 @@ namespace circular_list
         }
     };
     //表结构，列
-    struct Column{
-        string          name;
-        DATA_TYPE       type;
-        Column(const string &_name,const DATA_TYPE &_type):name(_name),type(_type){};
+    class Column{
+    private:
+        string                        name;
+       DATA_TYPE            type;
+    public:
+       Column(const string& _name,DATA_TYPE _type):name(_name),type(_type){}
+       const string& get_name(){
+           return name;
+       }
+       DATA_TYPE get_type(){
+           return type;
+       }
     };
     class Row
     {
@@ -102,7 +110,7 @@ namespace circular_list
         ~PageTail()=default;
         uint32_t calculateOffest() const;
     };
-
+    
     class Page
     {
         static const size_t             PAGESIZE=4096;
@@ -117,9 +125,40 @@ namespace circular_list
         size_t calculate_page_size() const;
         //初始化页面
         bool init_page(uint32_t pageId, const char *blockName, const char *pageName, PAGE_TYPE type);
-        bool add_row(const Row& new_row);
-        bool drop_row(int *row_id);
+        bool insert_row(const Row& new_row);
         const Row& getRow(size_t index);
+        vector<Row> get_page_data() const;
+        bool update_row(Row &row);
+        bool drop_row(int *row_id);
+    };
+    //构成环形链表的节点
+    struct PageNode{
+        Page                        page;
+        PageNode                *next;
+    };
+
+
+    //Block头信息，存储页
+    class BlockHeader{
+    private:
+        string              m_block_name;
+        string              m_block_version;
+        string              m_block_owner;
+        size_t              m_block_size;
+    public:
+        BlockHeader(){}
+        BlockHeader(const string & _block_name,const string &_block_version,const string &_block_owner):m_block_name(_block_name),m_block_version(_block_version),m_block_owner(_block_owner){}
+    };
+    //Block体，存储分页数据，数据在环形链表组织成页后页满存储如Block，Block进行持久化操作
+    class Block
+    {
+    public:
+        bool isFull()const;
+        //执行落盘操作
+        bool  write_to_file(const string &file_path);
+    private:
+        BlockHeader         header;
+        vector<Page>        pages;
     };
 
     //索引页结构

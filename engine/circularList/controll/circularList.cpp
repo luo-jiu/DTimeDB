@@ -2,18 +2,15 @@
 // Created by illumwang on 11/29/23.
 //
 #include "engine/circularList/include/circular_list_header.h"
-namespace circular_list{
-    bool Block::create_page(const std::string &page_name) {
+namespace clt{
+    void CircularList::insert_page(const clt::PageHead &pageHead) {
 
     }
-    void CircularList::insert_page(const circular_list::PageHead &pageHead) {
-
-    }
-    void CircularList::writePageToBlock(Page *page,Block *block) {
+    void CircularList::flush_to_disk(Page *page, Block *block) {
 
     }
 
-    void CircularList::addRowToCircularList(const circular_list::Row &row) {
+    void CircularList::addRowToCircularList(const clt::Row &row) {
         //if (!head||head->page.row)
     }
 }

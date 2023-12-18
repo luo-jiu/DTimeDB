@@ -11,61 +11,56 @@
 #include <unordered_map>
 #include "data_def.h"
 #include "vector"
-#include <fstream>
+#include "filesystem"
 using namespace luo::json;
 using namespace std;
 using namespace luo::json;
 using namespace std;
-using namespace circular_list;
-#define BLOCK_MAX_PAGES 100
-namespace circular_list
+using namespace clt;
+
+namespace clt
 {
 /**
- * block相当于数据库，页相当于表，行为行信息
+ * block相当于数据库，table相当于表，行为行信息
  */
-    //Block头信息，存储页
-    class BlockHeader{
-    private:
-        string              m_block_name;
-        string              m_block_version;
-        string              m_block_owner;
-    public:
-        BlockHeader(){}
-    };
-    //Block体，存储分页数据，数据在环形链表组织成页后页满存储如Block，Block进行持久化操作
-    class Block
-    {
-    public:
-        bool isFull()const;
-        //将页写入块内存
-        bool write_page_to_file(const PageHead &head,const string &file_path);
-        bool getPage();
-        bool deletePage(const PageHead& header);
-        void storeToFile(const string& file_name);
-        bool create_page(const string &page_name);
-    public:
-        BlockHeader         header;
-        vector<Page>        pages;
-    };
+     class TableHeader{
+         string             table_name;
+         string             table_path;
+     };
+     class Table{
 
-    //环形链表结构，当每一页存满以后存入块中，块进行落盘存储操作
-    struct CircularListNode{
-        Page                page;
-        CircularListNode    *next;
-        CircularListNode(const Page& _page):page(_page),next(nullptr){}
-    };
+     public:
+         void create_column(const string &column_name,DATA_TYPE type);
+         void add_row();
+         bool  write_to_block();
 
+     private:
+         TableHeader                    tableHeader;
+         vector<Row>                    rows;
+         vector<Column>               columns;
+     };
+     class DataBase{
+     public:
+         bool  create_table(string &table_name);
+     public:
+         string                     database_name;
+         string                     file_path;
+     };
+
+//    //环形链表结构，当每一页存满以后存入块中，块进行落盘存储操作
+//    struct CircularListNode{
+//        Page                page;
+//        CircularListNode    *next;
+//        CircularListNode(const Page& _page):page(_page),next(nullptr){}
+//    };
+//
     class CircularList
     {
     public:
-        //
-        void  insert_page(const PageHead &pageHead);
-        void addRowToCircularList(const Row& row);
-        void writePageToBlock(Page *page,Block *block);
-        bool isFull();
+
     private:
         static const size_t                 MAX_PAGES= 8;           //存储最大页数
-        CircularListNode                 *head;                             //存储头结点
+        PageNode                            *head;                             //存储头结点
         size_t                                  page_count;                     //存储页数
     };
 }

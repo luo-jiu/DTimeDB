@@ -22,7 +22,7 @@ size_t Page::calculate_page_size() const
     return size;
 }
 //向页中插入行数据
-bool Page::add_row(const Row& row)
+bool Page::insert_row(const Row& row)
 {
     size_t totalSize=calculate_page_size();
     //如果页面积足够则添加新数据
@@ -33,11 +33,11 @@ bool Page::add_row(const Row& row)
     return false;
 }
 //从页中删除行数据
-//bool Page::drop_row(int *row_id)
-//{
-//
-//}
-////从页中获取行数据
+bool Page::drop_row(int *row_id)
+{
+
+}
+//从页中获取行数据
 //const Row& Page::getRow(size_t index){
 //
 //}
@@ -50,6 +50,11 @@ bool Page::init_page(uint32_t pageId, const char *blockName, const char *pageNam
     m_page_tail=PageTail(0);
     m_rows.clear();
     return true;
+}
+//输出全页数据
+vector<Row> Page::get_page_data() const
+{
+    return m_rows;
 }
 
 
