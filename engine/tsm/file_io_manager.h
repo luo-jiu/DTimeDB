@@ -1,5 +1,5 @@
-#ifndef DTIMEDB_FILE_MANAGER_H
-#define DTIMEDB_FILE_MANAGER_H
+#ifndef DTIMEDB_FILE_IO_MANAGER_H
+#define DTIMEDB_FILE_IO_MANAGER_H
 
 #include <fstream>
 #include <iostream>
@@ -12,10 +12,10 @@
 
 namespace dt::tsm
 {
-    class FileManager
+    class FileIOManager
     {
     public:
-        FileManager(size_t max_size) : m_max_size(max_size) {}
+        FileIOManager(size_t max_size) : m_max_size(max_size) {}
 
         std::shared_ptr<std::fstream> get_file_stream(const std::string & file_path);
         void release_file_stream(const std::string & file_path);
@@ -42,4 +42,4 @@ namespace dt::tsm
     };
 }
 
-#endif //DTIMEDB_FILE_MANAGER_H
+#endif //DTIMEDB_FILE_IO_MANAGER_H

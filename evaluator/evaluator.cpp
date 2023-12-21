@@ -60,6 +60,13 @@ std::shared_ptr<Object> Evaluator::eval(
             auto s = std::dynamic_pointer_cast<ast::ExpressionStatement>(node);
             return eval(s->m_expression, env);  // 递归判断值类型
         }
+        case Node::NODE_SELECT:  // select 处理
+        {
+            auto select = std::dynamic_pointer_cast<ast::Select>(node);
+            auto where = eval(select->m_where, env);  // 解析where
+
+            return eval(select, env);
+        }
         case Node::NODE_STRING:  // string
         {
             auto s = std::dynamic_pointer_cast<ast::String>(node);

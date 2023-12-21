@@ -8,6 +8,7 @@ using std::string;
 using namespace std::chrono;
 
 #include <list>
+#include <vector>
 
 namespace dt::iengine
 {
@@ -26,12 +27,59 @@ namespace dt::iengine
 
     public:
         /**
-         *
+         * [tsm]
+         * 写入数据
          */
-        virtual string init_file(string & file_path) = 0;
-        virtual bool insert(high_resolution_clock::time_point timestamp, string value, Type type, string & field_name, string & file_path) = 0;
-        virtual bool update(high_resolution_clock::time_point timestamp, string value, Type type, string & table_name) = 0;
-        virtual std::list<string> search(std::list<high_resolution_clock::time_point> timestamps, string & table_name, std::list<string> tags) = 0;
+        virtual bool insert(
+                high_resolution_clock::time_point timestamp,
+                string value,
+                Type type,
+                string & field_name) = 0;
+
+
+
+        virtual bool update(
+                high_resolution_clock::time_point timestamp,
+                string value,
+                Type type,
+                string & table_name) = 0;
+
+
+        /**
+         * [共有]
+         * 获取下一条数据 (不使用索引)
+         * 最基本的接口，允许逐条数据遍历表中的数据
+         *
+         * 通常用于[全表扫描] 和没有可用索引时的操作
+         */
+        virtual bool get_next_data(string & data) = 0;
+
+        /**
+         * [共有]
+         * 获取准确的数据 (通过索引 [时间戳timestamp])
+         * @param timestamp
+         */
+        virtual void begin_indexed_scan(
+                const high_resolution_clock::time_point & timestamp,
+                string & data) = 0;
+
+        /**
+         * [共有]
+         * 获取范围数据 (通过索引 [时间戳timestamp])
+         */
+        virtual bool get_range_datas(
+                const high_resolution_clock::time_point & start,
+                const high_resolution_clock::time_point & end,
+                std::vector<string> & datas) = 0;
+
+        /**
+         * [tsm]
+         * 获取范围数据 (通过索引 [标签tag])
+         */
+        virtual bool get_range_datas(
+                std::vector<string> tags,
+                std::vector<string> datas) = 0;
+
     };
 }
 

@@ -41,7 +41,7 @@ namespace dt::tsm
         void set_size(u_int64_t size) { m_tsm_size = size; }
 
     private:
-        FileManager m_file_manager;
+        FileIOManager m_file_manager;
         u_int64_t m_tsm_size;  // TSM size
     };
 }

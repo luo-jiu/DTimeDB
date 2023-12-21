@@ -27,8 +27,10 @@ namespace dt
                 NODE_INFIX,   // 中缀
                 NODE_EXPRESSION_STATEMENT,
                 NODE_PROGRAM,
+
                 NODE_SELECT,
                 NODE_INSERT,
+                NODE_UPDATE,
             };
 
             Node() {}

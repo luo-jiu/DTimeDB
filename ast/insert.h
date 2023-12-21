@@ -34,19 +34,20 @@ namespace dt::ast
             Json clause_values;
             for (auto & cla : m_values)
             {
-                clause_values.append(cla);
+                clause_values.append(cla->json());
             }
             json["values"] = clause_values;
 
+            json["timestamp"] = m_timestamp;
             return json;
         }
 
     public:
-        std::shared_ptr<Expression>         m_from;
-        std::list<string>                   m_tags;       // 标签集合
-        std::list<string>                   m_fields;     // 字段集合
-        std::list<string>                   m_values;     // 值集合
-        string                              m_timestamp;  // timestamp
+        std::shared_ptr<Expression>                 m_from;
+        std::list<string>                           m_tags;       // 标签集合
+        std::list<string>                           m_fields;     // 字段集合
+        std::list<std::shared_ptr<Expression>>      m_values;     // 值集合
+        string                                      m_timestamp;  // timestamp
     };
 }
 

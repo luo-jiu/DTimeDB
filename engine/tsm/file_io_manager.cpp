@@ -1,10 +1,10 @@
-#include <engine/tsm/file_manager.h>
+#include <engine/tsm/file_io_manager.h>
 using namespace dt::tsm;
 
 /**
  * 获取文件io 流
  */
-std::shared_ptr<std::fstream> FileManager::get_file_stream(
+std::shared_ptr<std::fstream> FileIOManager::get_file_stream(
         const std::string &file_path)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -31,7 +31,7 @@ std::shared_ptr<std::fstream> FileManager::get_file_stream(
     return stream;
 }
 
-void FileManager::release_file_stream(const std::string & file_path)
+void FileIOManager::release_file_stream(const std::string & file_path)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_file_stream.find(file_path);
@@ -42,7 +42,7 @@ void FileManager::release_file_stream(const std::string & file_path)
     }
 }
 
-void FileManager::close_file_stream(const std::string & file_path)
+void FileIOManager::close_file_stream(const std::string & file_path)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto it = m_file_stream.find(file_path);
@@ -58,7 +58,7 @@ void FileManager::close_file_stream(const std::string & file_path)
  * 重置文件指针位置
  * (没有则创建)
  */
-void FileManager::reset_file_stream(const std::string & file_path)
+void FileIOManager::reset_file_stream(const std::string & file_path)
 {
     auto stream = get_file_stream(file_path);
     if (stream)
@@ -77,7 +77,7 @@ void FileManager::reset_file_stream(const std::string & file_path)
     }
 }
 
-void FileManager::update_usage_order(const std::string & file_path)
+void FileIOManager::update_usage_order(const std::string & file_path)
 {
     auto it = m_file_stream.find(file_path);
     if (it != m_file_stream.end())
@@ -88,7 +88,7 @@ void FileManager::update_usage_order(const std::string & file_path)
     }
 }
 
-void FileManager::evict_least_used()
+void FileIOManager::evict_least_used()
 {
     if (!m_usage_order.empty())
     {
