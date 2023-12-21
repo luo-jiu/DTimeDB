@@ -27,7 +27,6 @@ add_executable(ast ${SOURCES} ast.cpp
         engine/circularList/file/circular_list_file_manager.cpp
         engine/circularList/file/circular_list_file_manager.h
         engine/circularList/file/circular_list_file_manager.cpp
-        engine/circularList/include/circular_skip_list.h
         engine/circularList/file/circular_list_file_manager.cpp
         engine/circularList/controll/page_manager.cpp
         pool/buffer_pool.cpp

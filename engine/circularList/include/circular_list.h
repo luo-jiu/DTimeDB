@@ -24,36 +24,38 @@ namespace clt
  * block相当于数据库，table相当于表，行为行信息
  */
      class TableHeader{
+     public:
+         void set_table_name(string &table_name){}
+     private:
          string             table_name;
          string             table_path;
      };
      class Table{
 
      public:
+         Table(string &file_name){}
          void create_column(const string &column_name,DATA_TYPE type);
-         void add_row();
+         void insert_row(const Row &new_row);
          bool  write_to_block();
 
      private:
          TableHeader                    tableHeader;
-         vector<Row>                    rows;
-         vector<Column>               columns;
      };
      class DataBase{
      public:
          bool  create_table(string &table_name);
+         bool  drop_table(string &table_name);
+         DataBase(string  file_name)
+         {
+             table=new Table(file_name);
+         }
+         void  create_data_base(const string &name);
      public:
          string                     database_name;
          string                     file_path;
+         Table                     *table;
      };
 
-//    //环形链表结构，当每一页存满以后存入块中，块进行落盘存储操作
-//    struct CircularListNode{
-//        Page                page;
-//        CircularListNode    *next;
-//        CircularListNode(const Page& _page):page(_page),next(nullptr){}
-//    };
-//
     class CircularList
     {
     public:

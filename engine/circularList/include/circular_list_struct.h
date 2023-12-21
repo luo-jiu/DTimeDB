@@ -87,7 +87,7 @@ namespace clt
         void display_row()const;
         ~Row()= default;
     };
-
+//
     class PageHead
     {
     public:
