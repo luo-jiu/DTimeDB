@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <map>
-#include <vector>
+#include <list>
 #include <iostream>
 using std::string;
 
@@ -17,17 +17,26 @@ namespace dt::tsm
     class FilePathManager
     {
     public:
-        FilePathManager(const string & base_path) : m_default_base_path(base_path), m_file_counter(INT64_MAX) {}
+        FilePathManager(const string & base_path) : m_default_base_path(base_path) {}
 
-        string create_database(string & table_name, string & database_name);
-        string create_file(string & table_name, string & database_name, string & engine_abbrev);
+        string create_database(const string & database_name);
+        bool create_table(const string & table_name, const string & database_name);
+        string create_file(const string & table_name, const string & database_name, const string & engine_abbrev);
+
+        bool delete_database(const string & database_name);
+        bool delete_table(const string & table_name, const string & databases_name);
         bool delete_file(const string & file_path);
 
     private:
-        string                                       m_default_base_path;  // 默认基路径
-        std::map<string, std::vector<string>>        m_database_map;       // 数据库列表
-        std::map<string, int64_t>                    m_table_count_map;    // 表对应计数器
-        int64_t                                      m_file_counter;       // 计数器
+        struct TableInfo
+        {
+            int64_t                 m_counter;
+            std::list<string>       m_files;
+        };
+
+        string                                            m_default_base_path;  // 默认基路径
+        //       db_name         tb_name | counter and files
+        std::map<string, std::map<string, TableInfo>>     m_map;     // 表对应的文件
     };
 }
 
