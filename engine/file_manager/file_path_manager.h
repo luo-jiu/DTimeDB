@@ -25,7 +25,7 @@ namespace dt::tsm
 
         bool delete_database(const string & database_name);
         bool delete_table(const string & table_name, const string & databases_name);
-        bool delete_file(const string & file_path);
+        bool delete_file(const string & file_name, const string & table_name, const string & database_name);
 
     private:
         struct TableInfo

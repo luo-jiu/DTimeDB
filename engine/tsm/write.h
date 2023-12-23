@@ -17,7 +17,9 @@ using std::string;
 namespace dt::tsm
 {
     /**
-     * 总的控制
+     * 总的写入控制
+     *
+     * 一个Write 负责一个表
      */
     class Write
     {

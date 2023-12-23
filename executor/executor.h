@@ -11,8 +11,10 @@ namespace dt::executor
     /**
      * 执行器
      *
-     * 需要获取执行计划
-     * 然后根据执行计划进行函数调用
+     * 解析SQL：将SQL语句解析为抽象语法树（AST）
+     * 计划生成：根据AST生成查询或写入计划
+     * 执行计划：执行这些计划，这可能涉及调用存储引擎的接口来进行数据检索或更新
+     * 返回结果：在查询操作中，执行器处理并返回结果集
      */
     class Executor
     {
@@ -20,6 +22,9 @@ namespace dt::executor
 
 
     private:
+
+
+
         bool insert();
 
     private:

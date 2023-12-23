@@ -6,7 +6,7 @@ void Write::write(
         string & data,
         DataBlock::Type type,
         string & field_name,
-        const string & file_path)
+        const string & database_name)
 {
     std::shared_ptr<Field> _field(new Field());
     switch(type)
@@ -49,6 +49,8 @@ void Write::write(
 /**
  * 对数据进行刷盘
  * 子线程
+ *
+ * 一个线程对应一个表
  */
 void Write::flush_disk()
 {
@@ -163,7 +165,9 @@ void Write::flush_disk()
                      *      所以当所有的meta 和entry 都刷盘后，需要保证list 是空的！
                      *      然后就是切换一个新的文件继续重复上述过程罢了
                      * 最好还是有一个文件管理器
+                     * 此时field 已经拿出来了,你需要将此次的field写入新文件
                      */
+
                 }
             }
         }

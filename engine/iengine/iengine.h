@@ -29,13 +29,21 @@ namespace dt::iengine
         /**
          * [tsm]
          * 写入数据
+         *
+         * @param type 数据类型
+         * @param field_name 字段名
+         * @param measurement 表名
+         * @param database_name 数据库
          */
         virtual bool insert(
                 high_resolution_clock::time_point timestamp,
                 string value,
                 Type type,
-                string & field_name) = 0;
+                string & field_name,
+                string & measurement,
+                string & database_name) = 0;
 
+        virtual bool insert() = 0;
 
 
         virtual bool update(

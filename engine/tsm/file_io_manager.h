@@ -17,6 +17,8 @@ namespace dt::tsm
     public:
         FileIOManager(size_t max_size) : m_max_size(max_size) {}
 
+        std::string new_tsm(const std::string & measurement);
+
         std::shared_ptr<std::fstream> get_file_stream(const std::string & file_path);
         void release_file_stream(const std::string & file_path);
         void close_file_stream(const std::string & file_path);

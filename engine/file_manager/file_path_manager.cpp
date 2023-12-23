@@ -1,6 +1,8 @@
 #include <engine/file_manager/file_path_manager.h>
 using namespace dt::tsm;
 
+#include <algorithm>
+
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -65,7 +67,6 @@ string FilePathManager::create_file(
         const string & engine_abbrev)
 {
     // 先判断库是否存在
-    int64_t count = 0;
     auto db_it = m_map.find(database_name);
     if (db_it != m_map.end())  // 数据库存在
     {
@@ -76,7 +77,19 @@ string FilePathManager::create_file(
             auto & tb_info = tb_info_it->second;
             tb_info.m_counter--;
             string file_name = table_name + "-" +std::to_string(tb_info.m_counter) + "." + engine_abbrev;
-            
+            string file_path = m_default_base_path + "/" + file_name;
+
+            // 创建文件
+            int fd = open(file_path.c_str(), O_CREAT | O_WRONLY, 0666);
+            if (fd == -1)
+            {
+                std::cerr << "Error : Failed to crate file " << file_path << std::endl;
+                return "";
+            }
+
+            // 把文件名存入对应表目录下
+            m_map[database_name][table_name].m_files.push_back(file_name);
+            return file_path;
         }
         else
         {
@@ -85,53 +98,144 @@ string FilePathManager::create_file(
             return "";
         }
     }
-//
-//    // 开始创建文件
-//    string file_name = table_name + "-" + std::to_string(count) + "." + engine_abbrev;
-//    string file_path = m_default_base_path + "/" + file_name;
-//    int fd = open(file_path.c_str(), O_CREAT | O_WRONLY, 0666);
-//    if (fd == -1)
-//    {
-//        std::cerr << "Error : Failed to crate file " << file_path << std::endl;
-//        return "";
-//    }
-//    // 添加到表
-//    m_table_map[table_name].push_back(file_name);
-//    close(fd);
-//
-//    return file_path;
+    else
+    {
+        // 数据库不存在
+        std::cerr << "Error : cannot find database '" << database_name << "' " << std:: endl;
+        return "";
+    }
 }
-//
-//bool FilePathManager::delete_database(
-//        const string & database_name)
-//{
-//    auto db_it = m_table_count_map.find(database_name);
-//    if (db_it != m_table_count_map.end())
-//    {
-//        // 数据库存在
-//        fs::path db_path = m_default_base_path + "/" + database_name;
-//        if (fs::exists(db_path) && fs::is_directory(db_path))
-//        {
-//            fs::remove_all(db_path);
-//        }
-//    }
-//
-//    return m_table_count_map.erase(database_name) == 1;
-//}
-//
-//bool FilePathManager::delete_table(
-//        string & table_name,
-//        string & databases_name)
-//{
-//
-//}
 
-bool FilePathManager::delete_file(const string & file_path)
+/**
+ * 删除数据库
+ */
+bool FilePathManager::delete_database(
+        const string & database_name)
 {
-//    if (remove(file_path.c_str()) != 0)
-//    {
-//        std::cerr << "Error : Filed to delete file " << file_path << std::endl;
-//        return false;
-//    }
-//    m_file_map.erase(file_path);
+    auto db_it = m_map.find(database_name);
+    if (db_it != m_map.end())
+    {
+        // 数据库存在
+        fs::path db_path = m_default_base_path + "/" + database_name;
+        if (fs::exists(db_path) && fs::is_directory(db_path))
+        {
+            try
+            {
+                fs::remove_all(db_path);  // 移除文件夹以及里面的所有内容
+                return true;
+            }
+            catch (const std::exception & e)
+            {
+                std::cerr << "Error: " << e.what() << std::endl;
+                return false;
+            }
+        }
+        else
+        {
+            std::cout << "Folder does not exist, no action taken." << std::endl;
+            return false;
+        }
+    }
+
+    // 移除库记录
+    return m_map.erase(database_name) == 1;
+}
+
+/**
+ * 删除表
+ */
+bool FilePathManager::delete_table(
+        const string & table_name,
+        const string & databases_name)
+{
+    auto db_it = m_map.find(databases_name);
+    if (db_it != m_map.end())  // 数据库存在
+    {
+        auto tb_it = db_it->second.find(table_name);
+        if (tb_it != db_it->second.end())  // 表也存在
+        {
+            // 拿取list 开始删除所有表对应文件
+            auto & file_list = tb_it->second.m_files;
+            string file_path;
+            for (string & item : file_list)
+            {
+                try
+                {
+                    file_path = m_default_base_path + "/" + table_name + "/" + item;
+                    if (fs::exists(file_path) && fs::is_regular_file(file_path))  // 存在且是文件
+                    {
+                        fs::remove(file_path);
+                    }
+                    else
+                    {
+                        std::cout << "File does not exist, no action taken." << std::endl;
+                    }
+                }
+                catch (const std::exception & e)
+                {
+                    std::cerr << "Error: " << e.what() << std::endl;
+                }
+            }
+        }
+    }
+
+    // 移除表记录
+    return m_map[databases_name].erase(table_name) == 1;
+}
+
+
+/**
+ * 删除文件
+ */
+bool FilePathManager::delete_file(
+        const string & file_name,
+        const string & table_name,
+        const string & database_name)
+{
+    auto db_it = m_map.find(database_name);
+    if (db_it != m_map.end())
+    {
+        auto tb_it = db_it->second.find(table_name);
+        if (tb_it != db_it->second.end())
+        {
+            auto & file_list = tb_it->second.m_files;
+            auto file_it = std::find(file_list.begin(), file_list.end(), file_name);
+
+            if (file_it != file_list.end())  // 文件存在
+            {
+                try
+                {
+                    string file_path = m_default_base_path + "/" + table_name + "/" + file_name;
+                    if (fs::exists(file_path) && fs::is_regular_file(file_path))  // 存在且是文件
+                    {
+                        fs::remove(file_path);  // 移除文件
+                        return true;
+                    }
+                    else
+                    {
+                        std::cout << "File does not exist, no action taken." << std::endl;
+                        return false;
+                    }
+                }
+                catch (const std::exception & e)
+                {
+                    std::cerr << "Error: " << e.what() << std::endl;
+                    return false;
+                }
+            }
+            else
+            {
+                std::cout << "File does not exist, no action taken." << std::endl;
+            }
+        }
+        else
+        {
+            std::cerr << "Error : cannot find table '" << table_name << "' " << std:: endl;
+        }
+    }
+    else
+    {
+        std::cerr << "Error : cannot find database '" << database_name << "' " << std:: endl;
+    }
+    return false;
 }

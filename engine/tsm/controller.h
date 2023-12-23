@@ -11,11 +11,13 @@ namespace dt::tsm
 {
     /**
      * 控制层
+     *
+     * 管理所有数据库
      */
     class Controller : IEngine
     {
     public:
-        bool insert(high_resolution_clock::time_point timestamp, string value, Type type, string & field_name) override;
+        bool insert(high_resolution_clock::time_point timestamp, string value, Type type, string & field_name, string & measurement, string & database_name) override;
         bool update(high_resolution_clock::time_point timestamp, string value, Type type, string & table_name) override;
 
         bool get_next_data(string & data) override;
@@ -24,7 +26,20 @@ namespace dt::tsm
         bool get_range_datas(std::vector<string> tags, std::vector<string> datas) override;
 
     private:
-        Write m_write;
+        struct Table
+        {
+            // 一个write 负责一个表的全部写入
+            std::shared_ptr<Write> m_writer;
+        };
+
+        struct Database
+        {
+            string                       m_name;
+            std::map<string, Table>      m_table_map;
+        };
+
+        //       db_name
+        std::map<string, Database>  m_map;
     };
 }
 
