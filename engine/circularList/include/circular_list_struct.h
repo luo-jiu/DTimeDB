@@ -58,6 +58,7 @@ namespace clt
     };
     //表结构，列
     class Column{
+        friend class Table;
     private:
         string                        name;
        DATA_TYPE            type;
