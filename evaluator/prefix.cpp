@@ -5,12 +5,13 @@ using namespace dt::evaluator;
 /**
  * 前缀表达式求值
  */
-std::shared_ptr<Object> Evaluator::eval_prefix(
+std::shared_ptr<ExecutionPlanNode> Evaluator::eval_prefix(
         const std::shared_ptr<ast::Prefix> & node,
-        Environment * env)
+        Environment * env,
+        const std::shared_ptr<ExecutionPlanNode> & root)
 {
     string op = node->m_operator;
-    auto right = eval(node->m_right, env);
+    auto right = eval(node->m_right, env, root);
     if (is_error(right))
     {
         return right;
@@ -30,14 +31,14 @@ std::shared_ptr<Object> Evaluator::eval_prefix(
 /**
  * 对'-' 求值
  */
-std::shared_ptr<Object> Evaluator::eval_minus_prefix_expression(
-        const std::shared_ptr<Object> & right)
+std::shared_ptr<ExecutionPlanNode> Evaluator::eval_minus_prefix_expression(
+        const std::shared_ptr<ExecutionPlanNode> & right)
 {
     switch (right->type())
     {
-        case Object::OBJECT_INTEGER:
+        case ExecutionPlanNode::OBJECT_INTEGER:
         {
-            auto r = std::dynamic_pointer_cast<object::Integer>(right);
+            auto r = std::dynamic_pointer_cast<execution::Integer>(right);
             return new_integer(-(r->m_value));
         }
         default:

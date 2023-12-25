@@ -1,13 +1,13 @@
-#include <object/object.h>
-#include <object/integer.h>
-#include <object/float.h>
-#include <object/error.h>
-#include <object/string.h>
-#include <object/null.h>
+#include <execution_plan/node.h>
+#include <execution_plan/integer.h>
+#include <execution_plan/float.h>
+#include <execution_plan/error.h>
+#include <execution_plan/string.h>
+#include <execution_plan/null.h>
 #include <cstdarg>
-using namespace dt::object;
+using namespace dt::execution;
 
-std::map<Object::Type, string> Object::m_names = {
+std::map<ExecutionPlanNode::Type, string> ExecutionPlanNode::m_names = {
         {OBJECT_ERROR,       "error"},
         {OBJECT_STRING,      "string"},
         {OBJECT_INTEGER,     "integer"},
@@ -15,7 +15,7 @@ std::map<Object::Type, string> Object::m_names = {
         {OBJECT_NULL,        "null"},
 };
 
-string Object::name() const
+string ExecutionPlanNode::name() const
 {
     auto it = m_names.find(m_type);
     if (it != m_names.end())
@@ -25,7 +25,7 @@ string Object::name() const
     return "";
 }
 
-std::shared_ptr<Object> Object::new_error(const char * format, ...)
+std::shared_ptr<ExecutionPlanNode> ExecutionPlanNode::new_error(const char * format, ...)
 {
     char buf[1024] = {0};
     va_list arg_ptr;
@@ -37,22 +37,22 @@ std::shared_ptr<Object> Object::new_error(const char * format, ...)
     return obj;
 }
 
-std::shared_ptr<Object> Object::new_string(string & value)
+std::shared_ptr<ExecutionPlanNode> ExecutionPlanNode::new_string(string & value)
 {
     return std::make_shared<String>(value);
 }
 
-std::shared_ptr<Object> Object::new_integer(int64_t value)
+std::shared_ptr<ExecutionPlanNode> ExecutionPlanNode::new_integer(int64_t value)
 {
     return std::make_shared<Integer>(value);
 }
 
-std::shared_ptr<Object> Object::new_float(float value)
+std::shared_ptr<ExecutionPlanNode> ExecutionPlanNode::new_float(float value)
 {
     return std::make_shared<Float>(value);
 }
 
-std::shared_ptr<Object> Object::new_null()
+std::shared_ptr<ExecutionPlanNode> ExecutionPlanNode::new_null()
 {
     return std::make_shared<Null>();
 }

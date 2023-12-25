@@ -1,6 +1,15 @@
 #ifndef DTIMEDB_EXECUTOR_H
 #define DTIMEDB_EXECUTOR_H
 
+#include <lexer/lexer.h>
+using namespace dt::lexer;
+
+#include <parser/parser.h>
+using namespace dt::parser;
+
+#include <evaluator/evaluator.h>
+using namespace dt::evaluator;
+
 #include <engine/iengine/iengine.h>
 using namespace dt::iengine;
 
@@ -19,16 +28,14 @@ namespace dt::executor
     class Executor
     {
     public:
-
-
-    private:
-
-
+        std::shared_ptr<Program> generate_ast_tree(string & sql);
+        void generate_execute_plan(string & sql);
+        void execute_plan(const std::shared_ptr<ExecutionPlanNode> & node);
 
         bool insert();
 
     private:
-        std::unique_ptr<IEngine> m_engine;
+        std::shared_ptr<IEngine>    m_engine;  // 引擎接口
     };
 }
 

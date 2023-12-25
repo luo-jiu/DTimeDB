@@ -6,15 +6,14 @@ using namespace std::chrono;
 
 std::shared_ptr<Expression> Parser::parse_insert()
 {
-    // insert into from school,class='高一2班' '温度'=21, '湿度'=72.1 1702880186879347823
+    // insert into school,class='高一2班' '温度'=21, '湿度'=72.1 1702880186879347823
     std::shared_ptr<Insert> e = std::make_shared<Insert>();
     e->m_token = m_curr;
     next_token();  // 跳过insert 关键字
-    if (m_curr.type() == Token::TOKEN_INTO && peek_token_is(Token::TOKEN_FROM))  // into from
+    if (m_curr.type() == Token::TOKEN_INTO && peek_token_is(Token::TOKEN_IDENTIFIER))  // into
     {
         next_token();
-        next_token();
-        e->m_from = parse_string();
+        e->m_from = m_curr.literal();
         next_token();
 
         if(m_curr.type() == Token::TOKEN_COMMA)  // token 是否为','
@@ -50,17 +49,17 @@ std::shared_ptr<Expression> Parser::parse_insert()
             {
                 case Token::TOKEN_STRING:
                 {
-                    e->m_values.push_back(parse_string());
+                    e->m_values.push_back(m_curr.literal());
                     break;
                 }
                 case Token::TOKEN_INTEGER:
                 {
-                    e->m_values.push_back(parse_integer());
+                    e->m_values.push_back(m_curr.literal());
                     break;
                 }
                 case Token::TOKEN_FLOAT:
                 {
-                    e->m_values.push_back(parse_float());
+                    e->m_values.push_back(m_curr.literal());
                     break;
                 }
                 default:
@@ -99,7 +98,7 @@ std::shared_ptr<Expression> Parser::parse_insert()
     else
     {
         std::ostringstream oss;
-        oss << "Error : insert '"<< m_curr.literal() <<"' Syntax error";
+        oss << "Error : insert.cpp '"<< m_curr.literal() <<"' Syntax error";
         m_errors.push_back(oss.str());
     }
 }

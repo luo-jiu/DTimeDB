@@ -2,32 +2,29 @@
 
 #include <ast/node.h>
 
-namespace dt
+namespace dt::ast
 {
-    namespace ast
+    class Program : public Statement
     {
-        class Program : public Statement
+    public:
+        Program(): Statement(NODE_PROGRAM) {}
+        ~Program() {}
+
+        virtual Json json()
         {
-        public:
-            Program(): Statement(NODE_PROGRAM) {}
-            ~Program() {}
+            Json json;
+            json["type"] = name();
 
-            virtual Json json()
+            Json statements;
+            for (auto & stat : m_statements)
             {
-                Json json;
-                json["type"] = name();
-
-                Json statements;
-                for (auto & stat : m_statements)
-                {
-                    statements.append(stat->json());
-                }
-                json["statements"] = statements;
-                return json;
+                statements.append(stat->json());
             }
+            json["statements"] = statements;
+            return json;
+        }
 
-        public:
-            std::list<std::shared_ptr<Statement>> m_statements;
-        };
-    }
+    public:
+        std::list<std::shared_ptr<Statement>> m_statements;
+    };
 }

@@ -13,20 +13,31 @@ using namespace dt::evaluator;
 #include <engine/file_manager/file_path_manager.h>
 using namespace dt::tsm;
 
+#include <executor/executor.h>
+using namespace dt::executor;
+
 #include <iostream>
 using std::string;
 
 int main() {
-    string table_name = "school";
-    string temp = "tsm";
+    string sql = "select * from school where age > 10";
 
-    FilePathManager file_path_manager("./../dbs");
+    Executor executor;
 
-    for(int i = 10; i > 0; i--)
-    {
-        string filePath = file_path_manager.create_file(table_name, temp);
-        std::cout << "File created at: " << filePath << std::endl;
-    }
+    executor.generate_execute_plan(sql);
+
+
+
+//    string table_name = "school";
+//    string temp = "tsm";
+//
+//    FilePathManager file_path_manager("./../dbs");
+//
+//    for(int i = 10; i > 0; i--)
+//    {
+//        string filePath = file_path_manager.create_file(table_name, temp);
+//        std::cout << "File created at: " << filePath << std::endl;
+//    }
 
 
     // 假设其他操作...

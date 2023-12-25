@@ -200,6 +200,12 @@ Token Lexer::next_token()
     }
 }
 
+void Lexer::set_input(
+        string & sql)
+{
+    m_input = sql;
+}
+
 /**
  * 跳过无用字符
  */

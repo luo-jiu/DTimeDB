@@ -24,7 +24,7 @@ namespace dt
             ~Lexer() = default;
 
             Token next_token();
-
+            void set_input(string & sql);
         private:
             void skip_white_space();
             void read_char();

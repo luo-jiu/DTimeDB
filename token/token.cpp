@@ -32,11 +32,12 @@ std::map<Token::Type, string> Token::m_names = {
         {TOKEN_IDENTIFIER,      "identifier"},
         {TOKEN_NULL,            "null"},
         {TOKEN_DATABASE,        "database"},
+        {TOKEN_DATABASES,        "databases"},
         {TOKEN_ENGINE,          "engine"},
         {TOKEN_TABLE,           "table"},
         {TOKEN_USE,             "use"},
         {TOKEN_CREATE,          "create"},
-        {TOKEN_INSERT,          "insert"},
+        {TOKEN_INSERT,          "insert.cpp"},
         {TOKEN_INTO,            "into"},
         {TOKEN_UPDATE,          "update"},
         {TOKEN_SELECT,          "select"},
@@ -45,6 +46,9 @@ std::map<Token::Type, string> Token::m_names = {
         {TOKEN_WHERE,           "m_where"},
         {TOKEN_TTL,             "ttl"},
         {TOKEN_TIME,            "time"},
+
+        {TOKEN_TSM,             "tsm"},
+        {TOKEN_CLT,             "clt"},
 };
 
 /**
@@ -52,6 +56,7 @@ std::map<Token::Type, string> Token::m_names = {
  */
 std::map<string, Token::Type> Token::m_keywords = {
         {"null",            TOKEN_NULL},
+        {"database",        TOKEN_DATABASE},
         {"databases",       TOKEN_DATABASE},
         {"table",           TOKEN_TABLE},
         {"use",             TOKEN_USE},
@@ -63,13 +68,16 @@ std::map<string, Token::Type> Token::m_keywords = {
         {"update",          TOKEN_UPDATE},
         {"select",          TOKEN_SELECT},
 
-        {"from",          TOKEN_FROM},
-        {"where",         TOKEN_WHERE},
+        {"from",            TOKEN_FROM},
+        {"where",           TOKEN_WHERE},
         {"ttl",             TOKEN_TTL},
         {"time",            TOKEN_TIME},
 
         {"and",             TOKEN_AND},
         {"or",              TOKEN_OR},
+
+        {"tsm",             TOKEN_TSM},
+        {"clt",             TOKEN_CLT},
 };
 
 Token::Token(): m_type(TOKEN_ILLEGAL)

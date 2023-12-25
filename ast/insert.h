@@ -15,7 +15,7 @@ namespace dt::ast
         {
             Json json;
             json["type"] = name();
-            json["from"] = m_from->json();
+            json["from"] = m_from;
 
             Json clause_tags;
             for (auto & cla : m_tags)
@@ -34,7 +34,7 @@ namespace dt::ast
             Json clause_values;
             for (auto & cla : m_values)
             {
-                clause_values.append(cla->json());
+                clause_values.append(cla);
             }
             json["values"] = clause_values;
 
@@ -43,10 +43,10 @@ namespace dt::ast
         }
 
     public:
-        std::shared_ptr<Expression>                 m_from;
+        string                                      m_from;
         std::list<string>                           m_tags;       // 标签集合
         std::list<string>                           m_fields;     // 字段集合
-        std::list<std::shared_ptr<Expression>>      m_values;     // 值集合
+        std::list<string>                           m_values;     // 值集合
         string                                      m_timestamp;  // timestamp
     };
 }

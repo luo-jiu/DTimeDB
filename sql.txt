@@ -1,2 +1,1 @@
-select * from user where age > 16 and age < 20
-
+use xxx;

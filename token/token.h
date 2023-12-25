@@ -47,12 +47,13 @@ namespace dt
                 TOKEN_NULL,            // null
 
                 TOKEN_DATABASE,        // database
+                TOKEN_DATABASES,       // databases
                 TOKEN_TABLE,           // table
                 TOKEN_ENGINE,          // engine
                 TOKEN_USE,             // use
                 TOKEN_CREATE,          // create
 
-                TOKEN_INSERT,          // insert
+                TOKEN_INSERT,          // insert.cpp
                 TOKEN_INTO,            // into
                 TOKEN_UPDATE,          // update
                 TOKEN_SELECT,          // select
@@ -61,6 +62,9 @@ namespace dt
                 TOKEN_FROM,            // m_from
                 TOKEN_WHERE,           // m_where
                 TOKEN_TIME,            // time
+
+                TOKEN_TSM,             // tsm
+                TOKEN_CLT,             // clt
 
             };
 

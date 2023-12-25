@@ -2,29 +2,26 @@
 
 #include <ast/node.h>
 
-namespace dt
+namespace dt::ast
 {
-    namespace ast
+    /**
+     * 关键字节点
+     */
+    class Identifier : public Expression
     {
-        /**
-         * 关键字节点
-         */
-        class Identifier : public Expression
+    public:
+        Identifier(): Expression(NODE_IDENTIFIER) {}
+        ~Identifier() {}
+
+        virtual Json json()
         {
-        public:
-            Identifier(): Expression(NODE_IDENTIFIER) {}
-            ~Identifier() {}
+            Json json;
+            json["type"] = name();
+            json["value"] = m_value;
+            return json;
+        }
 
-            virtual Json json()
-            {
-                Json json;
-                json["type"] = name();
-                json["value"] = m_value;
-                return json;
-            }
-
-        public:
-            string m_value;
-        };
-    }
+    public:
+        string m_value;
+    };
 }

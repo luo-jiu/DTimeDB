@@ -1,8 +1,8 @@
 #ifndef DTIMEDB_ENVIRONMENT_H
 #define DTIMEDB_ENVIRONMENT_H
 
-#include <object/object.h>
-using namespace dt::object;
+#include <execution_plan/node.h>
+using namespace dt::execution;
 
 namespace dt::evaluator
 {
@@ -16,7 +16,7 @@ namespace dt::evaluator
         /**
          * 存放变量名和值
          */
-        void set(const std::string & name, const std::shared_ptr<Object> & value)
+        void set(const std::string & name, const std::shared_ptr<ExecutionPlanNode> & value)
         {
             m_store[name] = value;
         }
@@ -24,7 +24,7 @@ namespace dt::evaluator
         /**
          * 通过变量名获取变量的值
          */
-        std::shared_ptr<Object> get(const std::string & name)
+        std::shared_ptr<ExecutionPlanNode> get(const std::string & name)
         {
             auto it = m_store.find(name);
             if (it != m_store.end())
@@ -77,7 +77,7 @@ namespace dt::evaluator
 
     private:
         //       变量名        变量值
-        std::map<std::string, std::shared_ptr<Object>>      m_store;
+        std::map<std::string, std::shared_ptr<ExecutionPlanNode>>      m_store;
         Environment *                                       m_outer;  // 外层环境变量
 
     };

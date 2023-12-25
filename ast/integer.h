@@ -2,29 +2,26 @@
 
 #include <ast/node.h>
 
-namespace dt
+namespace dt::ast
 {
-    namespace ast
+    /**
+     * 整形节点定义
+     */
+    class Integer : public Expression
     {
-        /**
-         * 整形节点定义
-         */
-        class Integer : public Expression
+    public:
+        Integer(): Expression(NODE_INTEGER) {}
+        ~Integer() {}
+
+        virtual Json json()
         {
-        public:
-            Integer(): Expression(NODE_INTEGER) {}
-            ~Integer() {}
+            Json json;
+            json["type"] = name();
+            json["value"] = std::to_string(m_value);
+            return json;
+        }
 
-            virtual Json json()
-            {
-                Json json;
-                json["type"] = name();
-                json["value"] = std::to_string(m_value);
-                return json;
-            }
-
-        public:
-            int64_t m_value;
-        };
-    }
+    public:
+        int64_t m_value;
+    };
 }

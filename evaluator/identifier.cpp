@@ -1,7 +1,7 @@
 #include <evaluator/evaluator.h>
 using namespace dt::evaluator;
 
-std::shared_ptr<Object> Evaluator::eval_identifier(
+std::shared_ptr<ExecutionPlanNode> Evaluator::eval_identifier(
         const std::shared_ptr<ast::Identifier> & node,
         Environment * env)
 {
