@@ -22,14 +22,27 @@ add_executable(ast ${SOURCES} ast.cpp
         engine/circularList/include/circular_tools.h
         engine/circularList/test/CircularListTest.cpp
         engine/circularList/include/circular_list_header.h
-        pool/buffer_pool.cpp
-        pool/buffer_pool.h
-        engine/circularList/include/page/page.h
-        engine/circularList/include/table/tuple.h
-        engine/circularList/include/table/tuple.h
+        engine/circularList/include/storage/page/page.h
+        engine/circularList/include/storage/table/tuple.h
         engine/circularList/include/type/value.h
         engine/circularList/storage/disk/disk_manager.cpp
-        engine/circularList/include/disk/disk_manager.h
+        engine/circularList/include/storage/disk/disk_manager.h
+        engine/circularList/include/buffer/lru_replacer.h
+        engine/circularList/include/storage/table/table.h
+        engine/circularList/include/storage/table/table_iterator.h
+        engine/circularList/include/storage/table/table_heap.h
+        engine/circularList/include/common/rwlatch.h
+        engine/circularList/include/catalog/column.h
+        engine/circularList/include/catalog/schema.h
+        engine/circularList/include/catalog/catalog.h
+        engine/circularList/include/storage/page/circular_list_page.h
+        engine/circularList/include/common/config.h
+        engine/circularList/storage/table/table.cpp
+        engine/circularList/recovery/log_manager.h
+        engine/circularList/include/type/type_id.h
+        engine/circularList/include/common/get_timestamp.h
+        engine/circularList/catelog/schema.cpp
+        engine/circularList/include/catalog/table_generator.h
 )
 
 #add_executable(ast ${SOURCES} ast.cpp)

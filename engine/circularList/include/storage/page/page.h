@@ -7,6 +7,9 @@
 namespace ctl{
     class Page{
     public:
+        Page(){}
+        ~Page()=default;
+    private:
 
     };
 }
