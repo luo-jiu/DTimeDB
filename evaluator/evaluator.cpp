@@ -63,8 +63,17 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval(
         }
         case Node::NODE_USE:  // use 处理
         {
-            auto s = std::dynamic_pointer_cast<ast::Use>(node);
-            return eval_use(s, env, root);
+            auto use = std::dynamic_pointer_cast<ast::Use>(node);
+            auto u = eval_use(use);
+            root->set_child(u);
+            return u;
+        }
+        case Node::NODE_CREATE:  // create 处理
+        {
+            auto create = std::dynamic_pointer_cast<ast::Create>(node);
+            auto c = eval_create(create);
+            root->set_child(c);
+            return c;
         }
         case Node::NODE_SELECT:  // select 处理
         {
@@ -72,12 +81,11 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval(
 
             // 解析field
 
-
             auto where = eval(select->m_where, env, root);  // 解析where
 
             return eval(select, env, root);
         }
-        case Node::NODE_INSERT:  // insert.cpp 处理
+        case Node::NODE_INSERT:  // insert 处理
         {
             auto insert = std::dynamic_pointer_cast<ast::Insert>(node);
             auto child = eval_insert(insert);

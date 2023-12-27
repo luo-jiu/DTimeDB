@@ -17,18 +17,44 @@ namespace dt::execution
 
         virtual string str() const { return ""; }
         void execute(std::shared_ptr<IEngine> engine) override {}
-
-        std::shared_ptr<ExecutionPlanNode> get_child() const override
-        {
-            return m_child;
-        }
-        void set_child(std::shared_ptr<ExecutionPlanNode> child) override
-        {
-            m_child = child;
-        }
+        std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
+        void set_child(std::shared_ptr<ExecutionPlanNode> child) override { m_child = child; }
 
     public:
         std::shared_ptr<ExecutionPlanNode>     m_child;
+    };
+
+    /**
+     * 创建节点
+     */
+    class CreateNode : public ExecutionPlanNode
+    {
+    public:
+        virtual string str() const { return ""; }
+        void execute(std::shared_ptr<IEngine> engine) override { std::cout << "create:" << m_type << ", m_name:" << m_name << std::endl; }
+        std::shared_ptr<ExecutionPlanNode> get_child() const override {}
+        void set_child(std::shared_ptr<ExecutionPlanNode> child) override {}
+
+    public:
+        string m_type;  // database or table
+        string m_name;
+    };
+
+    /**
+     * 选择数据库
+     */
+    class UseNode : public ExecutionPlanNode
+    {
+    public:
+        UseNode() : ExecutionPlanNode(OBJECT_USE) {}
+
+        virtual string str() const { return ""; }
+        void execute(std::shared_ptr<IEngine> engine) override { std::cout << "use :" << m_database << std::endl; }
+        std::shared_ptr<ExecutionPlanNode> get_child() const override {}
+        void set_child(std::shared_ptr<ExecutionPlanNode> child) override {}
+
+    public:
+        string m_database;
     };
 
     /**
@@ -47,15 +73,10 @@ namespace dt::execution
         ScanNode(const string & table_name) : ExecutionPlanNode(OBJECT_SCAN), m_table_name(table_name) {}
         ~ScanNode() {}
 
-        virtual string str() const
-        {
-            return m_table_name;
-        }
-        void execute(std::shared_ptr<IEngine> engine) override {}
-        void set_child(std::shared_ptr<ExecutionPlanNode> & child)
-        {
-            m_child = child;
-        }
+        virtual string str() const { return m_table_name; }
+        void execute(std::shared_ptr<IEngine> engine) override { std::cout << "scan : " << m_table_name << std::endl; }
+        std::shared_ptr<ExecutionPlanNode> get_child() const override {}
+        void set_child(std::shared_ptr<ExecutionPlanNode> & child) { m_child = child; }
 
     public:
         string                                 m_table_name;
@@ -74,15 +95,9 @@ namespace dt::execution
         FilterNode(const string & condition) : m_condition(condition), ExecutionPlanNode(OBJECT_FILTER) {}
 
         virtual string str() const { return ""; }
-        void execute(std::shared_ptr<IEngine> engine) override {}
-        std::shared_ptr<ExecutionPlanNode> get_child() const override
-        {
-            return m_child;
-        }
-        void set_child(std::shared_ptr<ExecutionPlanNode> child) override
-        {
-            m_child = child;
-        }
+        void execute(std::shared_ptr<IEngine> engine) override { std::cout << "filter : " << std::endl; }
+        std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
+        void set_child(std::shared_ptr<ExecutionPlanNode> child) override { m_child = child; }
 
     public:
         string                                  m_condition;
@@ -95,15 +110,10 @@ namespace dt::execution
     class ProjectNode : public ExecutionPlanNode
     {
     public:
-
-        std::shared_ptr<ExecutionPlanNode> get_child() const override
-        {
-            return m_child;
-        }
-        void set_child(std::shared_ptr<ExecutionPlanNode> child) override
-        {
-            m_child = child;
-        }
+        virtual string str() const { return ""; }
+        void execute(std::shared_ptr<IEngine> engine) override { std::cout << "project : " << std::endl; }
+        std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
+        void set_child(std::shared_ptr<ExecutionPlanNode> child) override { m_child = child; }
 
     public:
         std::shared_ptr<ExecutionPlanNode>      m_child;
@@ -127,14 +137,8 @@ namespace dt::execution
         void set_type(Type type) { m_type = type; }
         void set_table(const string & table) { m_table = table; }
         void set_timestamp(const string & timestamp) { m_timestamp = timestamp; }
-        void add_tag(string & tag)
-        {
-            m_tags.push_back(tag);
-        }
-        void add_field(string & fv)
-        {
-            m_fv.push_back(fv);
-        }
+        void add_tag(string & tag) { m_tags.push_back(tag); }
+        void add_field(string & fv) { m_fv.push_back(fv); }
 
         virtual string str() const {return ""; }
         // 执行任务
@@ -159,14 +163,8 @@ namespace dt::execution
                 engine->insert(timestamp, value, IEngine::Type::DATA_STREAM, field, m_table, db);
             }
         }
-        std::shared_ptr<ExecutionPlanNode> get_child() const override
-        {
-            return m_child;
-        }
-        void set_child(std::shared_ptr<ExecutionPlanNode> child) override
-        {
-            m_child = child;
-        }
+        std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
+        void set_child(std::shared_ptr<ExecutionPlanNode> child) override { m_child = child; }
 
     public:
         Type                                    m_type;  // 引擎类型

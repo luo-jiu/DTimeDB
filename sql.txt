@@ -1,1 +1,2 @@
-use xxx;
+create database xxx
+use xxx

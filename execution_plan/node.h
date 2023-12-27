@@ -28,6 +28,7 @@ namespace dt::execution
 
             // 操作符
             OBJECT_ROOT,
+            OBJECT_USE,
             OBJECT_SCAN,
             OBJECT_FILTER,
             OBJECT_PROJECT,

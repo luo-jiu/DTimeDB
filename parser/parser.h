@@ -65,6 +65,7 @@ namespace dt::parser
         std::shared_ptr<Expression> parse_null();
         std::shared_ptr<Expression> parse_identifier();
 
+        std::shared_ptr<Expression> parse_use();
         std::shared_ptr<Expression> parse_create();
         std::shared_ptr<Expression> parse_select();
         std::shared_ptr<Expression> parse_insert();

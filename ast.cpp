@@ -26,13 +26,16 @@ int main()
     std::shared_ptr<Executor> executor(new Executor());
 
     // 构建ast
-    auto program = parser->parse_program();
+    std::shared_ptr<Program> program = parser->parse_program();
+    auto ps = program->m_statements;
+    for (auto & p : ps)
+    {
+        // 递归构建执行计划
+        evaluator->eval(p, env.get(), root);
 
-    // 递归构建执行计划
-    evaluator->eval(program, env.get(), root);
-
-    // 递归运行执行计划
-//    executor->execute_plan(root);
+        // 递归运行执行计划
+        executor->execute_plan(root);
+    }
 
     Json json = program->json();
 

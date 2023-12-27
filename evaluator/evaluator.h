@@ -37,6 +37,7 @@ namespace dt::evaluator
         std::shared_ptr<ExecutionPlanNode> eval_identifier(const std::shared_ptr<ast::Identifier> & node, Environment * env);
 
         std::shared_ptr<ExecutionPlanNode> eval_use(const std::shared_ptr<Use> & node);
+        std::shared_ptr<ExecutionPlanNode> eval_create(const std::shared_ptr<ast::Create> & node);
         std::shared_ptr<ExecutionPlanNode> eval_insert(const std::shared_ptr<ast::Insert> & node);
         std::shared_ptr<ExecutionPlanNode> eval_select(const std::shared_ptr<ast::Select> & node);
 
@@ -47,6 +48,8 @@ namespace dt::evaluator
         // 中缀表达式求值
         std::shared_ptr<ExecutionPlanNode> eval_infix(const string & op, const std::shared_ptr<ExecutionPlanNode> & left, const std::shared_ptr<ExecutionPlanNode> & right);
         std::shared_ptr<ExecutionPlanNode> eval_string_infix_expression(const string & op, const std::shared_ptr<ExecutionPlanNode> & left, const std::shared_ptr<ExecutionPlanNode> & right);
+
+    public:
 
     };
 }
