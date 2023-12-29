@@ -2,6 +2,52 @@
 using namespace dt::tsm;
 
 /**
+ * 创建数据库
+ *
+ * 其实就是在真实的文件系统上创建了一个文件夹
+ */
+bool Controller::create_database(
+        string & db_name)
+{
+    auto path = m_file.create_database(db_name);
+    if (!path.empty())
+    {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * 确保在该数据库上下文进行操作
+ */
+bool Controller::use_database(
+        string & db_name)
+{
+    // 暂时想不到做啥
+}
+
+/**
+ * 创建表
+ * @param tb_name
+ * @return
+ */
+bool Controller::create_table(
+        string & tb_name,
+        string & db_name)
+{
+    // 先判断表是否已经存在
+    if (m_file.exists_table(tb_name, db_name))
+    {
+        // 表已经存在
+        std::cout << tb_name << " exists" << std::endl;
+        return false;
+    }
+
+    // 创建表
+    return m_file.create_table(tb_name, db_name, "tsm");
+}
+
+/**
  * 插入数据操作
  * @param file_path 文件路径
  * @return 操作是否成功
@@ -12,10 +58,10 @@ bool Controller::insert(
         Type type,
         string & field_name,
         string & measurement,
-        string & databases_name)
+        string & db_name)
 {
     // 拿取出对应表的writer
-    auto db_it = m_map.find(databases_name);
+    auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())
     {
         auto tb_it = db_it->second.m_table_map.find(measurement);
@@ -42,7 +88,7 @@ bool Controller::insert(
                 return false;
             }
 
-            writer.m_writer->write(timestamp, value, _type, field_name, databases_name);  // 写入
+            writer.m_writer->write(timestamp, value, _type, field_name, db_name);  // 写入
             return true;
         }
     }

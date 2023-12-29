@@ -1,6 +1,9 @@
 #ifndef DTIMEDB_CONTROLLER_H
 #define DTIMEDB_CONTROLLER_H
 
+#include <engine/file_manager/file_path_manager.h>
+using namespace dt::file;
+
 #include <engine/iengine/iengine.h>
 using namespace dt::iengine;
 
@@ -14,10 +17,14 @@ namespace dt::tsm
      *
      * 管理所有数据库
      */
-    class Controller : IEngine
+    class Controller : public IEngine
     {
     public:
-        bool insert(high_resolution_clock::time_point timestamp, string value, Type type, string & field_name, string & measurement, string & database_name) override;
+        bool create_database(string & db_name) override;
+        bool use_database(string & db_name) override;
+        bool create_table(string & tb_name, string & db_name) override;
+
+        bool insert(high_resolution_clock::time_point timestamp, string value, Type type, string & field_name, string & measurement, string & db_name) override;
         bool update(high_resolution_clock::time_point timestamp, string value, Type type, string & table_name) override;
 
         bool get_next_data(string & data) override;
@@ -40,6 +47,7 @@ namespace dt::tsm
 
         //       db_name
         std::map<string, Database>  m_map;
+        FilePathManager             m_file;  // 文件管理器
     };
 }
 

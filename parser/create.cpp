@@ -11,7 +11,6 @@ std::shared_ptr<Expression> Parser::parse_create()
         e->m_type = Create::CREATE_DATABASE;
         e->m_name = m_peek.literal();
         next_token();
-        next_token();
         return e;
     }
     else if (m_curr.type() == Token::TOKEN_TABLE)

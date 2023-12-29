@@ -1,5 +1,5 @@
 #include <engine/file_manager/file_path_manager.h>
-using namespace dt::tsm;
+using namespace dt::file;
 
 #include <algorithm>
 
@@ -11,10 +11,10 @@ namespace fs = std::filesystem;
  * @return 文件夹路径
  */
 string FilePathManager::create_database(
-        const string & database_name)
+        const string & db_name)
 {
     // 数据库路径
-    string db_path = m_default_base_path + "/" + database_name;
+    string db_path = m_default_base_path + "/" + db_name;
 
     // 检查路径是否已经存在
     if (!fs::exists(db_path))
@@ -23,7 +23,7 @@ string FilePathManager::create_database(
         fs::create_directory(db_path);
 
         // 初始化数据库条目,如果已经存在,这行代码不会有任何影响
-        m_map[database_name] = std::map<string, TableInfo>();
+        m_map[db_name] = std::map<string, TableInfo>();
 
         return db_path;
     }
@@ -36,24 +36,52 @@ string FilePathManager::create_database(
 
 /**
  * 创建表
- * @param table_name
- * @param database_name
  * @return 返回表名
  */
 bool FilePathManager::create_table(
-        const string & table_name,
-        const string & database_name)
+        const string & tb_name,
+        const string & db_name,
+        const string & engine)
 {
     // 检查数据库是否存在
-    if (m_map.find(database_name) == m_map.end())
+    if (m_map.find(db_name) == m_map.end())
     {
         std::cout << "Database does not exist\n";
         return false;
     }
 
     // 创建表(不用对真实的文件或文件夹进行操作, 是抽象出来的)
-    m_map[database_name][table_name] = TableInfo{INT64_MAX, std::list<string>()};
+    m_map[db_name][tb_name] = TableInfo{INT64_MAX, engine, std::list<string>()};
     return true;
+}
+
+/**
+ * 判断表是否存在
+ *
+ * 其实还可以顺手判断数据库是否存在
+ */
+bool FilePathManager::exists_table(
+        const string & tb_name,
+        const string & db_name)
+{
+    auto db_it = m_map.find(db_name);
+    if (db_it != m_map.end())
+    {
+        auto tb_info_it = db_it->second.find(tb_name);
+        if (tb_info_it != db_it->second.end())
+        {
+            return true;
+        }
+        else
+        {
+            std::cout << "cannot find table:'" << tb_name << "'" << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "cannot find database:'" << db_name << "'" << std::endl;
+    }
+    return false;
 }
 
 /**
@@ -62,21 +90,21 @@ bool FilePathManager::create_table(
  * @return 文件路径
  */
 string FilePathManager::create_file(
-        const string & table_name,
-        const string & database_name,
+        const string & tb_name,
+        const string & db_name,
         const string & engine_abbrev)
 {
     // 先判断库是否存在
-    auto db_it = m_map.find(database_name);
+    auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())  // 数据库存在
     {
         // 判断表是否存在
-        auto tb_info_it = db_it->second.find(table_name);
+        auto tb_info_it = db_it->second.find(tb_name);
         if (tb_info_it != db_it->second.end())  // 表存在
         {
             auto & tb_info = tb_info_it->second;
             tb_info.m_counter--;
-            string file_name = table_name + "-" +std::to_string(tb_info.m_counter) + "." + engine_abbrev;
+            string file_name = tb_name + "-" + std::to_string(tb_info.m_counter) + "." + engine_abbrev;
             string file_path = m_default_base_path + "/" + file_name;
 
             // 创建文件
@@ -88,20 +116,20 @@ string FilePathManager::create_file(
             }
 
             // 把文件名存入对应表目录下
-            m_map[database_name][table_name].m_files.push_back(file_name);
+            m_map[db_name][tb_name].m_files.push_back(file_name);
             return file_path;
         }
         else
         {
             // 表不存在
-            std::cerr << "Error : cannot find table '" << table_name << "' " << std:: endl;
+            std::cerr << "Error : cannot find table '" << tb_name << "' " << std:: endl;
             return "";
         }
     }
     else
     {
         // 数据库不存在
-        std::cerr << "Error : cannot find database '" << database_name << "' " << std:: endl;
+        std::cerr << "Error : cannot find database '" << db_name << "' " << std:: endl;
         return "";
     }
 }
@@ -110,13 +138,13 @@ string FilePathManager::create_file(
  * 删除数据库
  */
 bool FilePathManager::delete_database(
-        const string & database_name)
+        const string & db_name)
 {
-    auto db_it = m_map.find(database_name);
+    auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())
     {
         // 数据库存在
-        fs::path db_path = m_default_base_path + "/" + database_name;
+        fs::path db_path = m_default_base_path + "/" + db_name;
         if (fs::exists(db_path) && fs::is_directory(db_path))
         {
             try
@@ -138,20 +166,20 @@ bool FilePathManager::delete_database(
     }
 
     // 移除库记录
-    return m_map.erase(database_name) == 1;
+    return m_map.erase(db_name) == 1;
 }
 
 /**
  * 删除表
  */
 bool FilePathManager::delete_table(
-        const string & table_name,
-        const string & databases_name)
+        const string & tb_name,
+        const string & db_name)
 {
-    auto db_it = m_map.find(databases_name);
+    auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())  // 数据库存在
     {
-        auto tb_it = db_it->second.find(table_name);
+        auto tb_it = db_it->second.find(tb_name);
         if (tb_it != db_it->second.end())  // 表也存在
         {
             // 拿取list 开始删除所有表对应文件
@@ -161,7 +189,7 @@ bool FilePathManager::delete_table(
             {
                 try
                 {
-                    file_path = m_default_base_path + "/" + table_name + "/" + item;
+                    file_path = m_default_base_path + "/" + tb_name + "/" + item;
                     if (fs::exists(file_path) && fs::is_regular_file(file_path))  // 存在且是文件
                     {
                         fs::remove(file_path);
@@ -180,7 +208,7 @@ bool FilePathManager::delete_table(
     }
 
     // 移除表记录
-    return m_map[databases_name].erase(table_name) == 1;
+    return m_map[db_name].erase(tb_name) == 1;
 }
 
 
@@ -189,13 +217,13 @@ bool FilePathManager::delete_table(
  */
 bool FilePathManager::delete_file(
         const string & file_name,
-        const string & table_name,
-        const string & database_name)
+        const string & tb_name,
+        const string & db_name)
 {
-    auto db_it = m_map.find(database_name);
+    auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())
     {
-        auto tb_it = db_it->second.find(table_name);
+        auto tb_it = db_it->second.find(tb_name);
         if (tb_it != db_it->second.end())
         {
             auto & file_list = tb_it->second.m_files;
@@ -205,7 +233,7 @@ bool FilePathManager::delete_file(
             {
                 try
                 {
-                    string file_path = m_default_base_path + "/" + table_name + "/" + file_name;
+                    string file_path = m_default_base_path + "/" + tb_name + "/" + file_name;
                     if (fs::exists(file_path) && fs::is_regular_file(file_path))  // 存在且是文件
                     {
                         fs::remove(file_path);  // 移除文件
@@ -230,12 +258,24 @@ bool FilePathManager::delete_file(
         }
         else
         {
-            std::cerr << "Error : cannot find table '" << table_name << "' " << std:: endl;
+            std::cerr << "Error : cannot find table '" << tb_name << "' " << std:: endl;
         }
     }
     else
     {
-        std::cerr << "Error : cannot find database '" << database_name << "' " << std:: endl;
+        std::cerr << "Error : cannot find database '" << db_name << "' " << std:: endl;
     }
     return false;
+}
+
+/**
+ * 以数据库为单位将表信息加载到内存
+ *
+ * 调用use 的时候需要调用该方法加载上下文
+ * @param db_name
+ * @return
+ */
+bool FilePathManager::load_database(
+        const string & db_name)
+{
 }

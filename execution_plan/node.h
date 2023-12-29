@@ -50,7 +50,7 @@ namespace dt::execution
         static std::shared_ptr<ExecutionPlanNode> new_null();
 
         // 操作符虚函数
-        virtual void execute(std::shared_ptr<IEngine> engine) = 0;
+        virtual void execute(IEngine & engine) = 0;
         virtual std::shared_ptr<ExecutionPlanNode> get_child() const = 0;
         virtual void set_child(std::shared_ptr<ExecutionPlanNode> child) = 0;
 

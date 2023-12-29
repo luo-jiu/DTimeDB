@@ -6,10 +6,11 @@
 #include <fcntl.h>
 #include <map>
 #include <list>
+#include <fstream>
 #include <iostream>
 using std::string;
 
-namespace dt::tsm
+namespace dt::file
 {
     /**
      * 为存储引擎提供File 路径管理
@@ -17,20 +18,24 @@ namespace dt::tsm
     class FilePathManager
     {
     public:
+        FilePathManager() : m_default_base_path("./../dbs") {}
         FilePathManager(const string & base_path) : m_default_base_path(base_path) {}
 
-        string create_database(const string & database_name);
-        bool create_table(const string & table_name, const string & database_name);
-        string create_file(const string & table_name, const string & database_name, const string & engine_abbrev);
+        string create_database(const string & db_name);
+        bool create_table(const string & tb_name, const string & db_name, const string & engine);
+        bool exists_table(const string & tb_name, const string & db_name);
+        string create_file(const string & tb_name, const string & db_name, const string & engine_abbrev);
 
-        bool delete_database(const string & database_name);
-        bool delete_table(const string & table_name, const string & databases_name);
-        bool delete_file(const string & file_name, const string & table_name, const string & database_name);
+        bool delete_database(const string & db_name);
+        bool delete_table(const string & tb_name, const string & db_name);
+        bool delete_file(const string & file_name, const string & tb_name, const string & db_name);
 
+        bool load_database(const string & db_name);
     private:
         struct TableInfo
         {
-            int64_t                 m_counter;
+            int64_t                 m_counter;  // 计数器
+            string                  m_engine;   // 引擎类型
             std::list<string>       m_files;
         };
 

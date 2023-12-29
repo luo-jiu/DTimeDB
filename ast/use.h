@@ -16,6 +16,7 @@ namespace dt::ast
         virtual Json json()
         {
             Json json;
+            json["type"] = name();
             json["database"] = m_database_name;
             return json;
         }

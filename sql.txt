@@ -1,2 +1,3 @@
-create database xxx
-use xxx
+create database db_test
+use db_test
+create table school()engine=tsm

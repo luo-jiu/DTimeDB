@@ -13,6 +13,9 @@ using namespace dt::evaluator;
 #include <engine/iengine/iengine.h>
 using namespace dt::iengine;
 
+#include <engine/tsm/controller.h>
+using namespace dt::tsm;
+
 #include <memory>
 
 namespace dt::executor
@@ -28,14 +31,24 @@ namespace dt::executor
     class Executor
     {
     public:
+
         std::shared_ptr<Program> generate_ast_tree(string & sql);
         void generate_execute_plan(string & sql);
         void execute_plan(const std::shared_ptr<ExecutionPlanNode> & node);
 
         bool insert();
 
+        static void use_database(string & db_name);
+
     private:
-        std::shared_ptr<IEngine>    m_engine;  // 引擎接口
+        static string m_current_db;  // 当前操作哪个数据库
+
+        // new saveBankWorker
+        Controller * m_tsm = new Controller();  // 引擎控制器
+//        std::shared_ptr<Controller> m_clt;
+
+        // BankWork * bw = NULL;
+        IEngine * m_engine;  // 引擎接口
     };
 }
 

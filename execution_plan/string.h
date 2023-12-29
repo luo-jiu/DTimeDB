@@ -16,7 +16,7 @@ namespace dt::execution
         ~String() {}
 
         virtual string str() const { return m_value; }
-        void execute(std::shared_ptr<IEngine> engine) override {}
+        void execute(IEngine & engine) override {}
         std::shared_ptr<ExecutionPlanNode> get_child() const override { return nullptr; }
         void set_child(std::shared_ptr<ExecutionPlanNode> child) override {}
 

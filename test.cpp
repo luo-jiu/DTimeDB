@@ -11,7 +11,7 @@ using namespace dt::parser;
 using namespace dt::evaluator;
 
 #include <engine/file_manager/file_path_manager.h>
-using namespace dt::tsm;
+using namespace dt::file;
 
 #include <executor/executor.h>
 using namespace dt::executor;

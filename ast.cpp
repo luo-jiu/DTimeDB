@@ -35,6 +35,8 @@ int main()
 
         // 递归运行执行计划
         executor->execute_plan(root);
+
+        root = std::make_shared<RootNode>();
     }
 
     Json json = program->json();

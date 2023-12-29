@@ -63,9 +63,9 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval(
         }
         case Node::NODE_USE:  // use 处理
         {
+            // 该语句不生成执行计划，可以直接进行use 运行
             auto use = std::dynamic_pointer_cast<ast::Use>(node);
             auto u = eval_use(use);
-            root->set_child(u);
             return u;
         }
         case Node::NODE_CREATE:  // create 处理

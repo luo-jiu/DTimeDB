@@ -1,6 +1,8 @@
 #include <executor/executor.h>
 using namespace dt::executor;
 
+string Executor::m_current_db = "";
+
 /**
  * 生成AST 抽象语法树
  */
@@ -43,7 +45,7 @@ void Executor::execute_plan(
     }
 
     // 执行当前节点的操作
-    node->execute(m_engine);
+    node->execute(*m_tsm);
 
     // 递归执行子节点
     execute_plan(node->get_child());
@@ -52,4 +54,11 @@ void Executor::execute_plan(
 bool Executor::insert()
 {
 //    m_engine->insert.cpp();
+}
+
+void Executor::use_database(
+        string & db_name)
+{
+    m_current_db = db_name;
+    std::cout << "use:" << db_name << std::endl;
 }
