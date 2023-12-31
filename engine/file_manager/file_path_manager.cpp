@@ -69,8 +69,8 @@ bool FilePathManager::create_table(
     close(fd);
 
     auto file = m_io_file.get_file_stream(sys_file_path, "trunc");
-    *file << 147483647 << std::endl;
-    m_io_file.release_file_stream(sys_file_path);
+    *file << INT64_MAX << std::endl;
+    m_io_file.close_file_stream(sys_file_path);  // 用了直接关
 
     m_map[db_name][tb_name] = TableInfo{INT64_MAX, engine, std::list<string>()};
     return true;
@@ -319,6 +319,13 @@ bool FilePathManager::load_database(
         const string & db_name,
         const string & engine)
 {
+    // 如果已经存在了就不读取了
+    auto db_it = m_map.find(db_name);
+    if (db_it != m_map.end())
+    {
+        return true;
+    }
+
     // 读取基路径下的所有数据库
     string _db_name;
     for (const auto & entry : fs::directory_iterator(m_default_base_path))
@@ -400,9 +407,19 @@ bool FilePathManager::load_database(
 //        m_io_file.release_file_stream(file_path);  // 归还io 流
         m_io_file.close_file_stream(file_path);
         // 将计数器写到_table_map 中
-        std::cout << last_line << std::endl;
-        int64_t _temp = std::stol(last_line);
-        _table_map[pair.first].m_counter = _temp;
+//        std::cout << last_line << std::endl;
+//        int64_t _temp = std::stol(last_line);
+        std::istringstream bin_int(last_line);
+        int64_t _temp;
+        if (bin_int >> _temp)
+        {
+            _table_map[pair.first].m_counter = _temp;
+        }
+        else
+        {
+            std::cout << "Error: 转换数字失败" << std::endl;
+        }
+
     }
     m_map[db_name] = _table_map;
 

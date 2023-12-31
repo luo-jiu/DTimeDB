@@ -116,7 +116,7 @@ namespace dt::execution
         void execute(IEngine & engine) override
         {
             std::cout << "use: " << m_database << std::endl;
-            m_current_db = m_database;
+            m_current_db = m_database;  // 上下文环境
             engine.use_database(m_database);
         }
         std::shared_ptr<ExecutionPlanNode> get_child() const override
