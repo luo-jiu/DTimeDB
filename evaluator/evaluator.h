@@ -36,6 +36,7 @@ namespace dt::evaluator
         std::shared_ptr<ExecutionPlanNode> eval_null(const std::shared_ptr<ast::Null> & node);
         std::shared_ptr<ExecutionPlanNode> eval_identifier(const std::shared_ptr<ast::Identifier> & node, Environment * env);
 
+        std::shared_ptr<ExecutionPlanNode> eval_show(const std::shared_ptr<ast::Show> & node);
         std::shared_ptr<ExecutionPlanNode> eval_use(const std::shared_ptr<Use> & node);
         std::shared_ptr<ExecutionPlanNode> eval_create(const std::shared_ptr<ast::Create> & node);
         std::shared_ptr<ExecutionPlanNode> eval_insert(const std::shared_ptr<ast::Insert> & node);

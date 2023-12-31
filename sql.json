@@ -1,1 +1,1 @@
-{"statements":[{"expression":{"name":"db_test","type":""},"type":"ExpressionStatement"},{"expression":{"database":"db_test","type":""},"type":"ExpressionStatement"},{"expression":{"name":"school","type":""},"type":"ExpressionStatement"}],"type":"Program"}
+{"statements":[{"expression":{"type":"table"},"type":"ExpressionStatement"}],"type":"Program"}

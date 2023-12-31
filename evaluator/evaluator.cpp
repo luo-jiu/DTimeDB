@@ -61,11 +61,19 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval(
             auto s = std::dynamic_pointer_cast<ast::ExpressionStatement>(node);
             return eval(s->m_expression, env, root);  // 递归判断值类型
         }
+        case Node::NODE_SHOW:  // show 处理
+        {
+            auto show = std::dynamic_pointer_cast<ast::Show>(node);
+            auto s = eval_show(show);
+            root->set_child(s);
+            return s;
+        }
         case Node::NODE_USE:  // use 处理
         {
             // 该语句不生成执行计划，可以直接进行use 运行
             auto use = std::dynamic_pointer_cast<ast::Use>(node);
             auto u = eval_use(use);
+            root->set_child(u);
             return u;
         }
         case Node::NODE_CREATE:  // create 处理

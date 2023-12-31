@@ -55,6 +55,8 @@ namespace dt::execution
         virtual void set_child(std::shared_ptr<ExecutionPlanNode> child) = 0;
 
     protected:
+        static string                       m_current_db;
+
         Type                                m_type;
         static std::map<Type, string>       m_names;  // 类型 对应字符串名称
     };

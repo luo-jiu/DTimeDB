@@ -50,7 +50,28 @@ bool FilePathManager::create_table(
         return false;
     }
 
-    // 创建表(不用对真实的文件或文件夹进行操作, 是抽象出来的)
+    // 创建表(创建系统表文件就行)
+    string sys_file_path;
+    if (engine == "tsm")
+    {
+        sys_file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    }
+    else
+    {
+        sys_file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".clt";
+    }
+    int fd = open(sys_file_path.c_str(), O_CREAT | O_WRONLY, 0666);
+    if (fd == -1)
+    {
+        std::cerr << "Error : Failed to crate file " << sys_file_path << std::endl;
+        return false;
+    }
+    close(fd);
+
+    auto file = m_io_file.get_file_stream(sys_file_path, "trunc");
+    *file << 147483647 << std::endl;
+    m_io_file.release_file_stream(sys_file_path);
+
     m_map[db_name][tb_name] = TableInfo{INT64_MAX, engine, std::list<string>()};
     return true;
 }
@@ -72,10 +93,10 @@ bool FilePathManager::exists_table(
         {
             return true;
         }
-        else
-        {
-            std::cout << "cannot find table:'" << tb_name << "'" << std::endl;
-        }
+//        else
+//        {
+//            std::cout << "cannot find table:'" << tb_name << "'" << std::endl;
+//        }
     }
     else
     {
@@ -123,15 +144,34 @@ string FilePathManager::create_file(
         {
             // 表不存在
             std::cerr << "Error : cannot find table '" << tb_name << "' " << std:: endl;
-            return "";
         }
     }
     else
     {
         // 数据库不存在
         std::cerr << "Error : cannot find database '" << db_name << "' " << std:: endl;
-        return "";
     }
+    return "";
+}
+
+/**
+ * 该文件用来记录单个表的计数器信息，以及溢写其他的
+ * 可能的数据
+ */
+string FilePathManager::create_sys_tfile(
+        const string & tb_name,
+        const string & db_name,
+        const string & engine_abbrev)
+{
+
+}
+
+string FilePathManager::create_sys_dfile(
+        const string & tb_name,
+        const string & db_name,
+        const string & engine_abbrev)
+{
+
 }
 
 /**
@@ -276,6 +316,142 @@ bool FilePathManager::delete_file(
  * @return
  */
 bool FilePathManager::load_database(
-        const string & db_name)
+        const string & db_name,
+        const string & engine)
 {
+    // 读取基路径下的所有数据库
+    string _db_name;
+    for (const auto & entry : fs::directory_iterator(m_default_base_path))
+    {
+        if (entry.is_directory())
+        {
+            _db_name = entry.path().filename().string();
+            m_map[_db_name] = std::map<string, TableInfo>();
+        }
+    }
+
+    /**
+     * 开始加载数据库的信息
+     * 只用加载系统文件即可(因为和表一一对应)
+     */
+    string _abbrev;
+    if (engine == "clt")
+    {
+        _abbrev = ".clt";
+    }
+    else
+    {
+        _abbrev = ".tsm";
+    }
+
+    string _db_path = m_default_base_path + "/" + db_name;
+    string _file_name;
+    string _start_part;
+    std::map<string, TableInfo> _table_map;
+    // 判断路径是否存在
+    if (!fs::exists(_db_path)) {
+        // 不存在
+        std::cout << "Error: '" << db_name << "' database does not exist" << std::endl;
+        return false;
+    }
+    for (const auto & entry : fs::directory_iterator(_db_path))
+    {
+        if (entry.is_regular_file())
+        {
+            _file_name = entry.path().filename().string();
+            size_t pos = _file_name.find('-');
+            if (pos != std::string::npos)
+            {
+                _start_part = _file_name.substr(0, pos);
+            }
+            if (_start_part == "sys" && entry.path().extension() == _abbrev)  // 只加载sys 系统文件
+            {
+                string _table_part = _file_name.substr(pos + 1);
+                size_t dot_pos = _table_part.find('.');
+                string _table_name = _table_part.substr(0, dot_pos);
+                _table_map[_table_name] = TableInfo{0, "tsm", std::list<string>()};  // 创建对象
+            }
+        }
+    }
+
+    // 开始加载计数器
+    // 遍历_map 的key，去读取每个表的计数器
+    for (auto & pair : _table_map)
+    {
+        string file_path = m_default_base_path + "/" + db_name + "/sys-" + pair.first + _abbrev;
+        auto file = m_io_file.get_file_stream(file_path, "normal");
+        if (!file->is_open())
+        {
+            std::cerr << "Error: Could not open file for writing" << std::endl;
+            return false;
+        }
+
+        // 向前搜索换行符
+        string last_line;
+        string current_line;
+        while (std::getline(*file, current_line))
+        {
+            last_line = current_line;
+        }
+        file->clear();
+        file->seekp(0, std::ios::beg);
+        *file << last_line << std::endl;
+        file->flush();
+//        m_io_file.release_file_stream(file_path);  // 归还io 流
+        m_io_file.close_file_stream(file_path);
+        // 将计数器写到_table_map 中
+        std::cout << last_line << std::endl;
+        int64_t _temp = std::stol(last_line);
+        _table_map[pair.first].m_counter = _temp;
+    }
+    m_map[db_name] = _table_map;
+
+    return true;
+}
+
+bool FilePathManager::show_data(const string & db_name)
+{
+    if (db_name.empty())
+    {
+        for (const auto & entry : fs::directory_iterator("./../dbs"))
+        {
+            if (entry.is_directory())
+            {
+                std::cout << entry.path().filename().string() << std::endl;
+            }
+        }
+    }
+    else
+    {
+//        string db_name = "Executor::get_database()";
+        string db_path = "./../dbs/" + db_name;  // 数据库路径
+        if (!fs::exists(db_path))
+        {
+            std::cout << "Error: '" << db_name << "' database does not exist" << std::endl;
+            return false;
+        }
+
+        // 遍历所有表
+        string _file_name;
+        string _start_part;
+        for (const auto & entry : fs::directory_iterator(db_path))
+        {
+            if (entry.is_regular_file())
+            {
+                _file_name = entry.path().filename().string();
+                size_t pos = _file_name.find('-');
+                if (pos != std::string::npos)
+                {
+                    _start_part = _file_name.substr(0, pos);
+                }
+                if (_start_part == "sys")  // 只加载sys 系统文件
+                {
+                    string _table_part = _file_name.substr(pos + 1);
+                    size_t dot_pos = _table_part.find('.');
+                    string _table_name = _table_part.substr(0, dot_pos);
+                    std::cout << _table_name << std::endl;
+                }
+            }
+        }
+    }
 }

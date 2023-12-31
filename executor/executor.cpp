@@ -1,8 +1,6 @@
 #include <executor/executor.h>
 using namespace dt::executor;
 
-string Executor::m_current_db = "";
-
 /**
  * 生成AST 抽象语法树
  */
@@ -56,9 +54,14 @@ bool Executor::insert()
 //    m_engine->insert.cpp();
 }
 
-void Executor::use_database(
-        string & db_name)
-{
-    m_current_db = db_name;
-    std::cout << "use:" << db_name << std::endl;
-}
+//void Executor::use_database(
+//        string & db_name)
+//{
+//    m_current_db = db_name;
+//    std::cout << "use:" << db_name << std::endl;
+//}
+//
+//string Executor::get_database()
+//{
+//    return m_current_db;
+//}

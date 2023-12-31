@@ -10,10 +10,16 @@ using namespace dt::parser;
 #include <evaluator/evaluator.h>
 using namespace dt::evaluator;
 
-const string prompt = " <<";
+#include <executor/executor.h>
+using namespace dt::executor;
+
+const string prompt = "<<";
 
 int main()
 {
+    std::shared_ptr<RootNode> root = std::make_shared<RootNode>();
+    std::shared_ptr<Executor> executor(new Executor());
+
     std::cout << "Welcome to DTimeDB!" << std::endl;
     std::shared_ptr<Environment> env(new Environment());
 
@@ -27,6 +33,7 @@ int main()
 
         if (text == "exit")  // 退出出口
         {
+            std::cout << "Bye!" << std::endl;
             return 0;
         }
 
@@ -49,14 +56,7 @@ int main()
         }
 
         // 递归向下求值
-        std::shared_ptr<ExecutionPlanNode> root;
         auto evaluated = evaluator->eval(program, env.get(), root);
-        if (evaluated)
-        {
-            if (evaluated->type() != ExecutionPlanNode::OBJECT_NULL)  // 不为空才打印
-            {
-                std::cout << evaluated->str() << std::endl;
-            }
-        }
+        executor->execute_plan(root);
     }
 }

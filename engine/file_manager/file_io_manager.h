@@ -10,7 +10,7 @@
 #include <memory>
 #include <list>
 
-namespace dt::tsm
+namespace dt::file
 {
     class FileIOManager
     {
@@ -20,6 +20,7 @@ namespace dt::tsm
         std::string new_tsm(const std::string & measurement);
 
         std::shared_ptr<std::fstream> get_file_stream(const std::string & file_path);
+        std::shared_ptr<std::fstream> get_file_stream(const std::string & file_path, std::string mode);
         void release_file_stream(const std::string & file_path);
         void close_file_stream(const std::string & file_path);
         void reset_file_stream(const std::string & file_path);

@@ -12,5 +12,6 @@
 #include <ast/prefix.h>
 #include <ast/program.h>
 #include <ast/select.h>
+#include <ast/show.h>
 #include <ast/string.h>
 #include <ast/use.h>

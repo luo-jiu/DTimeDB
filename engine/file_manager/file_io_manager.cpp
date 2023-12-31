@@ -1,5 +1,5 @@
-#include <engine/tsm/file_io_manager.h>
-using namespace dt::tsm;
+#include <engine/file_manager/file_io_manager.h>
+using namespace dt::file;
 
 /**
  * 获取文件io 流
@@ -22,6 +22,47 @@ std::shared_ptr<std::fstream> FileIOManager::get_file_stream(
     }
 
     auto stream = std::make_shared<std::fstream>(file_path, std::ios::in | std::ios::out | std::ios::binary);
+    if (!stream->is_open()) {
+        std::cerr << "Error opening file " << file_path << std::endl;
+        return nullptr;
+    }
+    m_usage_order.push_front(file_path);
+    m_file_stream[file_path] = {stream, m_usage_order.begin(), true};
+    return stream;
+}
+
+std::shared_ptr<std::fstream> FileIOManager::get_file_stream(
+        const std::string & file_path,
+        std::string mode)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    auto it = m_file_stream.find(file_path);
+    if (it != m_file_stream.end() && !it->second.in_use) {
+        it->second.in_use = true;
+        update_usage_order(file_path);
+        return it->second.stream;  // 找到io 流且未被使用
+    }
+
+    // 未找到io 流，准备创建
+    if (m_file_stream.size() >= m_max_size)  // 是否超过容积
+    {
+        evict_least_used();  // 移出链表尾部不常用的io 流
+    }
+
+    std::shared_ptr<std::fstream> stream;
+    if (mode == "binary")
+    {
+        stream = std::make_shared<std::fstream>(file_path, std::ios::in | std::ios::out | std::ios::binary);
+    }
+    else if(mode == "trunc")
+    {
+        stream = std::make_shared<std::fstream>(file_path, std::ios::in | std::ios::out | std::ios::trunc);
+    }
+    else if (mode == "normal")
+    {
+        stream = std::make_shared<std::fstream>(file_path, std::ios::in | std::ios::out);
+    }
+
     if (!stream->is_open()) {
         std::cerr << "Error opening file " << file_path << std::endl;
         return nullptr;

@@ -7,6 +7,8 @@
 #include <cstdarg>
 using namespace dt::execution;
 
+string ExecutionPlanNode::m_current_db = "";
+
 std::map<ExecutionPlanNode::Type, string> ExecutionPlanNode::m_names = {
         {OBJECT_ERROR,       "error"},
         {OBJECT_STRING,      "string"},

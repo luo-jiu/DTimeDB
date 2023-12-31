@@ -1,9 +1,13 @@
 #ifndef DTIMEDB_OPERATOR_H
 #define DTIMEDB_OPERATOR_H
 
+#include <execution_plan/node.h>
+#include <engine/file_manager/file_path_manager.h>
+using namespace dt::file;
+
 #include <chrono>
 using namespace std::chrono;
-#include <execution_plan/node.h>
+
 #include <iostream>
 #include <utility>
 using std::string;
@@ -33,7 +37,7 @@ namespace dt::execution
         virtual string str() const { return ""; }
         void execute(IEngine & engine) override
         {
-            std::cout << "create:" << m_type << ", m_name:" << m_name << std::endl;
+            std::cout << "create: " << m_type << ", m_name: " << m_name << std::endl;
             if (m_type == "database")
             {
                 engine.create_database(m_name);
@@ -47,7 +51,7 @@ namespace dt::execution
                 }
                 else  // 默认tsm 引擎
                 {
-//                    engine.create_table(m_name, );
+                    engine.create_table(m_name, m_current_db);
                 }
 
             }
@@ -67,6 +71,40 @@ namespace dt::execution
     };
 
     /**
+     * 显示信息
+     */
+    class ShowNode : public ExecutionPlanNode
+    {
+    public:
+        virtual string str() const { return ""; }
+        void execute(IEngine & engine) override
+        {
+//            std::cout << "show: " << m_type << std::endl;
+
+            // 遍历数据库 或者 表
+            if (m_type == "database")
+            {
+                FilePathManager::show_data("");
+            }
+            else
+            {
+                if (m_current_db.empty())
+                {
+                    std::cout << "Database not selected, 'use' command" << std::endl;
+                    return;
+                }
+                FilePathManager::show_data(m_current_db);
+            }
+        }
+        std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
+        void set_child(std::shared_ptr<ExecutionPlanNode> child) { m_child = child; }
+
+    public:
+        string                                  m_type;
+        std::shared_ptr<ExecutionPlanNode>      m_child;
+    };
+
+    /**
      * 选择数据库
      */
     class UseNode : public ExecutionPlanNode
@@ -77,8 +115,9 @@ namespace dt::execution
         virtual string str() const { return ""; }
         void execute(IEngine & engine) override
         {
-            std::cout << "use:" << m_database << std::endl;
-
+            std::cout << "use: " << m_database << std::endl;
+            m_current_db = m_database;
+            engine.use_database(m_database);
         }
         std::shared_ptr<ExecutionPlanNode> get_child() const override
         {

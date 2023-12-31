@@ -24,6 +24,7 @@ bool Controller::use_database(
         string & db_name)
 {
     // 暂时想不到做啥
+    m_file.load_database(db_name, "tsm");
 }
 
 /**

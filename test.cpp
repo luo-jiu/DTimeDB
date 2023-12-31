@@ -15,36 +15,54 @@ using namespace dt::file;
 
 #include <executor/executor.h>
 using namespace dt::executor;
+#include <random>
 
 #include <iostream>
 using std::string;
 
+
+// 随机选择一个字符串数组中的元素
+std::string getRandomElement(const std::vector<std::string>& strArray) {
+    if (strArray.empty()) {
+        return ""; // 如果数组为空，返回空字符串
+    }
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 864000);  // 定义时间范围（比如，240小时 = 864000秒）
+
+
+    // 返回随机选择的元素
+    return strArray[dis(gen)%strArray.size()];
+}
+
 int main() {
-    string sql = "select * from school where age > 10";
+    std::shared_ptr<Environment> env(new Environment());
+    std::shared_ptr<Evaluator> evaluator(new Evaluator());
+    std::shared_ptr<RootNode> root = std::make_shared<RootNode>();
+    std::shared_ptr<Executor> executor(new Executor());
+    std::vector<string> sqls = {"show databases", "show tables", "use db_test", "use xxx"};
 
-    Executor executor;
+    // 暴力测试
+    for (int i = 0; i < 100000; ++i)
+    {
+        string randomElement = getRandomElement(sqls);
+//        std::cout << "Random Element #" << i + 1 << ": " << randomElement << std::endl;
 
-    executor.generate_execute_plan(sql);
+        std::shared_ptr<Lexer> lexer(new Lexer(randomElement.c_str(), randomElement.size()));
+        std::shared_ptr<Parser> parser(new Parser(lexer));
 
+        auto program = parser->parse_program();
 
+        // 递归构建执行计划
+        evaluator->eval(program, env.get(), root);
 
-//    string table_name = "school";
-//    string temp = "tsm";
-//
-//    FilePathManager file_path_manager("./../dbs");
-//
-//    for(int i = 10; i > 0; i--)
-//    {
-//        string filePath = file_path_manager.create_file(table_name, temp);
-//        std::cout << "File created at: " << filePath << std::endl;
-//    }
+        // 递归运行执行计划
+        executor->execute_plan(root);
 
+        root = std::make_shared<RootNode>();
 
-    // 假设其他操作...
-//
-//    if (file_path_manager.delete_file(filePath)) {
-//        std::cout << "File deleted successfully." << std::endl;
-//    }
+    }
 
     return 0;
 

@@ -26,6 +26,7 @@ namespace dt::ast
             NODE_EXPRESSION_STATEMENT,
             NODE_PROGRAM,
 
+            NODE_SHOW,
             NODE_USE,
             NODE_CREATE,
             NODE_SELECT,

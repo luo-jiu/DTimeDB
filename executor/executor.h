@@ -38,10 +38,10 @@ namespace dt::executor
 
         bool insert();
 
-        static void use_database(string & db_name);
-
+//        void use_database(string & db_name);
+//        string get_database();
     private:
-        static string m_current_db;  // 当前操作哪个数据库
+//        string m_current_db;  // 当前操作哪个数据库
 
         // new saveBankWorker
         Controller * m_tsm = new Controller();  // 引擎控制器
