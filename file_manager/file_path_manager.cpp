@@ -1,10 +1,12 @@
-#include <engine/file_manager/file_path_manager.h>
+#include "file_path_manager.h"
 using namespace dt::file;
 
 #include <algorithm>
 
 #include <filesystem>
 namespace fs = std::filesystem;
+
+string FilePathManager::m_default_base_path = "./../dbs";
 
 /**
  * 创建数据库(文件夹)
@@ -68,11 +70,13 @@ bool FilePathManager::create_table(
     }
     close(fd);
 
-    auto file = m_io_file.get_file_stream(sys_file_path, "trunc");
-    *file << INT64_MAX << std::endl;
-    m_io_file.close_file_stream(sys_file_path);  // 用了直接关
+//    auto file = m_io_file.get_file_stream(sys_file_path, "trunc");
+//    *file << INT64_MAX << std::endl;
+//    m_io_file.close_file_stream(sys_file_path);  // 用了直接关
 
-    m_map[db_name][tb_name] = TableInfo{INT64_MAX, engine, std::list<string>()};
+    // 文件名直接上时间戳，不采用上述方案
+
+    m_map[db_name][tb_name] = TableInfo{0, engine, std::list<string>()};
     return true;
 }
 
@@ -123,9 +127,10 @@ string FilePathManager::create_file(
         auto tb_info_it = db_it->second.find(tb_name);
         if (tb_info_it != db_it->second.end())  // 表存在
         {
-            auto & tb_info = tb_info_it->second;
-            tb_info.m_counter--;
-            string file_name = tb_name + "-" + std::to_string(tb_info.m_counter) + "." + engine_abbrev;
+//            auto & tb_info = tb_info_it->second;
+            auto current_time = std::chrono::high_resolution_clock::now();
+//            tb_info.m_counter--;
+            string file_name = tb_name + "-" + std::to_string(current_time.time_since_epoch().count()) + "." + engine_abbrev;
             string file_path = m_default_base_path + "/" + file_name;
 
             // 创建文件
@@ -371,11 +376,20 @@ bool FilePathManager::load_database(
             {
                 _start_part = _file_name.substr(0, pos);
             }
-            if (_start_part == "sys" && entry.path().extension() == _abbrev)  // 只加载sys 系统文件
+//            if (_start_part == "sys" && entry.path().extension() == _abbrev)  // 只加载sys 系统文件
+//            {
+//                string _table_part = _file_name.substr(pos + 1);
+//                size_t dot_pos = _table_part.find('.');
+//                string _table_name = _table_part.substr(0, dot_pos);
+//                _table_map[_table_name] = TableInfo{0, "tsm", std::list<string>()};  // 创建对象
+//            }
+            if (_start_part == "sys")  // 只加载sys 系统文件
             {
                 string _table_part = _file_name.substr(pos + 1);
                 size_t dot_pos = _table_part.find('.');
                 string _table_name = _table_part.substr(0, dot_pos);
+
+                //
                 _table_map[_table_name] = TableInfo{0, "tsm", std::list<string>()};  // 创建对象
             }
         }
@@ -385,7 +399,7 @@ bool FilePathManager::load_database(
     // 遍历_map 的key，去读取每个表的计数器
     for (auto & pair : _table_map)
     {
-        string file_path = m_default_base_path + "/" + db_name + "/sys-" + pair.first + _abbrev;
+        string file_path = m_default_base_path + "/" + db_name + "/sys-" + pair.first + ".dt";
         auto file = m_io_file.get_file_stream(file_path, "normal");
         if (!file->is_open())
         {
@@ -430,7 +444,7 @@ bool FilePathManager::show_data(const string & db_name)
 {
     if (db_name.empty())
     {
-        for (const auto & entry : fs::directory_iterator("./../dbs"))
+        for (const auto & entry : fs::directory_iterator(m_default_base_path))
         {
             if (entry.is_directory())
             {
@@ -441,7 +455,7 @@ bool FilePathManager::show_data(const string & db_name)
     else
     {
 //        string db_name = "Executor::get_database()";
-        string db_path = "./../dbs/" + db_name;  // 数据库路径
+        string db_path = m_default_base_path + "/" + db_name;  // 数据库路径
         if (!fs::exists(db_path))
         {
             std::cout << "Error: '" << db_name << "' database does not exist" << std::endl;

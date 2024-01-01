@@ -1,7 +1,7 @@
 #ifndef DTIMEDB_CONTROLLER_H
 #define DTIMEDB_CONTROLLER_H
 
-#include <engine/file_manager/file_path_manager.h>
+#include <file_manager/file_path_manager.h>
 using namespace dt::file;
 
 #include <engine/iengine/iengine.h>
@@ -46,8 +46,8 @@ namespace dt::tsm
         };
 
         //       db_name
-        std::map<string, Database>  m_map;
-        FilePathManager             m_file;  // 文件管理器
+        std::map<string, Database>      m_map;
+        FilePathManager                 m_file;  // 文件管理器
     };
 }
 

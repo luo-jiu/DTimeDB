@@ -10,7 +10,7 @@ using namespace dt::parser;
 #include "executor/operator/query_plan.h"
 using namespace dt::evaluator;
 
-#include <engine/file_manager/file_path_manager.h>
+#include <file_manager/file_path_manager.h>
 using namespace dt::file;
 
 #include <executor/executor.h>

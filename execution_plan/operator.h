@@ -2,7 +2,7 @@
 #define DTIMEDB_OPERATOR_H
 
 #include <execution_plan/node.h>
-#include <engine/file_manager/file_path_manager.h>
+#include <file_manager/file_path_manager.h>
 using namespace dt::file;
 
 #include <chrono>

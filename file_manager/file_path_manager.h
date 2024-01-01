@@ -1,7 +1,7 @@
 #ifndef DTIMEDB_FILE_PATH_MANAGER_H
 #define DTIMEDB_FILE_PATH_MANAGER_H
 
-#include <engine/file_manager/file_io_manager.h>
+#include "file_io_manager.h"
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -12,6 +12,9 @@
 #include <iostream>
 using std::string;
 
+#include <chrono>
+using namespace std::chrono;
+
 namespace dt::file
 {
     /**
@@ -20,7 +23,7 @@ namespace dt::file
     class FilePathManager
     {
     public:
-        FilePathManager() : m_default_base_path("./../dbs"), m_io_file(10) {}
+        FilePathManager(): m_io_file(10) {}
 //        FilePathManager(const string & base_path) : m_default_base_path(base_path) {}
 
         string create_database(const string & db_name);
@@ -44,7 +47,7 @@ namespace dt::file
             std::list<string>       m_files;
         };
 
-        string                                            m_default_base_path;  // 默认基路径
+        static string                                     m_default_base_path;  // 默认基路径
         //       db_name         tb_name | counter and files
         std::map<string, std::map<string, TableInfo>>     m_map;     // 表对应的文件
         FileIOManager                                     m_io_file;

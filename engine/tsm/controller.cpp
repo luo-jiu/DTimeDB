@@ -23,8 +23,10 @@ bool Controller::create_database(
 bool Controller::use_database(
         string & db_name)
 {
-    // 暂时想不到做啥
+    // 将数据加载到内存中
     m_file.load_database(db_name, "tsm");
+
+
 }
 
 /**
