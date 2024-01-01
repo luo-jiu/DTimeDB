@@ -16,7 +16,7 @@ namespace ctl{
         /** @return column's offset in the tuple */
         uint32_t GetOffset() const { return column_offset_; }
         /**@return column's name*/
-        TypeId getType() const{return  column_type_;}
+        TypeId GetType() const{return  column_type_;}
         uint32_t GetSize()const{return column_size_;}
         /** @return a string representation of this column */
         std::string ToString() const;
