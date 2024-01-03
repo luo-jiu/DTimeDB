@@ -6,7 +6,7 @@ void Write::write(
         string & data,
         DataBlock::Type type,
         string & field_name,
-        const string & database_name)
+        const string & db_name)
 {
     std::shared_ptr<Field> _field(new Field());
     switch(type)
@@ -35,10 +35,9 @@ void Write::write(
     if (!_str.empty())  // 有field_name 返回,说明已经生成data_block
     {
         std::unique_lock<std::mutex> lock(m_thread_mutex);
-
         push_back_field_list(_str);  // 添加,让其可以映射map
-        // 激活子线程去处理数据块
 
+        // 激活子线程去处理数据块
         std::cout << "激活" << std::endl;
         ++m_is_ready;
         std::cout << "m_is_ready = " << m_is_ready << std::endl;
@@ -67,7 +66,7 @@ void Write::flush_disk()
              }
              else  // 有数据，启用计数器激活
              {
-                 m_cv.wait(lock, [&] {return m_is_ready;});  // 进入等待
+                 m_cv.wait(lock, [&]{return m_is_ready;});  // 进入等待
              }
         }
 

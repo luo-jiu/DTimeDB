@@ -28,7 +28,6 @@ namespace dt::file
 
         string create_database(const string & db_name);
         bool create_table(const string & tb_name, const string & db_name, const string & engine);
-        bool exists_table(const string & tb_name, const string & db_name);
         string create_file(const string & tb_name, const string & db_name, const string & engine_abbrev);
         string create_sys_tfile(const string & tb_name, const string & db_name, const string & engine_abbrev);
         string create_sys_dfile(const string & tb_name, const string & db_name, const string & engine_abbrev);
@@ -37,8 +36,11 @@ namespace dt::file
         bool delete_table(const string & tb_name, const string & db_name);
         bool delete_file(const string & file_name, const string & tb_name, const string & db_name);
 
-        bool load_database(const string & db_name, const string & engine);
+        string get_engine_type(const string & db_name, const string & tb_name);
+
+        static bool load_database(const string & db_name);
         static bool show_data(const string & type);
+        static bool exists_table(const string & tb_name, const string & db_name, bool print);
     private:
         struct TableInfo
         {
@@ -47,10 +49,10 @@ namespace dt::file
             std::list<string>       m_files;
         };
 
-        static string                                     m_default_base_path;  // 默认基路径
+        static string                                            m_default_base_path;  // 默认基路径
         //       db_name         tb_name | counter and files
-        std::map<string, std::map<string, TableInfo>>     m_map;     // 表对应的文件
-        FileIOManager                                     m_io_file;
+        static std::map<string, std::map<string, TableInfo>>     m_map;     // 表对应的文件
+        FileIOManager                                            m_io_file;
     };
 }
 

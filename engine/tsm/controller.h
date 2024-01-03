@@ -20,6 +20,8 @@ namespace dt::tsm
     class Controller : public IEngine
     {
     public:
+        void init();
+
         bool create_database(string & db_name) override;
         bool use_database(string & db_name) override;
         bool create_table(string & tb_name, string & db_name) override;

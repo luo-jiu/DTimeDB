@@ -10,7 +10,7 @@ include_directories(./)
 
 file(GLOB_RECURSE SOURCES "token/*.cpp" "lexer/*.cpp" "json/*.cpp" "ast/*.cpp"
         "parser/*.cpp" "engine/tsm/*.cpp" "engine/circularList/*.cpp" "executor/*.cpp"
-        "file_manager/*.cpp" "execution_plan/*.cpp" "evaluator/*.cpp" "")
+        "file_manager/*.cpp" "execution_plan/*.cpp" "evaluator/*.cpp" "thread_manager/*.cpp" "")
 
 add_executable(ast ${SOURCES} ast.cpp)
 add_executable(eval_repl ${SOURCES} eval_repl.cpp)

@@ -37,10 +37,10 @@ namespace dt::execution
         virtual string str() const { return ""; }
         void execute(IEngine & engine) override
         {
-            std::cout << "create: " << m_type << ", m_name: " << m_name << std::endl;
+            bool res;
             if (m_type == "database")
             {
-                engine.create_database(m_name);
+                res = engine.create_database(m_name);
             }
             else if (m_type == "table")
             {
@@ -51,9 +51,12 @@ namespace dt::execution
                 }
                 else  // 默认tsm 引擎
                 {
-                    engine.create_table(m_name, m_current_db);
+                    res = engine.create_table(m_name, m_current_db);
                 }
-
+            }
+            if (res)
+            {
+                std::cout << "create: " << m_type << ", m_name: " << m_name << std::endl;
             }
         }
         std::shared_ptr<ExecutionPlanNode> get_child() const override
@@ -115,9 +118,12 @@ namespace dt::execution
         virtual string str() const { return ""; }
         void execute(IEngine & engine) override
         {
-            std::cout << "use: " << m_database << std::endl;
             m_current_db = m_database;  // 上下文环境
-            engine.use_database(m_database);
+            auto res = FilePathManager::load_database(m_database);  // 加载数据库
+            if (res)
+            {
+                std::cout << "use: " << m_database << "\n";
+            }
         }
         std::shared_ptr<ExecutionPlanNode> get_child() const override
         {

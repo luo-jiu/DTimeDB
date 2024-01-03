@@ -17,7 +17,7 @@ const string prompt = "<<";
 
 int main()
 {
-    std::shared_ptr<RootNode> root = std::make_shared<RootNode>();
+    std::shared_ptr<RootNode> root;
     std::shared_ptr<Executor> executor(new Executor());
 
     std::cout << "Welcome to DTimeDB!" << std::endl;
@@ -27,6 +27,8 @@ int main()
     std::shared_ptr<Evaluator> evaluator(new Evaluator());
     while (true)
     {
+        root = std::make_shared<RootNode>();
+
         std::cout << prompt;
         string text;
         std::getline(std::cin, text);

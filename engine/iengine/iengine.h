@@ -77,7 +77,7 @@ namespace dt::iengine
                 string value,
                 Type type,
                 string & field_name,
-                string & measurement,
+                string & tb_name,
                 string & db_name) = 0;
 
 //        virtual bool insert() = 0;

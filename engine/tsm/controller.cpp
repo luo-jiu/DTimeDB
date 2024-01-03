@@ -2,6 +2,16 @@
 using namespace dt::tsm;
 
 /**
+ * 初始化函数
+ *
+ * 主要目标是启动写入线程，监控线程
+ */
+void Controller::init()
+{
+
+}
+
+/**
  * 创建数据库
  *
  * 其实就是在真实的文件系统上创建了一个文件夹
@@ -18,14 +28,11 @@ bool Controller::create_database(
 }
 
 /**
- * 确保在该数据库上下文进行操作
+ * 当要操作一个表的时候才会调用
  */
 bool Controller::use_database(
         string & db_name)
 {
-    // 将数据加载到内存中
-    m_file.load_database(db_name, "tsm");
-
 
 }
 
@@ -39,7 +46,7 @@ bool Controller::create_table(
         string & db_name)
 {
     // 先判断表是否已经存在
-    if (m_file.exists_table(tb_name, db_name))
+    if (FilePathManager::exists_table(tb_name, db_name, false))
     {
         // 表已经存在
         std::cout << tb_name << " exists" << std::endl;

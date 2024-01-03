@@ -32,17 +32,32 @@ std::shared_ptr<Expression> Parser::parse_create()
     if (m_curr.type() == Token::TOKEN_LPAREN)  // 如果是 '('
     {
         // 读取field 和类型
-        while (m_curr.type() != Token::TOKEN_RPAREN || m_curr.type() == Token::TOKEN_EOF)  // 防止语法写错给代码崩了
+        while (m_peek.type() != Token::TOKEN_RPAREN && m_curr.type() != Token::TOKEN_EOF)  // 防止语法写错给代码崩了
         {
             next_token();
         }
+        if (m_peek.type() == Token::TOKEN_RPAREN) next_token();
         if (m_curr.type() == Token::TOKEN_EOF)
         {
-            std::cerr << "Error : not fond ')';" << std::endl;
+            std::cerr << "Error: not fond ')';" << std::endl;
+            while (m_curr.type() != Token::TOKEN_EOF) next_token();  // 清空语句
+            return nullptr;
         }
+    }
+    else
+    {
+        // 语法不对,没有(),先报错,再结束掉剩下的语句
+        std::cout << "Error: you have a syntax error in \"create table " << e->m_name << "'()'\";" << std::endl;
+        while (m_curr.type() != Token::TOKEN_EOF) next_token();  // 清空语句
+        return nullptr;
     }
 
     // 出来就是 ')'
+    if (!peek_token_is(Token::TOKEN_ENGINE))
+    {
+        e->m_engine = "tsm";  // 默认引擎
+        return e;
+    }
     next_token();  // skip ')'
     next_token();  // skip 'engine'
     next_token();  // skip '='

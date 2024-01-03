@@ -15,6 +15,8 @@ std::shared_ptr<Expression> Parser::parse_show()
     else
     {
         std::cout << "There is a syntax error here in \"show '" << m_peek.literal() << "'" << std::endl;
+        while (m_curr.type() != Token::TOKEN_EOF) next_token();
+        return nullptr;
     }
     next_token();
     return e;
