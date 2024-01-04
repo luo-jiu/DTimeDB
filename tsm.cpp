@@ -31,34 +31,4 @@ int main()
 
     }
     flush_thread.join();
-
-
-
-
-//    Tool::write_integer_skip_list(sl, 100, false);
-//    Tool::transfer(sl, block, true);
-//    tsm.write_data_to_file(block, file_path, 8);
-
-    Footer new_footer;
-    tsm.read_footer_from_file(new_footer, "data.tsm");
-    std::cout << new_footer.json() << std::endl;
-
-    // 读取数据
-//    Header new_header;
-//    std::shared_ptr<DataBlock> new_block(new DataBlock());
-//    tsm.read_header_from_file(new_header, file_path);
-//    std::cout << header.json() << std::endl;
-//    tsm.read_data_from_file(new_block, file_path , 8);
-//    std::cout << new_block->json() << std::endl;
-
-//    string measurement = "school,class=高一2班";
-//    string field = "温度";
-//    string file_path = "data.tsm";
-//    Controller<string> controller;
-//    SkipList<string> sl;
-
-//    Json json = dataBlock_01.json();
-//    std::ofstream ofs("./../tsm_.json");
-//    ofs << json.str();
-//    ofs.close();
 }

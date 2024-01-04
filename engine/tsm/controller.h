@@ -4,11 +4,16 @@
 #include <file_manager/file_path_manager.h>
 using namespace dt::file;
 
-#include <engine/iengine/iengine.h>
-using namespace dt::iengine;
+#include <engine/impl/iengine.h>
+using namespace dt::impl;
 
 #include <engine/tsm/write.h>
 using namespace dt::tsm;
+
+#include <thread_manager/thread_pool.h>
+using namespace dt::thread;
+
+#include <engine/tsm/table_state.h>
 
 namespace dt::tsm
 {
@@ -20,6 +25,20 @@ namespace dt::tsm
     class Controller : public IEngine
     {
     public:
+        Controller(): m_thread_pool(8), m_running(true)
+        {
+            init();
+        }
+
+        ~Controller()
+        {
+            stop_monitoring_thread();
+            if (m_monitor_thread.joinable())
+            {
+                m_monitor_thread.join();
+            }
+        }
+
         void init();
 
         bool create_database(string & db_name) override;
@@ -33,6 +52,9 @@ namespace dt::tsm
         void begin_indexed_scan(const high_resolution_clock::time_point & timestamp, string & data) override;
         bool get_range_datas(const high_resolution_clock::time_point & start, const high_resolution_clock::time_point & end, std::vector<string> & datas) override;
         bool get_range_datas(std::vector<string> tags, std::vector<string> datas) override;
+
+        void monitoring_thread();
+        void stop_monitoring_thread();
 
     private:
         struct Table
@@ -49,7 +71,12 @@ namespace dt::tsm
 
         //       db_name
         std::map<string, Database>      m_map;
-        FilePathManager                 m_file;  // 文件管理器
+        ThreadPool                      m_thread_pool;  // 线程池
+        FilePathManager                 m_file;         // 文件管理器
+
+        TableState                      m_state;        // 为监控线程提供表状态
+        std::atomic<bool>               m_running;      // 用于退出监控线程
+        std::thread                     m_monitor_thread;
     };
 }
 

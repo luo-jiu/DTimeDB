@@ -8,7 +8,8 @@ using namespace dt::tsm;
  */
 void Controller::init()
 {
-
+    //  开启监控跳表线程
+    m_monitor_thread = std::thread([this]{ this->monitoring_thread(); });
 }
 
 /**
@@ -144,3 +145,25 @@ bool Controller::get_range_datas(
 
 }
 
+/**
+ * 监控线程需要执行到函数
+ *
+ * 用于不断去检查跳表中是否有残余数据还未刷写
+ */
+void Controller::monitoring_thread()
+{
+    while(m_running.load())
+    {
+        m_state.iterate_map();
+        // 等待一段时间再次检查
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+
+/**
+ * 结束监控线程
+ */
+void Controller::stop_monitoring_thread()
+{
+    m_running.store(false);
+}
