@@ -2,9 +2,6 @@
 // Created by illumwang on 23-12-26.
 //
 
-#ifndef DTIMEDB_CATALOG_H
-#define DTIMEDB_CATALOG_H
-
 #include <unordered_map>
 #include "schema.h"
 
@@ -48,4 +45,3 @@ namespace ctl{
          std::unordered_map<std::string ,table_oid_t>               table_names_;
      };
 }
-#endif //DTIMEDB_CATALOG_H

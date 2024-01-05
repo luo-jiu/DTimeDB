@@ -43,17 +43,18 @@ namespace ctl{
         }
     }
 
-    Value Type::GetMinValue(TypeId type_id){
+    Field Type::GetMinValue(TypeId type_id){
         switch (type_id) {
             case BOOLEAN:
-                return Value(type_id,0);
+                return Field(type_id, 0);
             case TINYINT:
-                return Value(type_id,-127);
+                return Field(type_id, -127);
         }
     }
 
-    Value Type::GetMaxValue(ctl::TypeId type_id) {
+    Field Type::GetMaxValue(ctl::TypeId type_id) {
 
     }
+    Type::Type() {}
 
 }

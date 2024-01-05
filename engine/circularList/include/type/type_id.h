@@ -9,6 +9,7 @@ namespace ctl{
         TINYINT,
         SMALLINT,
         INTEGER,
+        DECIMAL,
         VARCHAR,
         TIMESTAMP
     };

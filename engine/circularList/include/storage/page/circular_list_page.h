@@ -1,12 +1,8 @@
-//
-// Created by illumwang on 23-12-26.
-//
-
-#ifndef DTIMEDB_CIRCULAR_LIST_PAGE_H
-#define DTIMEDB_CIRCULAR_LIST_PAGE_H
 
 #include "engine/circularList/include/storage/page/page.h"
-
+/**
+ * 节点页
+ */
 namespace ctl{
     class CircularList{
     public:
@@ -16,4 +12,4 @@ namespace ctl{
         Page*               next;
     };
 }
-#endif //DTIMEDB_CIRCULAR_LIST_PAGE_H
+

@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <vector>
 #include "engine/circularList/include/type/type_id.h"
-#include "engine/circularList/include/type/value.h"
+#include "engine/circularList/include/type/field.h"
 
 namespace ctl{
     class TableGenerator{
@@ -38,7 +38,7 @@ namespace ctl{
              :name_(name),num_rows_(num_rows),col_meta_(std::move(cols)){}
          };
          void FillTable();
-         std::vector<Value> MakeValues(ColumnInsertMeta *col_meta,uint32_t count);
+         std::vector<Field> MakeValues(ColumnInsertMeta *col_meta, uint32_t count);
 
     };
 }

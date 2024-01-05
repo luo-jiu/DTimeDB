@@ -1,5 +1,5 @@
 #include <vector>
-#include "engine/circularList/include/type/value.h"
+#include "engine/circularList/include/type/field.h"
 #include "engine/circularList/include/catalog/schema.h"
 
 namespace ctl{
@@ -9,7 +9,7 @@ namespace ctl{
     public:
         Tuple()=default;
         //根据定义的表结构Schema构造行数据
-        Tuple(std::vector<Value> values,const Schema *schema);
+        Tuple(std::vector<Field> values, const Schema *schema);
         Tuple(const Tuple &other);
     };
 }
