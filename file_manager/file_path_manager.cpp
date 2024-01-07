@@ -6,15 +6,15 @@ using namespace dt::file;
 #include <filesystem>
 namespace fs = std::filesystem;
 
-string FilePathManager::m_default_base_path = "./../dbs";
-std::map<string, std::map<string, FilePathManager::TableInfo>>  FilePathManager::m_map = {};
+//string FilePathManager::m_default_base_path = "./../dbs";
+//std::map<string, std::map<string, FilePathManager::TableInfo>>  FilePathManager::m_map = {};
 
 /**
  * 创建数据库(文件夹)
  * @return 文件夹路径
  */
 string FilePathManager::create_database(
-        const string & db_name)
+        const string& db_name)
 {
     // 数据库路径
     string db_path = m_default_base_path + "/" + db_name;
@@ -42,16 +42,23 @@ string FilePathManager::create_database(
  * @return 返回表名
  */
 bool FilePathManager::create_table(
-        const string & tb_name,
-        const string & db_name,
-        const string & engine)
+        const string& tb_name,
+        const string& db_name,
+        const string& engine)
 {
+    std::unique_lock<std::shared_mutex> map_lock(m_mutex);  // 先锁整个m_map
+
     // 检查数据库是否存在
-    if (m_map.find(db_name) == m_map.end())
+    auto db_it = m_map.find(tb_name);
+    if (db_it == m_map.end())
     {
         std::cout << "Database does not exist\n";
         return false;
     }
+
+    // 放全局锁 细化粒度到表锁
+    map_lock.unlock();
+    std::unique_lock<std::shared_mutex> tb_lock(m_table_locks[tb_name]);
 
     // 创建表(创建系统表文件就行)
     string sys_file_path;
@@ -70,8 +77,8 @@ bool FilePathManager::create_table(
         return false;
     }
     close(fd);
-
-    m_map[db_name][tb_name] = TableInfo{0, engine, std::list<string>()};
+    
+    db_it->second[tb_name] = TableInfo{std::list<string>()};
     return true;
 }
 
@@ -114,9 +121,9 @@ bool FilePathManager::exists_table(
  * @return 文件路径
  */
 string FilePathManager::create_file(
-        const string & tb_name,
-        const string & db_name,
-        const string & engine_abbrev)
+        const string& tb_name,
+        const string& db_name,
+        const string& engine_abbrev)
 {
     if (exists_table(db_name, tb_name, false))
     {
@@ -145,17 +152,17 @@ string FilePathManager::create_file(
  * 可能的数据
  */
 string FilePathManager::create_sys_tfile(
-        const string & tb_name,
-        const string & db_name,
-        const string & engine_abbrev)
+        const string& tb_name,
+        const string& db_name,
+        const string& engine_abbrev)
 {
 
 }
 
 string FilePathManager::create_sys_dfile(
-        const string & tb_name,
-        const string & db_name,
-        const string & engine_abbrev)
+        const string& tb_name,
+        const string& db_name,
+        const string& engine_abbrev)
 {
 
 }
@@ -164,7 +171,7 @@ string FilePathManager::create_sys_dfile(
  * 删除数据库
  */
 bool FilePathManager::delete_database(
-        const string & db_name)
+        const string& db_name)
 {
     auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())
@@ -199,8 +206,8 @@ bool FilePathManager::delete_database(
  * 删除表
  */
 bool FilePathManager::delete_table(
-        const string & tb_name,
-        const string & db_name)
+        const string& tb_name,
+        const string& db_name)
 {
     if (exists_table(db_name, tb_name, true))
     {
@@ -237,9 +244,9 @@ bool FilePathManager::delete_table(
  * 删除文件
  */
 bool FilePathManager::delete_file(
-        const string & file_name,
-        const string & tb_name,
-        const string & db_name)
+        const string& file_name,
+        const string& tb_name,
+        const string& db_name)
 {
     if (exists_table(db_name, tb_name, true))
     {
@@ -280,7 +287,7 @@ string FilePathManager::get_engine_type(
     if (exists_table(db_name, tb_name, true))
     {
         // 存在直接返回引擎类型
-        return m_map[db_name][tb_name].m_engine;
+//        return m_map[db_name][tb_name].m_engine;
     }
     return "";
 }
@@ -295,13 +302,15 @@ string FilePathManager::get_engine_type(
 bool FilePathManager::load_database(
         const string & db_name)
 {
-    // 如果已经存在了就不读取了
+    // 读取过
     auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())
     {
+        // 直接返回
         return true;
     }
 
+    // 没读取过
     // 读取基路径下的所有数据库
     string _db_name;
     bool exists = false;
@@ -310,7 +319,8 @@ bool FilePathManager::load_database(
         if (entry.is_directory())
         {
             _db_name = entry.path().filename().string();
-            if (db_name == _db_name)  // 找到
+            // 找到就退出
+            if (db_name == _db_name)
             {
                 m_map[_db_name] = std::map<string, TableInfo>();
                 exists = true;
@@ -348,7 +358,7 @@ bool FilePathManager::load_database(
             {
                 _start_part = _file_name.substr(0, pos);
             }
-            if (_start_part == "sys")  // 只加载sys 系统文件
+            if (_start_part == "sys" && entry.path().extension() == ("." + m_engine))  // 只加载sys 系统文件
             {
                 string _table_part = _file_name.substr(pos + 1);
                 size_t dot_pos = _table_part.find('.');
@@ -357,14 +367,7 @@ bool FilePathManager::load_database(
                 // 在此处读取系统文件的信息[暂时没有]
                 // ...
 
-                // 区别引擎类型
-                string _abbrev = ".tsm";
-                if (entry.path().extension() == ".clt")
-                {
-                    _abbrev = ".clt";
-                }
-
-                _table_map[_table_name] = TableInfo{0, _abbrev, std::list<string>()};  // 创建对象
+                _table_map[_table_name] = TableInfo{std::list<string>()};  // 创建对象
             }
         }
     }

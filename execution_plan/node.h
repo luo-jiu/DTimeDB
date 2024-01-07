@@ -1,8 +1,8 @@
 #ifndef DTIMEDB_NODE_H
 #define DTIMEDB_NODE_H
 
-#include <engine/iengine/iengine.h>
-using namespace dt::iengine;
+#include <engine/impl/iengine.h>
+using namespace dt::impl;
 
 #include <memory>
 #include <map>
@@ -14,6 +14,8 @@ namespace dt::execution
 {
     /**
      * 数据类型基类
+     *
+     * [被观察者]
      */
     class ExecutionPlanNode
     {
@@ -28,6 +30,7 @@ namespace dt::execution
 
             // 操作符
             OBJECT_ROOT,
+            OBJECT_SHOW,
             OBJECT_USE,
             OBJECT_SCAN,
             OBJECT_FILTER,
@@ -48,6 +51,8 @@ namespace dt::execution
         static std::shared_ptr<ExecutionPlanNode> new_integer(int64_t value);
         static std::shared_ptr<ExecutionPlanNode> new_float(float value);
         static std::shared_ptr<ExecutionPlanNode> new_null();
+
+        void show_database();
 
         // 操作符虚函数
         virtual void execute(IEngine & engine) = 0;

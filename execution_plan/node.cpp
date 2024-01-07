@@ -7,9 +7,14 @@
 #include <cstdarg>
 using namespace dt::execution;
 
+#include <filesystem>
+namespace fs = std::filesystem;
+
 string ExecutionPlanNode::m_current_db = "";
 
 std::map<ExecutionPlanNode::Type, string> ExecutionPlanNode::m_names = {
+        {OBJECT_USE,         "use"},
+        {OBJECT_SHOW,        "show"},
         {OBJECT_ERROR,       "error"},
         {OBJECT_STRING,      "string"},
         {OBJECT_INTEGER,     "integer"},
@@ -57,4 +62,18 @@ std::shared_ptr<ExecutionPlanNode> ExecutionPlanNode::new_float(float value)
 std::shared_ptr<ExecutionPlanNode> ExecutionPlanNode::new_null()
 {
     return std::make_shared<Null>();
+}
+
+/**
+ * 这个命令用的少且较为特殊直接写在这里了
+ */
+void ExecutionPlanNode::show_database()
+{
+    for (const auto & entry : fs::directory_iterator("./../dbs"))
+    {
+        if (entry.is_directory())
+        {
+            std::cout << entry.path().filename().string() << std::endl;
+        }
+    }
 }

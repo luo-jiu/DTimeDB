@@ -31,24 +31,23 @@ namespace dt::executor
     class Executor
     {
     public:
+        Executor()
+        {
+            // 为多个引擎的调用提供映射
+            m_engine_map["tsm"] = std::make_shared<Controller>();
+        }
 
-        std::shared_ptr<Program> generate_ast_tree(string & sql);
+        std::shared_ptr<Program> generate_ast_tree(string& sql);
         void generate_execute_plan(string & sql);
-        void execute_plan(const std::shared_ptr<ExecutionPlanNode> & node);
+        void execute_plan(const std::shared_ptr<ExecutionPlanNode>& node);
 
         bool insert();
 
-//        void use_database(string & db_name);
-//        string get_database();
     private:
-//        string m_current_db;  // 当前操作哪个数据库
+        std::map<string, std::shared_ptr<IEngine>> m_engine_map;
+//        Controller* m_tsm = new Controller();  // 引擎控制器
 
-        // new saveBankWorker
-        Controller * m_tsm = new Controller();  // 引擎控制器
-//        std::shared_ptr<Controller> m_clt;
-
-        // BankWork * bw = NULL;
-        IEngine * m_engine;  // 引擎接口
+//        IEngine* m_engine;  // 引擎接口
     };
 }
 

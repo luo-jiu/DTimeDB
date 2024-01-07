@@ -25,6 +25,7 @@ namespace dt::execution
         void set_child(std::shared_ptr<ExecutionPlanNode> child) override { m_child = child; }
 
     public:
+        string                                 m_engine;  // 表示该执行计划需要在哪个引擎下执行
         std::shared_ptr<ExecutionPlanNode>     m_child;
     };
 
@@ -79,25 +80,17 @@ namespace dt::execution
     class ShowNode : public ExecutionPlanNode
     {
     public:
+        ShowNode(): ExecutionPlanNode(OBJECT_SHOW) {}
         virtual string str() const { return ""; }
         void execute(IEngine & engine) override
         {
 //            std::cout << "show: " << m_type << std::endl;
-
-            // 遍历数据库 或者 表
-            if (m_type == "database")
+            if (m_current_db.empty())
             {
-                FilePathManager::show_data("");
+                std::cout << "Database not selected, 'use' command" << std::endl;
+                return;
             }
-            else
-            {
-                if (m_current_db.empty())
-                {
-                    std::cout << "Database not selected, 'use' command" << std::endl;
-                    return;
-                }
-                FilePathManager::show_data(m_current_db);
-            }
+            engine.show_table(m_current_db);
         }
         std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
         void set_child(std::shared_ptr<ExecutionPlanNode> child) { m_child = child; }
@@ -119,11 +112,8 @@ namespace dt::execution
         void execute(IEngine & engine) override
         {
             m_current_db = m_database;  // 上下文环境
-            auto res = FilePathManager::load_database(m_database);  // 加载数据库
-            if (res)
-            {
-                std::cout << "use: " << m_database << "\n";
-            }
+            engine.load_database(m_database);  // 加载对应数据库
+            std::cout << "use: " << m_database << "\n";
         }
         std::shared_ptr<ExecutionPlanNode> get_child() const override
         {
@@ -231,15 +221,14 @@ namespace dt::execution
             // 调用存储引擎接口的插入函数
             for (string fv : m_fv)
             {
-                size_t pos = 0;
+                size_t pos;
                 string field, value;
                 while ((pos = fv.find('=')) != std::string::npos) {
                     field = fv.substr(0, pos);
                     fv.erase(0, pos + 1);
                 }
                 value = fv;
-                string db = "fv";
-                engine.insert(timestamp, value, IEngine::Type::DATA_STREAM, field, m_table, db);
+                engine.insert(timestamp, value, IEngine::Type::DATA_STRING, field, m_table, m_current_db);
             }
         }
         std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }

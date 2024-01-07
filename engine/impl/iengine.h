@@ -1,6 +1,9 @@
 #ifndef DTIMEDB_IENGINE_H
 #define DTIMEDB_IENGINE_H
 
+#include <file_manager/file_path_manager.h>
+using namespace dt::file;
+
 #include <iostream>
 using std::string;
 
@@ -20,30 +23,30 @@ namespace dt::impl
     public:
         enum Type
         {
-            DATA_STREAM,
+            DATA_STRING,
             DATA_INTEGER,
             DATA_FLOAT
         };
 
     public:
+
+        /**
+         * [共有]
+         * 1. 加载数据库信息
+         * 2. 打印表
+         *
+         * 因为将每个数据库的文件管理系统给分开了，所以需要额外提供接口
+         */
+        virtual void load_database(string & db_name) = 0;
+        virtual void show_table(string & db_name) = 0;
+
+
         /**
          * [共有]
          * 创建数据库
          */
         virtual bool create_database(
                 string & db_name) = 0;
-
-
-        /**
-         * [共有]
-         * 选择数据库
-         *
-         * 引擎要做的是给对应数据库的信息加载到内存
-         * 里面来
-         */
-        virtual bool use_database(
-                string & db_name) = 0;
-
 
         /**
          * [tsm]
@@ -128,6 +131,11 @@ namespace dt::impl
         virtual bool get_range_datas(
                 std::vector<string> tags,
                 std::vector<string> datas) = 0;
+
+//        /**
+//         * 获取对应引擎的文件管理器
+//         */
+//        virtual FilePathManager get_file_manager() = 0;
 
     };
 }

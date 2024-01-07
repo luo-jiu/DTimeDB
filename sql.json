@@ -1,1 +1,1 @@
-{"statements":[{"expression":{"type":"database"},"type":"ExpressionStatement"},{"expression":{"type":"Identifier","value":"zzz"},"type":"ExpressionStatement"}],"type":"Program"}
+{"statements":[{"expression":{"database":"db_test","type":""},"type":"ExpressionStatement"}],"type":"Program"}

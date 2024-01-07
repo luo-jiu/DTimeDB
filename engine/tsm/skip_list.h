@@ -1,9 +1,12 @@
 #pragma once
 
+#include <engine/impl/iobserver_table_state.h>
+using namespace dt::impl;
+
 #include <vector>
 #include <cstdlib>
 #include <iostream>
-
+#include <shared_mutex>
 #include <chrono>
 using namespace std::chrono;
 
@@ -20,7 +23,7 @@ namespace dt::tsm
      * 线程不安全
      */
     template <class T>
-    class SkipList
+    class SkipList : public ITableStateSubject
     {
     public:
         SkipList()
@@ -41,6 +44,28 @@ namespace dt::tsm
             }
         }
 
+        void attach(ITableStateObserver* observer) override
+        {
+            std::unique_lock<std::shared_mutex> lock(m_mutex);
+            m_observers.push_back(observer);
+        }
+
+        void detach(ITableStateObserver* observer) override
+        {
+            std::shared_lock<std::shared_mutex> lock(m_mutex);
+            m_observers.remove(observer);
+        }
+
+        void notify(const string& db_name, const string& tb_name, bool is_registered) override
+        {
+            std::shared_lock<std::shared_mutex> lock(m_mutex);
+            // 通知所有观察者发生变化
+            for (auto observer : m_observers)
+            {
+                observer->update(db_name, tb_name, is_registered);
+            }
+        }
+
         SkipListIterator<T> begin() const
         {
             return SkipListIterator<T>(m_head->m_nexts[0]);  // 从最低层开始迭代
@@ -51,8 +76,8 @@ namespace dt::tsm
             return SkipListIterator<T>(nullptr);  // 迭代结束标志
         }
 
-        void put(high_resolution_clock::time_point key, T & value);
-        bool get(high_resolution_clock::time_point key, T & value);
+        void put(high_resolution_clock::time_point key, T& value);
+        bool get(high_resolution_clock::time_point key, T& value);
         void del(high_resolution_clock::time_point key);
         void cle();
 
@@ -65,6 +90,8 @@ namespace dt::tsm
 
         size_t size();
 
+
+    public:
         struct Node
         {
             high_resolution_clock::time_point m_key;
@@ -75,8 +102,10 @@ namespace dt::tsm
         };
 
     private:
-        Node * m_head;  // 头结点
-        size_t m_bottom_level_node_count; // 计数器
+        Node*                                   m_head;  // 头结点
+        size_t                                  m_bottom_level_node_count; // 计数器
+        std::list<ITableStateObserver*>         m_observers;
+        mutable std::shared_mutex               m_mutex;  // 读写锁
 
         int random_level()
         {
@@ -97,14 +126,14 @@ namespace dt::tsm
     class SkipListIterator
     {
     public:
-        SkipListIterator(typename SkipList<T>::Node* start) : current(start) {}
+        SkipListIterator(typename SkipList<T>::Node* start): current(start) {}
 
         bool operator!=(const SkipListIterator& other) const
         {
             return current != other.current;
         }
 
-        SkipListIterator & operator++()
+        SkipListIterator& operator++()
         {
             if (current != nullptr)
             {
@@ -113,7 +142,7 @@ namespace dt::tsm
             return *this;
         }
 
-        const std::pair<high_resolution_clock::time_point, T> & operator*() const
+        const std::pair<high_resolution_clock::time_point, T>& operator*() const
         {
             if (current == nullptr)
             {
@@ -129,7 +158,7 @@ namespace dt::tsm
     };
 
     template <class T>
-    void SkipList<T>::put(high_resolution_clock::time_point key, T & value)
+    void SkipList<T>::put(high_resolution_clock::time_point key, T& value)
     {
         std::vector<Node*> update(MAX_LEVEL, nullptr);
         Node* current = m_head;
@@ -167,7 +196,7 @@ namespace dt::tsm
     }
 
     template <class T>
-    bool SkipList<T>::get(high_resolution_clock::time_point key, T & value)
+    bool SkipList<T>::get(high_resolution_clock::time_point key, T& value)
     {
         Node* current = m_head;
         for (int i = MAX_LEVEL - 1; i >= 0; --i)

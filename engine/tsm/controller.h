@@ -25,7 +25,7 @@ namespace dt::tsm
     class Controller : public IEngine
     {
     public:
-        Controller(): m_thread_pool(8), m_running(true)
+        Controller(): m_thread_pool(8), m_running(true), m_file("tsm")
         {
             init();
         }
@@ -41,8 +41,9 @@ namespace dt::tsm
 
         void init();
 
+        void load_database(string & db_name) override;
+        void show_table(string & db_name) override;
         bool create_database(string & db_name) override;
-        bool use_database(string & db_name) override;
         bool create_table(string & tb_name, string & db_name) override;
 
         bool insert(high_resolution_clock::time_point timestamp, string value, Type type, string & field_name, string & measurement, string & db_name) override;
@@ -72,7 +73,7 @@ namespace dt::tsm
         //       db_name
         std::map<string, Database>      m_map;
         ThreadPool                      m_thread_pool;  // 线程池
-        FilePathManager                 m_file;         // 文件管理器
+        FilePathManager                 m_file;         // 文件管理器(每个引擎都有自己的管理系统)
 
         TableState                      m_state;        // 为监控线程提供表状态
         std::atomic<bool>               m_running;      // 用于退出监控线程

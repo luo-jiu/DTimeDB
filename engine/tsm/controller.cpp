@@ -10,6 +10,9 @@ void Controller::init()
 {
     //  开启监控跳表线程
     m_monitor_thread = std::thread([this]{ this->monitoring_thread(); });
+
+    // 注册观察者
+
 }
 
 /**
@@ -31,10 +34,16 @@ bool Controller::create_database(
 /**
  * 当要操作一个表的时候才会调用
  */
-bool Controller::use_database(
+void Controller::load_database(
         string & db_name)
 {
+    m_file.load_database(db_name);
+}
 
+void Controller::show_table(
+        string & db_name)
+{
+    m_file.show_data(db_name);
 }
 
 /**
@@ -47,7 +56,7 @@ bool Controller::create_table(
         string & db_name)
 {
     // 先判断表是否已经存在
-    if (FilePathManager::exists_table(tb_name, db_name, false))
+    if (m_file.exists_table(tb_name, db_name, false))
     {
         // 表已经存在
         std::cout << tb_name << " exists" << std::endl;
@@ -68,20 +77,24 @@ bool Controller::insert(
         string value,
         Type type,
         string & field_name,
-        string & measurement,
+        string & tb_name,
         string & db_name)
 {
-    // 拿取出对应表的writer
+    // 先看文件管理器里面有没有
+
+
+
+    // 拿取出对应表的writer (基本上是拿不到的)
     auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())
     {
-        auto tb_it = db_it->second.m_table_map.find(measurement);
+        auto tb_it = db_it->second.m_table_map.find(tb_name);
         if (tb_it != db_it->second.m_table_map.end())
         {
             // 获取字段writer
             auto & writer = tb_it->second;
             DataBlock::Type _type;
-            if (type == IEngine::Type::DATA_STREAM)
+            if (type == IEngine::Type::DATA_STRING)
             {
                 _type = DataBlock::DATA_STRING;
             }
