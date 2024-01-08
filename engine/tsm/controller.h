@@ -46,7 +46,8 @@ namespace dt::tsm
         bool create_database(string & db_name) override;
         bool create_table(string & tb_name, string & db_name) override;
 
-        bool insert(high_resolution_clock::time_point timestamp, string value, Type type, string & field_name, string & measurement, string & db_name) override;
+        bool insert(high_resolution_clock::time_point timestamp, string value, Type type, string & field_name, string & tb_name, string & db_name) override;
+        void insert_thread(high_resolution_clock::time_point timestamp, string value, Type type, string & field_name, string & tb_name, string & db_name);
         bool update(high_resolution_clock::time_point timestamp, string value, Type type, string & table_name) override;
 
         bool get_next_data(string & data) override;
@@ -56,6 +57,7 @@ namespace dt::tsm
 
         void monitoring_thread();
         void stop_monitoring_thread();
+        bool exists_table(string & db_name, string & tb_name);
 
     private:
         struct Table
@@ -78,6 +80,7 @@ namespace dt::tsm
         TableState                      m_state;        // 为监控线程提供表状态
         std::atomic<bool>               m_running;      // 用于退出监控线程
         std::thread                     m_monitor_thread;
+        mutable std::shared_mutex       m_mutex;        // 读写锁保证m_map 安全
     };
 }
 

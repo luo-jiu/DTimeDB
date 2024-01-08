@@ -80,43 +80,65 @@ bool Controller::insert(
         string & tb_name,
         string & db_name)
 {
+    // 从线程池分配任务
+    m_thread_pool.enqueue(&Controller::insert_thread, this, timestamp, value, type, field_name, tb_name, db_name);
+    return true;
+}
+
+void Controller::insert_thread(
+        high_resolution_clock::time_point timestamp,
+        string value,
+        Type type,
+        string & field_name,
+        string & tb_name,
+        string & db_name)
+{
+    std::shared_lock<std::shared_mutex> read_lock(m_mutex);
+    std::cout << "tsm调用线程池处理插入任务..." << std::endl;
+
     // 先看文件管理器里面有没有
-
-
-
-    // 拿取出对应表的writer (基本上是拿不到的)
-    auto db_it = m_map.find(db_name);
-    if (db_it != m_map.end())
+    if (m_file.exists_table(db_name, tb_name, true))
     {
-        auto tb_it = db_it->second.m_table_map.find(tb_name);
-        if (tb_it != db_it->second.m_table_map.end())
+        if (!exists_table(db_name, tb_name))
         {
-            // 获取字段writer
-            auto & writer = tb_it->second;
-            DataBlock::Type _type;
-            if (type == IEngine::Type::DATA_STRING)
-            {
-                _type = DataBlock::DATA_STRING;
-            }
-            else if (type == IEngine::Type::DATA_INTEGER)
-            {
-                _type = DataBlock::DATA_INTEGER;
-            }
-            else if (type == IEngine::Type::DATA_FLOAT)
-            {
-                _type = DataBlock::DATA_FLOAT;
-            }
-            else
-            {
-                std::cerr << "Error : unknown type " << type << std::endl;
-                return false;
-            }
+            read_lock.unlock();
+            std::unique_lock<std::shared_mutex> write_lock(m_mutex);
+            // 不存在需要初始化
+            std::map<string, Table> _table;
+            _table[tb_name] = Table{};
+            m_map[db_name] = Database{"", _table};
 
-            writer.m_writer->write(timestamp, value, _type, field_name, db_name);  // 写入
-            return true;
+            write_lock.unlock();
+            read_lock.lock();
         }
     }
-    return false;
+    else
+    {
+        std::cout << "the '"<< tb_name << "' table does not exist.";
+        return;
+    }
+
+    // 拿取出对应表的writer (这里一定是读取)
+    auto & _writer = m_map[db_name].m_table_map[tb_name].m_writer;
+    DataBlock::Type _type;
+    if (type == IEngine::Type::DATA_STRING)
+    {
+        _type = DataBlock::DATA_STRING;
+    }
+    else if (type == IEngine::Type::DATA_INTEGER)
+    {
+        _type = DataBlock::DATA_INTEGER;
+    }
+    else if (type == IEngine::Type::DATA_FLOAT)
+    {
+        _type = DataBlock::DATA_FLOAT;
+    }
+    else
+    {
+        std::cerr << "Error : unknown type " << type << std::endl;
+        return;
+    }
+    _writer->write(timestamp, value, _type, field_name, db_name);
 }
 
 /**
@@ -179,4 +201,21 @@ void Controller::monitoring_thread()
 void Controller::stop_monitoring_thread()
 {
     m_running.store(false);
+}
+
+bool Controller::exists_table(
+        string & db_name,
+        string & tb_name)
+{
+    std::shared_lock<std::shared_mutex> read_lock(m_mutex);
+    auto db_it = m_map.find(db_name);
+    if (db_it != m_map.end())
+    {
+        auto tb_it = db_it->second.m_table_map.find(tb_name);
+        if (tb_it != db_it->second.m_table_map.end())
+        {
+            return true;
+        }
+    }
+    return false;
 }

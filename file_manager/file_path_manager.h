@@ -21,13 +21,11 @@ namespace dt::file
 {
     /**
      * 为存储引擎提供File 路径管理
-     *
-     * [观察者]
      */
     class FilePathManager
     {
     public:
-        FilePathManager(string engine):m_default_base_path("./../dbs"), m_engine(std::move(engine)), m_io_file(10) {}
+        FilePathManager(string engine): m_default_base_path("./../dbs"), m_engine(std::move(engine)), m_io_file(10) {}
 
         string create_database(const string & db_name);
         bool create_table(const string & tb_name, const string & db_name, const string & engine);

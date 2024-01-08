@@ -44,19 +44,19 @@ namespace dt::tsm
             }
         }
 
-        void attach(ITableStateObserver* observer) override
+        void attach(ITableStateObserver * observer) override
         {
             std::unique_lock<std::shared_mutex> lock(m_mutex);
             m_observers.push_back(observer);
         }
 
-        void detach(ITableStateObserver* observer) override
+        void detach(ITableStateObserver * observer) override
         {
             std::shared_lock<std::shared_mutex> lock(m_mutex);
             m_observers.remove(observer);
         }
 
-        void notify(const string& db_name, const string& tb_name, bool is_registered) override
+        void notify(const string & db_name, const string & tb_name, bool is_registered) override
         {
             std::shared_lock<std::shared_mutex> lock(m_mutex);
             // 通知所有观察者发生变化
@@ -76,15 +76,15 @@ namespace dt::tsm
             return SkipListIterator<T>(nullptr);  // 迭代结束标志
         }
 
-        void put(high_resolution_clock::time_point key, T& value);
-        bool get(high_resolution_clock::time_point key, T& value);
+        void put(high_resolution_clock::time_point key, T & value);
+        bool get(high_resolution_clock::time_point key, T & value);
         void del(high_resolution_clock::time_point key);
         void cle();
 
         bool empty();
 
-        high_resolution_clock::time_point min_key() const;  // 获取最小键
-        high_resolution_clock::time_point max_key() const;  // 获取最大键
+        high_resolution_clock::time_point min_key();  // 获取最小键
+        high_resolution_clock::time_point max_key();  // 获取最大键
 
         void traverse();
 
@@ -106,6 +106,7 @@ namespace dt::tsm
         size_t                                  m_bottom_level_node_count; // 计数器
         std::list<ITableStateObserver*>         m_observers;
         mutable std::shared_mutex               m_mutex;  // 读写锁
+        std::mutex                              m_sl_mutex;  // 互斥锁, 性能瓶颈, 未来再说
 
         int random_level()
         {
@@ -160,6 +161,7 @@ namespace dt::tsm
     template <class T>
     void SkipList<T>::put(high_resolution_clock::time_point key, T& value)
     {
+        std::lock_guard<std::mutex> lock(m_sl_mutex);  // 互斥锁
         std::vector<Node*> update(MAX_LEVEL, nullptr);
         Node* current = m_head;
 
@@ -198,6 +200,7 @@ namespace dt::tsm
     template <class T>
     bool SkipList<T>::get(high_resolution_clock::time_point key, T& value)
     {
+        std::lock_guard<std::mutex> lock(m_sl_mutex);  // 互斥锁
         Node* current = m_head;
         for (int i = MAX_LEVEL - 1; i >= 0; --i)
         {
@@ -219,6 +222,7 @@ namespace dt::tsm
     template <class T>
     void SkipList<T>::del(high_resolution_clock::time_point key)
     {
+        std::lock_guard<std::mutex> lock(m_sl_mutex);  // 互斥锁
         std::vector<Node*> update(MAX_LEVEL, nullptr);
         Node* current = m_head;
 
@@ -254,6 +258,7 @@ namespace dt::tsm
     template <class T>
     void SkipList<T>::cle()
     {
+        std::lock_guard<std::mutex> lock(m_sl_mutex);  // 互斥锁
         for (int i = 0; i < MAX_LEVEL; ++i) {
             m_head->m_nexts[i] = nullptr;
         }
@@ -297,6 +302,7 @@ namespace dt::tsm
     template <class T>
     size_t SkipList<T>::size()
     {
+        std::lock_guard<std::mutex> lock(m_sl_mutex);  // 互斥锁
         return m_bottom_level_node_count;
     }
 
@@ -304,8 +310,9 @@ namespace dt::tsm
      * 获取最小的键
      */
     template <class T>
-    high_resolution_clock::time_point SkipList<T>::min_key() const
+    high_resolution_clock::time_point SkipList<T>::min_key()
     {
+        std::lock_guard<std::mutex> lock(m_sl_mutex);  // 互斥锁
         if (m_head->m_nexts[0] != nullptr)
         {
             return m_head->m_nexts[0]->m_key;
@@ -317,8 +324,9 @@ namespace dt::tsm
      * 获取最大的键
      */
     template <class T>
-    high_resolution_clock::time_point SkipList<T>::max_key() const
+    high_resolution_clock::time_point SkipList<T>::max_key()
     {
+        std::lock_guard<std::mutex> lock(m_sl_mutex);  // 互斥锁
         Node* current = m_head;
         while (current->m_nexts[0] != nullptr)
         {
