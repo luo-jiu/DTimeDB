@@ -41,7 +41,7 @@ namespace dt::file
 
         bool load_database(const string & db_name);
         bool show_data(const string & type);
-        bool exists_table(const string & tb_name, const string & db_name, bool print);
+        bool exists_table(const string & db_name, const string & tb_name, bool print);
 
     public:
         mutable std::shared_mutex m_mutex;

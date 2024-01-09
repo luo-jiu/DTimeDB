@@ -3,25 +3,23 @@ using namespace dt::tsm;
 
 string Field::write(
         high_resolution_clock::time_point timestamp,
-        string & data)
+        string & data,
+        string & db_name,
+        string & tb_name)
 {
+    std::lock_guard<std::mutex> lock(m_sl_mutex);  // 直接上互斥锁
     m_sl.put(timestamp, data);
 
     if(m_sl.size() == 1)
     {
         m_sl_last_time = high_resolution_clock::now();
-        std::cout << "初始化/重置m_sl_last_time" << std::endl;
+        std::cout << "初始化/重置m_sl_last_time, table: " << tb_name << std::endl;
+        m_sl.notify(db_name, tb_name, true);
     }
 
-    // 跳表数量大于 10 || (跳表组织时间大于1s && 跳表有数据)
-    auto current_time = std::chrono::system_clock::now();
-    if (m_sl.size() >= 10 || (current_time - m_sl_last_time >= seconds(1) && !m_sl.empty()))
+    // 跳表是否需要刷新
+    if (should_flush_data())
     {
-        if (current_time - m_sl_last_time >= std::chrono::seconds(1) && !m_sl.empty())
-        {
-            std::cout << "跳表超过1s直接刷入" << std::endl;
-        }
-
         // 确保m_current_data 不为空
         if (!m_current_data)
         {
@@ -71,6 +69,15 @@ string Field::write(
 }
 
 /**
+ * 检查跳表是否需要刷新
+ */
+bool Field::should_flush_data()
+{
+    auto current_time = std::chrono::system_clock::now();
+    return m_sl.size() >= 10 || (current_time - m_sl_last_time >= seconds(1) && !m_sl.empty());
+}
+
+/**
  * 放置数据
  */
 void Field::push_data_to_deque(std::shared_ptr<DataBlock> data_block)
@@ -108,6 +115,11 @@ std::shared_ptr<IndexEntry> Field::pop_index_from_deque()
         m_index_deque.pop_front();
         return index_block;
     }
+}
+
+SkipList<string> & Field::get_skip_list()
+{
+    return m_sl;
 }
 
 bool Field::get_data_status()

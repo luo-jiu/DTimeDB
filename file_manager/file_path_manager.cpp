@@ -88,8 +88,8 @@ bool FilePathManager::create_table(
  * 其实还可以顺手判断数据库是否存在
  */
 bool FilePathManager::exists_table(
-        const string & tb_name,
         const string & db_name,
+        const string & tb_name,
         bool print)
 {
     auto db_it = m_map.find(db_name);

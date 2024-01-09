@@ -93,7 +93,7 @@ void Controller::insert_thread(
         string & tb_name,
         string & db_name)
 {
-    std::shared_lock<std::shared_mutex> read_lock(m_mutex);
+    std::unique_lock<std::shared_mutex> read_lock(m_mutex);
     std::cout << "tsm调用线程池处理插入任务..." << std::endl;
 
     // 先看文件管理器里面有没有
@@ -101,15 +101,15 @@ void Controller::insert_thread(
     {
         if (!exists_table(db_name, tb_name))
         {
-            read_lock.unlock();
-            std::unique_lock<std::shared_mutex> write_lock(m_mutex);
+//            read_lock.unlock();
+//            std::unique_lock<std::shared_mutex> write_lock(m_mutex);
             // 不存在需要初始化
             std::map<string, Table> _table;
-            _table[tb_name] = Table{};
+            _table[tb_name] = Table{std::make_shared<Write>()};
             m_map[db_name] = Database{"", _table};
 
-            write_lock.unlock();
-            read_lock.lock();
+//            write_lock.unlock();
+//            read_lock.lock();
         }
     }
     else
@@ -120,6 +120,7 @@ void Controller::insert_thread(
 
     // 拿取出对应表的writer (这里一定是读取)
     auto & _writer = m_map[db_name].m_table_map[tb_name].m_writer;
+    read_lock.unlock();
     DataBlock::Type _type;
     if (type == IEngine::Type::DATA_STRING)
     {
@@ -138,7 +139,7 @@ void Controller::insert_thread(
         std::cerr << "Error : unknown type " << type << std::endl;
         return;
     }
-    _writer->write(timestamp, value, _type, field_name, db_name);
+    _writer->write(timestamp, value, _type, field_name, db_name, tb_name, m_state);
 }
 
 /**
@@ -203,11 +204,13 @@ void Controller::stop_monitoring_thread()
     m_running.store(false);
 }
 
+/**
+ * 保证调用这个方法的方法已经有读写锁了
+ */
 bool Controller::exists_table(
         string & db_name,
         string & tb_name)
 {
-    std::shared_lock<std::shared_mutex> read_lock(m_mutex);
     auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())
     {

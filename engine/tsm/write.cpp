@@ -6,24 +6,26 @@ void Write::write(
         string & data,
         DataBlock::Type type,
         string & field_name,
-        const string & db_name)
+        string & db_name,
+        string & tb_name,
+        TableState & tb_state)
 {
     std::shared_ptr<Field> _field(new Field());
     switch(type)
     {
         case DataBlock::DATA_STRING:
         {
-            _field = get_field(field_name, "string");
+            _field = get_field(field_name, "string", tb_state);
             break;
         }
         case DataBlock::DATA_INTEGER:
         {
-            _field = get_field(field_name, "integer");
+            _field = get_field(field_name, "integer", tb_state);
             break;
         }
         case DataBlock::DATA_FLOAT:
         {
-            _field = get_field(field_name, "float");
+            _field = get_field(field_name, "float", tb_state);
             break;
         }
         default:
@@ -31,7 +33,7 @@ void Write::write(
             std::cerr << "Error : Unknown type " << type << std::endl;
         }
     }
-    auto _str = _field->write(timestamp, data);
+    auto _str = _field->write(timestamp, data, db_name, tb_name);
     if (!_str.empty())  // 有field_name 返回,说明已经生成data_block
     {
         std::unique_lock<std::mutex> lock(m_thread_mutex);
@@ -283,7 +285,8 @@ void Write::flush_all_sl()
 
 std::shared_ptr<Field> Write::get_field(
         string & field_name,
-        const string & type)
+        const string & type,
+        TableState & tb_state)
 {
     std::lock_guard<std::mutex> lock(m_write_mutex);
     auto it = m_field_map.find(field_name);
@@ -314,6 +317,8 @@ std::shared_ptr<Field> Write::get_field(
         std::cerr << "Error : Unknown type " << type << std::endl;
         return nullptr;
     }
+    // 注册观察者
+    _field->get_skip_list().attach(&tb_state);
     m_field_map[field_name] = _field;
     return _field;
 }

@@ -13,10 +13,10 @@ using std::string;
 
 namespace dt::tsm
 {
-    class TableState : ITableStateObserver
+    class TableState : public ITableStateObserver
     {
     public:
-        void update(const string& db_name, const string& tb_name, bool is_registered) override
+        void update(const string & db_name, const string & tb_name, bool is_registered) override
         {
             // 更新状态逻辑
             if (is_registered)
@@ -94,6 +94,7 @@ namespace dt::tsm
 
                 // 执行相关操作, 例如让跳表刷新数据到磁盘
                 // ...
+                std::cout << "监控到跳表注册的事件" << std::endl;
 
                 // 移除掉状态
                 {

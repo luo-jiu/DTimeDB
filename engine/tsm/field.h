@@ -16,12 +16,15 @@ namespace dt::tsm
     public:
         Field() = default;
         Field(DataBlock::Type type, string field_name) : m_type(type), m_field_name(field_name), m_status(false) {}
-        string write(high_resolution_clock::time_point timestamp, string & data);
+        string write(high_resolution_clock::time_point timestamp, string & data, string & db_name, string & tb_name);
         bool get_status() const { return m_status; }
+
+        bool should_flush_data();
 
         bool get_data_status();
         bool get_index_status();
         int get_index_deque_size();
+        SkipList<string> & get_skip_list();
         void push_data_to_deque(std::shared_ptr<DataBlock> data_block);
         std::shared_ptr<DataBlock> pop_data_from_deque();
         void push_index_to_deque(std::shared_ptr<IndexEntry> & index_block);
@@ -38,6 +41,7 @@ namespace dt::tsm
         bool                                        m_status;               // 状态
         high_resolution_clock::time_point           m_sl_last_time;         // 跳表刷块计时器
 
+        std::mutex                                  m_sl_mutex;             // 有关跳表逻辑的锁
         std::mutex                                  m_data_lock;
         std::mutex                                  m_index_lock;
 
