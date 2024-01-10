@@ -4,14 +4,18 @@
 
 #include <string>
 #include "engine/circularList/include/type/type_id.h"
-
+#include "exception/exception.h"
+#include "exception"
+/**
+ * column构成整个表的结构，即schema
+ */
 namespace ctl{
     class Column{
         friend class Schema;
     public:
        Column(std::string column_name,TypeId type,uint32_t length)
        :column_name_(std::move(column_name)), column_type_(type),column_size_(TypeSize(type)){}
-       /**@return column's name*/
+       /**@return  列的名称*/
         std::string GetName() const{return column_name_;}
         /** @return column's offset in the tuple */
         uint32_t GetOffset() const { return column_offset_; }

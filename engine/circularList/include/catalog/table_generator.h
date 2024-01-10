@@ -6,9 +6,12 @@
 #include <vector>
 #include "engine/circularList/include/type/type_id.h"
 #include "engine/circularList/include/type/field.h"
-
+#include "schema.h"
+#include "catalog.h"
 namespace ctl{
     class TableGenerator{
+    public:
+        explicit TableGenerator(const std::string &table_name,const Schema &schema);
     private:
         struct ColumnInsertMeta{
             const char      *name_;
@@ -37,7 +40,7 @@ namespace ctl{
              TableInsertMeta(const char *name,uint32_t num_rows,std::vector<ColumnInsertMeta>  cols)
              :name_(name),num_rows_(num_rows),col_meta_(std::move(cols)){}
          };
-         void FillTable();
+         void FillTable(TableInfo *info,TableInsertMeta *table_meta);
          std::vector<Field> MakeValues(ColumnInsertMeta *col_meta, uint32_t count);
 
     };

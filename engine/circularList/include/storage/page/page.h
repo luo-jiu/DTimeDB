@@ -2,9 +2,6 @@
 // Created by illumwang on 23-12-24.
 //
 
-#ifndef DTIMEDB_PAGE_H
-#define DTIMEDB_PAGE_H
-
 #include <cstring>
 #include "engine/circularList/include/common/rwlatch.h"
 
@@ -41,4 +38,4 @@ namespace ctl{
         ReaderWriterLatch                   rwlatch_;
     };
 }
-#endif //DTIMEDB_PAGE_H
+

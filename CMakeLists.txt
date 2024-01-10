@@ -20,7 +20,9 @@ file(GLOB_RECURSE SOURCES
 add_executable(token ${SOURCES} token.cpp)
 add_executable(ast ${SOURCES} ast.cpp
         engine/circularList/include/db_engine/clt.cpp
-        engine/circularList/include/db_engine/clt.h)
+        engine/circularList/include/db_engine/clt.h
+        engine/circularList/include/storage/index/skip_list.h
+        engine/circularList/catelog/table_generator.cpp)
 add_executable(tsm ${SOURCES} tsm.cpp)
 add_executable(test ${SOURCES} test.cpp)
 

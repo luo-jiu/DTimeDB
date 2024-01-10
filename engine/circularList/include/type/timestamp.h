@@ -23,6 +23,8 @@ namespace ctl{
             millisecond_=ms.count();
             nanosecond_ = ns.count();
         }
+        //对于时间戳的操作函数
+        TimestampType getTimestamp()const;
     private:
         int             year_;
         int             month_;
