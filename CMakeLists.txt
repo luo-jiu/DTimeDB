@@ -22,7 +22,8 @@ add_executable(ast ${SOURCES} ast.cpp
         engine/circularList/include/db_engine/clt.cpp
         engine/circularList/include/db_engine/clt.h
         engine/circularList/include/storage/index/skip_list.h
-        engine/circularList/catelog/table_generator.cpp)
+        engine/circularList/catelog/table_generator.cpp
+        engine/circularList/include/common/rid.h)
 add_executable(tsm ${SOURCES} tsm.cpp)
 add_executable(test ${SOURCES} test.cpp)
 

@@ -11,7 +11,12 @@
 namespace ctl{
     class TableGenerator{
     public:
-        explicit TableGenerator(const std::string &table_name,const Schema &schema);
+        /**
+         *表的构造函数
+         * @param table_name
+         * @param schema
+         */
+        explicit TableGenerator(const std::string &table_name,const Schema &schema){}
     private:
         struct ColumnInsertMeta{
             const char      *name_;

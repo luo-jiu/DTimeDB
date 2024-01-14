@@ -1,6 +1,0 @@
-
-namespace ctl{
-    class BooleanType{
-
-    };
-}
