@@ -1,3 +1,4 @@
+#pragma once
 #include <vector>
 #include "engine/circularList/include/type/field.h"
 #include "engine/circularList/include/catalog/schema.h"

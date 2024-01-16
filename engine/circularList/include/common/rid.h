@@ -1,7 +1,7 @@
 //
 // Created by illumwang on 24-1-12.
 //
-
+#pragma once
 #include <cstdint>
 #include <string>
 #include <sstream>

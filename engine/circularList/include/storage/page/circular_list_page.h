@@ -14,7 +14,6 @@ namespace ctl{
     private:
         CircularListPage                *next_page= nullptr;
         page_id_t                           page_id=INVALID_PAGE_ID;
-
     };
 }
 

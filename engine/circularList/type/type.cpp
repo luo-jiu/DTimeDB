@@ -42,19 +42,18 @@ namespace ctl{
                 return "INVALID";
         }
     }
+//
+//    Field Type::GetMinValue(TypeId type_id){
+//        switch (type_id) {
+//            case BOOLEAN:
+//                return Field(type_id, 0);
+//            case TINYINT:
+//                return Field(type_id, -127);
+//        }
+//    }
 
-    Field Type::GetMinValue(TypeId type_id){
-        switch (type_id) {
-            case BOOLEAN:
-                return Field(type_id, 0);
-            case TINYINT:
-                return Field(type_id, -127);
-        }
-    }
-
-    Field Type::GetMaxValue(ctl::TypeId type_id) {
-
-    }
-    Type::Type() {}
+//    Field Type::GetMaxValue(ctl::TypeId type_id) {
+//
+//    }
 
 }

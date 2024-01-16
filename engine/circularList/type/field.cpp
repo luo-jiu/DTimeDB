@@ -93,11 +93,41 @@ namespace ctl{
         }
     }
     //varchar类型
-    Field::Field(ctl::TypeId type, const char *data, uint32_t len, bool manage_data) {
-
+    Field::Field(ctl::TypeId type, const char *data, uint32_t len, bool manage_data): Field(type) {
+        switch (type) {
+            case VARCHAR:
+                if (data== nullptr){
+                    value_.varlen_= nullptr;
+                    size_.len_=UINT_MAX;
+                } else{
+                    manage_data_=manage_data;
+                    if (manage_data_){
+                        value_.varlen_=new char [len];
+                        size_.len_=len;
+                        memcpy(value_.varlen_,data,len);
+                    } else{
+                        value_.const_varlen_=data;
+                        size_.len_=len;
+                    }
+                }
+                break;
+            default:
+                throw  Exception(ExceptionType::INVALID,"Invalid Type");
+        }
     }
-    Field::Field(ctl::TypeId type, const std::string &data) {
-
+    Field::Field(ctl::TypeId type, const std::string &data): Field(type) {
+        switch (type) {
+            case VARCHAR:{
+                manage_data_= true;
+                uint32_t len=static_cast<uint32_t >(data.length())+1;
+                value_.varlen_=new char [len];
+                size_.len_=len;
+                memcpy(value_.varlen_,data.c_str(),len);
+                break;
+            }
+            default:
+                throw Exception(ExceptionType::INVALID,"Invalid Type");
+        }
     }
     //delete
     Field::~Field() {

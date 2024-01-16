@@ -5,9 +5,9 @@
 #include "type.h"
 
 namespace ctl{
-    class TimestampType:public Type{
+    class TimestampType{
     public:
-        ~TimestampType() override=default;
+        ~TimestampType() =default;
         TimestampType(){
             auto current_time=std::chrono::system_clock::now();
             auto time_point=std::chrono::system_clock::to_time_t(current_time);

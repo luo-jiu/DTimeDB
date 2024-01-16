@@ -1,7 +1,4 @@
-//
-// Created by illumwang on 23-12-26.
-//
-
+#pragma once
 #include <string>
 #include "engine/circularList/include/storage/page/page.h"
 #include "engine/circularList/include/common/config.h"

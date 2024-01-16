@@ -1,7 +1,7 @@
 //
 // Created by illumwang on 23-12-26.
 //
-
+#pragma once
 #include <string>
 #include "engine/circularList/include/type/type_id.h"
 #include "exception/exception.h"

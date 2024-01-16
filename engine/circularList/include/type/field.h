@@ -1,13 +1,15 @@
-//
-// Created by illumwang on 23-12-24.
-//
 #pragma once
 #include <cstdint>
 #include <string>
 #include "type_id.h"
 #include "type.h"
 #include "timestamp.h"
+#include <climits>
+#ifndef FIELD_H
+#define FIELD_H
+
 namespace ctl{
+    class Type;
     //行值的抽象类，存储不同类型的数据
     class Field{
         friend class Type;
@@ -80,3 +82,4 @@ namespace ctl{
     };
 }
 
+#endif // FIELD_H

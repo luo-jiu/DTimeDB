@@ -1,7 +1,7 @@
 //
 // Created by illumwang on 23-12-26.
 //
-
+#pragma once
 #include <vector>
 #include "column.h"
 

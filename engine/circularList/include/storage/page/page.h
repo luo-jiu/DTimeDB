@@ -1,10 +1,10 @@
-//
-// Created by illumwang on 23-12-24.
-//
 
+#pragma once
 #include <cstring>
 #include "engine/circularList/include/common/rwlatch.h"
-
+/**
+ * 设计应用场景为顺序读取，一个表是一个文件，一次读取一张表的数据
+ */
 namespace ctl{
     class Page{
         static constexpr int PAGE_SIZE = 4096;
@@ -22,6 +22,10 @@ namespace ctl{
         /** @return 页id*/
         inline page_id_t  GetPageId(){return page_id_;}
         inline int GetPageCount(){return pin_count_;}
+        void WLatch(){rwlatch_.WLock();}
+        void WULatch(){rwlatch_.WUnlock();}
+        void RLatch(){rwlatch_.RLock();}
+        void RULatch(){rwlatch_.RUnlock();}
     protected:
         static_assert(sizeof(page_id_t) == 4);
         static_assert(sizeof(lsn_t) == 4);
