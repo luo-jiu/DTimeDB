@@ -27,7 +27,7 @@ namespace ctl{
                 entry.reserve(fields.size());
             }
             RID rid;
-            bool inserted=info->table_;
+           // bool inserted=info->table_;
 
         }
     }

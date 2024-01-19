@@ -7,8 +7,6 @@ namespace ctl{
     enum TypeId{
         INVALID=0,
         BOOLEAN,
-        TINYINT,
-        SMALLINT,
         INTEGER,
         DECIMAL,
         VARCHAR,

@@ -29,10 +29,6 @@ namespace ctl{
             switch (type) {
                 case TypeId::BOOLEAN:
                     return 1;
-                case TypeId::TINYINT:
-                    return 1;
-                case TypeId::SMALLINT:
-                    return 2;
                 case TypeId::INTEGER:
                     return 4;
                 case TypeId::VARCHAR:
@@ -40,7 +36,7 @@ namespace ctl{
                 case TypeId::TIMESTAMP:
                     return 8;
                 default:
-                    "Cannot get size of invalid type";
+                    return -1;
             }
 
         }

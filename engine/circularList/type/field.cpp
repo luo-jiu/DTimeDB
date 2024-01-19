@@ -129,6 +129,30 @@ namespace ctl{
                 throw Exception(ExceptionType::INVALID,"Invalid Type");
         }
     }
+
+    template<>
+    int8_t Field::getData<int8_t>() const {
+        return value_.boolean_;
+    }
+    template<>
+    int32_t Field::getData<int32_t>() const {
+        return value_.integer_;
+    }
+
+    template<>
+    double Field::getData<double>() const {
+        return value_.decimal_;
+    }
+
+    template<>
+    uint64_t Field::getData<uint64_t>() const {
+        return value_.timestamp_;
+    }
+
+    template<>
+    const char *Field::getData<const char *>() const {
+        return value_.const_varlen_;
+    }
     //delete
     Field::~Field() {
         switch (type_id_) {

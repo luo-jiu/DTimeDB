@@ -5,6 +5,8 @@
 #include "type.h"
 #include "timestamp.h"
 #include <climits>
+#include <stdexcept>
+#include <iostream>
 #ifndef FIELD_H
 #define FIELD_H
 
@@ -13,7 +15,6 @@ namespace ctl{
     //行值的抽象类，存储不同类型的数据
     class Field{
         friend class Type;
-        friend class IntegerType;
         friend class TimestampType;
     public:
         ~Field();
@@ -40,12 +41,33 @@ namespace ctl{
             return *reinterpret_cast<const T *>(&value_);
         }
         inline TypeId GetTypeId() const  {return type_id_;}
-        //获取varchar数据的长度
-        inline uint32_t GetLength() const { return Type::GetInstance(type_id_)->GetLength(*this); }
-        //获取varchar数据的值
-        inline const char *GetData() const { return Type::GetInstance(type_id_)->GetData(*this); }
-        inline std::string ToString() const{return Type::GetInstance(type_id_)->ToString(*this);}
 
+        template<typename T>
+        T getData()const{
+            throw std::runtime_error("Unsupported data type");
+        }
+
+
+        std::string ToString()const{
+            switch (type_id_) {
+                case BOOLEAN:
+                    return std::to_string(value_.boolean_);
+                case INTEGER:
+                    return std::to_string(value_.integer_);
+                case DECIMAL:
+                    return std::to_string(value_.decimal_);
+                case TIMESTAMP:
+                    return std::to_string(value_.timestamp_);
+                case VARCHAR:
+                    return std::string(value_.varlen_,size_.len_);
+                default:
+                    return "Unknown Type";
+            }
+        }
+       friend std::ostream &operator<<(std::ostream &os, const Field &field) {
+            os << "type: " << static_cast<int>(field.type_id_) << " data: " << field.ToString().c_str();
+            return os;
+       }
     protected:
         /**
          * value_ 的不同成员用于表示不同类型的数据。
@@ -79,7 +101,18 @@ namespace ctl{
          * 而当 manage_data_ 为 false 时，表示 Value 对象不负责管理内部数据的内存，通常是通过外部手段（例如，其他对象或模块）管理
          */
         bool                             manage_data_;
+
     };
+    template<>
+    int8_t Field::getData<int8_t>()const;
+    template<>
+    int32_t Field::getData<int32_t>()const;
+    template<>
+    double Field::getData<double>() const;
+    template<>
+    uint64_t Field::getData<uint64_t>() const;
+    template<>
+    const char *Field::getData<const char *>() const ;
 }
 
 #endif // FIELD_H

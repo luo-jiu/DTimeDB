@@ -11,8 +11,6 @@ namespace ctl{
     uint64_t Type::GetTypeSize(ctl::TypeId type_id) {
         switch (type_id) {
             case BOOLEAN:
-            case TINYINT:
-                return 1;
             case INTEGER:
                 return 4;
             case VARCHAR:
@@ -32,8 +30,6 @@ namespace ctl{
                 return "BOOLEAN";
             case INTEGER:
                 return "INTEGER";
-            case TINYINT:
-                return "TINYINT";
             case VARCHAR:
                 return "VARCHAR";
             case TIMESTAMP:
@@ -42,18 +38,6 @@ namespace ctl{
                 return "INVALID";
         }
     }
-//
-//    Field Type::GetMinValue(TypeId type_id){
-//        switch (type_id) {
-//            case BOOLEAN:
-//                return Field(type_id, 0);
-//            case TINYINT:
-//                return Field(type_id, -127);
-//        }
-//    }
-
-//    Field Type::GetMaxValue(ctl::TypeId type_id) {
-//
-//    }
 
 }
+

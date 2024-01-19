@@ -47,7 +47,7 @@ namespace ctl{
              :name_(name),num_rows_(num_rows),col_meta_(std::move(cols)){}
          };
          void FillTable(TableInfo *info,TableInsertMeta *table_meta);
-         //std::vector<Field> MakeValues(ColumnInsertMeta *col_meta, uint32_t count);
+         std::vector<Field> MakeValues(ColumnInsertMeta *col_meta, uint32_t count);
 
     };
 }
