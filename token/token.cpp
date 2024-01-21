@@ -27,22 +27,30 @@ std::map<Token::Type, string> Token::m_names = {
         {TOKEN_RPAREN,          ")"},
         {TOKEN_COMMA,           ","},
         {TOKEN_SEMICOLON,       ";"},
+        {TOKEN_TIMESTAMP,       "timestamp"},
 
         {TOKEN_IDENTIFIER,      "identifier"},
         {TOKEN_NULL,            "null"},
         {TOKEN_DATABASE,        "database"},
+        {TOKEN_DATABASES,       "databases"},
         {TOKEN_ENGINE,          "engine"},
         {TOKEN_TABLE,           "table"},
+        {TOKEN_TABLES,          "tables"},
         {TOKEN_USE,             "use"},
+        {TOKEN_SHOW,            "show"},
         {TOKEN_CREATE,          "create"},
-        {TOKEN_DELETE,          "delete"},
+        {TOKEN_INSERT,          "insert.cpp"},
+        {TOKEN_INTO,            "into"},
         {TOKEN_UPDATE,          "update"},
         {TOKEN_SELECT,          "select"},
 
-        {TOKEN_FROM,            "from"},
-        {TOKEN_WHERE,           "where"},
+        {TOKEN_FROM,            "m_from"},
+        {TOKEN_WHERE,           "m_where"},
         {TOKEN_TTL,             "ttl"},
         {TOKEN_TIME,            "time"},
+
+        {TOKEN_TSM,             "tsm"},
+        {TOKEN_CLT,             "clt"},
 };
 
 /**
@@ -50,12 +58,17 @@ std::map<Token::Type, string> Token::m_names = {
  */
 std::map<string, Token::Type> Token::m_keywords = {
         {"null",            TOKEN_NULL},
-        {"databases",       TOKEN_DATABASE},
+        {"database",        TOKEN_DATABASE},
+        {"databases",       TOKEN_DATABASES},
         {"table",           TOKEN_TABLE},
+        {"tables",          TOKEN_TABLES},
+        {"show",            TOKEN_SHOW},
         {"use",             TOKEN_USE},
         {"engine",          TOKEN_ENGINE},
+
         {"create",          TOKEN_CREATE},
-        {"delete",          TOKEN_DELETE},
+        {"insert",          TOKEN_INSERT},
+        {"into",            TOKEN_INTO},
         {"update",          TOKEN_UPDATE},
         {"select",          TOKEN_SELECT},
 
@@ -66,6 +79,9 @@ std::map<string, Token::Type> Token::m_keywords = {
 
         {"and",             TOKEN_AND},
         {"or",              TOKEN_OR},
+
+        {"tsm",             TOKEN_TSM},
+        {"clt",             TOKEN_CLT},
 };
 
 Token::Token(): m_type(TOKEN_ILLEGAL)

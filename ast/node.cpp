@@ -14,9 +14,10 @@ std::map<Node::Type, string> Node::m_names = {
         {NODE_STRING,               "String"},
         {NODE_NULL,                 "Null"},
         {NODE_IDENTIFIER,           "Identifier"},
-//        {NODE_FROM,                 "From"},
-//        {NODE_WHERE,                "Where"},
-        {NODE_SELECT,               "Select"}
+
+        {NODE_SELECT,               "Select"},
+        {NODE_INSERT,               "Insert"},
+        {NODE_UPDATE,               "update"},
 };
 
 string Node::name() const

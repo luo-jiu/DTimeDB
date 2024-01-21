@@ -210,13 +210,13 @@ Json Parser::parse_object()
         ch = get_next_token();
         if (ch != '"')
         {
-            throw std::logic_error("expected '\"' in object");
+            throw std::logic_error("expected '\"' in execution_plan");
         }
         string key = parse_string();
         ch = get_next_token();
         if (ch != ':')
         {
-            throw std::logic_error("expected ':' in object");
+            throw std::logic_error("expected ':' in execution_plan");
         }
         obj[key] = parse();
         ch = get_next_token();
@@ -226,7 +226,7 @@ Json Parser::parse_object()
         }
         if (ch != ',')
         {
-            throw std::logic_error("expected ',' in object");
+            throw std::logic_error("expected ',' in execution_plan");
         }
     }
     return obj;

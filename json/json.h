@@ -24,7 +24,7 @@ namespace luo
                 JSON_DOUBLE,    // double value
                 JSON_STRING,    // string value
                 JSON_ARRAY,     // array value
-                JSON_OBJECT     // object value
+                JSON_OBJECT     // execution_plan value
             };
 
             Json();
@@ -53,10 +53,10 @@ namespace luo
             double as_double() const;
             string as_string() const;
 
-            // number of values in array or object
+            // number of values in array or execution_plan
             int size() const;
 
-            // return true if empty array, empty object, or null, otherwise, false.
+            // return true if empty array, empty execution_plan, or null, otherwise, false.
             bool empty() const;
 
             void clear();

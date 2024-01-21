@@ -2,30 +2,27 @@
 
 #include <ast/node.h>
 
-namespace dt
+namespace dt::ast
 {
-    namespace ast
+    /**
+     * 表达式语句
+     * 将一个表达式包装成一个语句
+     */
+    class ExpressionStatement : public Statement
     {
-        /**
-         * 表达式语句
-         * 将一个表达式包装成一个语句
-         */
-        class ExpressionStatement : public Statement
+    public:
+        ExpressionStatement(): Statement(NODE_EXPRESSION_STATEMENT) {}
+        ~ExpressionStatement() {}
+
+        virtual Json json()
         {
-        public:
-            ExpressionStatement(): Statement(NODE_EXPRESSION_STATEMENT) {}
-            ~ExpressionStatement() {}
+            Json json;
+            json["type"] = name();
+            json["expression"] = m_expression->json();
+            return json;
+        }
 
-            virtual Json json()
-            {
-                Json json;
-                json["type"] = name();
-                json["expression"] = m_expression->json();
-                return json;
-            }
-
-        public:
-            std::shared_ptr<Expression> m_expression;
-        };
-    }
+    public:
+        std::shared_ptr<Expression> m_expression;
+    };
 }

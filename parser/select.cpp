@@ -7,7 +7,7 @@ using namespace dt::parser;
  */
 std::shared_ptr<Expression> Parser::parse_select()
 {
-    std::shared_ptr<Select> e(new Select());
+    std::shared_ptr<Select> e = std::make_shared<Select>();
     e->m_token = m_curr;
     next_token();  // 跳过select 关键字
     while (m_curr.type() != Token::TOKEN_FROM)  // 不是from
@@ -15,21 +15,21 @@ std::shared_ptr<Expression> Parser::parse_select()
         if (m_curr.type() == Token::TOKEN_ASTERISK) {  // 如果是*
             std::shared_ptr<String> s(new String());
             s->m_value = "*";
-            e->select_clause.push_back(s);
+            e->fields.push_back(s);
             next_token();  // 跳过 '*'
             break;
         }
-        e->select_clause.push_back(parse_string());
+        e->fields.push_back(parse_string());
         next_token();
         if(m_curr.type() == Token::TOKEN_COMMA){
             next_token();  // 跳过 ','
         }
     }
     next_token();
-    e->from = parse_string();
+    e->m_from = parse_string();
     next_token();
     next_token();
-    e->where = parse_expression(LOWEST);
+    e->m_where = parse_expression(LOWEST);
     return e;
 }
 

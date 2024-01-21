@@ -1,2 +1,2 @@
-SELECT id,name,age FROM luo WHERE id > 11 OR age < 22
-select * from teacher where age > 33
+use db_test
+insert into school,local='中德',class='软工1班' '温度'=24.1,'出勤'=25

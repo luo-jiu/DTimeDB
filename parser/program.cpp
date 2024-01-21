@@ -11,7 +11,7 @@ std::shared_ptr<Program> Parser::parse_program()
         {
             s->m_statements.push_back(stmt);
         }
-        next_token();  // 后移知道遇见结束符
+        next_token();  // 后移直到遇见结束符
     }
     return s;
 }
