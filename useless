@@ -5,3 +5,4 @@ use db_test
 create table school()engine=tsm
 
 insert into school,local='中德',class='软工1班' '温度'=24.1
+test push
