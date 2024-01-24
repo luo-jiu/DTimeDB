@@ -13,8 +13,8 @@ string Field::write(
     if(m_sl.size() == 1)
     {
         m_sl_last_time = high_resolution_clock::now();
-        std::cout << "初始化/重置m_sl_last_time, table: " << tb_name << std::endl;
-        m_sl.notify(db_name, tb_name, true);
+        std::cout << "初始化/重置m_sl_last_time, table: " << tb_name << ", field:" << m_field_name << std::endl;
+        m_sl.notify(db_name, tb_name, m_field_name, true);
     }
 
     // 跳表是否需要刷新

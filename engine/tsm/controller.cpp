@@ -10,9 +10,6 @@ void Controller::init()
 {
     //  开启监控跳表线程
     m_monitor_thread = std::thread([this]{ this->monitoring_thread(); });
-
-    // 注册观察者
-
 }
 
 /**

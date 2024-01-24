@@ -56,13 +56,13 @@ namespace dt::tsm
             m_observers.remove(observer);
         }
 
-        void notify(const string & db_name, const string & tb_name, bool is_registered) override
+        void notify(const string & db_name, const string & tb_name, const string & field_name, bool is_registered) override
         {
             std::shared_lock<std::shared_mutex> lock(m_mutex);
             // 通知所有观察者发生变化
             for (auto observer : m_observers)
             {
-                observer->update(db_name, tb_name, is_registered);
+                observer->update(db_name, tb_name, field_name, is_registered);
             }
         }
 

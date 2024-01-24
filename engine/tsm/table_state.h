@@ -4,6 +4,7 @@
 #include <engine/impl/iobserver_table_state.h>
 using namespace dt::impl;
 
+#include <functional>
 #include <atomic>
 #include <map>
 #include <mutex>
@@ -16,85 +17,103 @@ namespace dt::tsm
     class TableState : public ITableStateObserver
     {
     public:
-        void update(const string & db_name, const string & tb_name, bool is_registered) override
+        using ConditionCallback = std::function<bool(const string&, const string&, const string&)>;
+
+        void set_condition_callback(ConditionCallback callback)
+        {
+            m_condition_callback = callback;
+        }
+
+        void update(const string & db_name, const string & tb_name, const string & field_name, bool is_registered) override
         {
             // 更新状态逻辑
             if (is_registered)
             {
-                check_and_register(db_name, tb_name);
+                check_and_register(db_name, tb_name, field_name);
             }
             else
             {
-                remove_status(db_name, tb_name);
+                remove_status(db_name, tb_name, field_name);
             }
         }
 
         // 检查并注册表
-        bool check_and_register(const string & db_name, const string & tb_name)
+        bool check_and_register(const string & db_name, const string & tb_name, const string & field_name)
         {
             std::shared_lock<std::shared_mutex> read_lock(m_mutex);
+            // 检查数据库和表是否存在
             auto db_it = m_state_map.find(db_name);
             if (db_it != m_state_map.end()) {
                 auto tb_it = db_it->second.find(tb_name);
                 if (tb_it != db_it->second.end()) {
-                    // 如果已经注册，直接返回
-                    return tb_it->second.m_is_registered.load();
+                    // 检查字段是否已经注册
+                    auto field_it = tb_it->second.m_field_map.find(field_name);
+                    if (field_it != tb_it->second.m_field_map.end()) {
+                        // 如果已经注册，直接返回
+                        return field_it->second.m_is_registered.load();
+                    }
                 }
             }
             // 升级到写锁
             read_lock.unlock();
             std::unique_lock<std::shared_mutex> write_lock(m_mutex);
-            // 再次检查以避免竞态条件
-            auto& tb_status = m_state_map[db_name][tb_name];
-            if (!tb_status.m_is_registered.load()) {
-                tb_status.m_is_registered.store(true);
+            // 再次检查以避免在释放读锁和获取写锁的间隙中发生的竞态条件
+            auto& tb_map = m_state_map[db_name];
+            auto& field_status = tb_map[tb_name].m_field_map[field_name];
+            // 如果字段未注册，则进行注册
+            if (!field_status.m_is_registered.load()) {
+                field_status.m_is_registered.store(true);
                 return true;
             }
+            // 字段已注册
             return false;
         }
 
         // 移除表的注册状态
-        void remove_status(const string & db_name, const string & tb_name)
-        {
+        void remove_status(const string & db_name, const string & tb_name, const string & field_name) {
             std::unique_lock<std::shared_mutex> write_lock(m_mutex);
             auto db_it = m_state_map.find(db_name);
             if (db_it != m_state_map.end()) {
-                db_it->second.erase(tb_name);
-                if (db_it->second.empty()) {
-                    m_state_map.erase(db_name);
+                auto& tb_info = db_it->second[tb_name];
+                tb_info.m_field_map.erase(field_name);
+                if (tb_info.m_field_map.empty()) {
+                    db_it->second.erase(tb_name);
+                    if (db_it->second.empty()) {
+                        m_state_map.erase(db_name);
+                    }
                 }
             }
         }
 
-        void iterate_map()
-        {
-            std::vector<std::pair<string, string>> table_to_process;
-
-            // 收集待处理的表
+        void iterate_map() {
+            std::vector<std::tuple<string, string, string>> items_to_process;
+            // 收集待处理的数据库、表和字段
             {
                 std::shared_lock<std::shared_mutex> read_lock(m_mutex);
-                for (const auto& db_pair : m_state_map)
-                {
-                    for (const auto& tb_pair : db_pair.second)
-                    {
-                        if (tb_pair.second.m_is_registered.load())
-                        {
-                            // 说明有数据, 先存储起来
-                            table_to_process.emplace_back(db_pair.first, tb_pair.first);
+                for (const auto& db_pair : m_state_map) {
+                    const auto& db_name = db_pair.first;
+                    for (const auto& tb_pair : db_pair.second) {
+                        const auto& tb_name = tb_pair.first;
+                        for (const auto& field_pair : tb_pair.second.m_field_map) {
+                            const auto& field_name = field_pair.first;
+                            if (field_pair.second.m_is_registered.load()) {
+                                // 说明该字段已注册，先存储起来
+                                items_to_process.emplace_back(db_name, tb_name, field_name);
+                            }
                         }
                     }
                 }
-            }  // 释放锁
+            }  // 释放读锁
 
-            // 处理这些表
-            for (const auto& item : table_to_process)
-            {
-                const auto& db_name = item.first;
-                const auto& tb_name = item.second;
+            // 处理这些数据库、表和字段
+            for (const auto& item : items_to_process) {
+                const auto& db_name = std::get<0>(item);
+                const auto& tb_name = std::get<1>(item);
+                const auto& field_name = std::get<2>(item);
 
-                // 执行相关操作, 例如让跳表刷新数据到磁盘
+                // 执行相关操作，例如更新字段的状态或刷新数据到磁盘
                 // ...
-                std::cout << "监控到跳表注册的事件" << std::endl;
+                std::cout << "监控到跳表注册事件：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
 
                 // 在此执行回调函数
                 // ...
@@ -102,18 +121,15 @@ namespace dt::tsm
                 // 移除掉状态
                 {
                     std::unique_lock<std::shared_mutex> write_lock(m_mutex);
-                    auto db_it = m_state_map.find(db_name);
-                    if (db_it != m_state_map.end()) {
-                        db_it->second.erase(tb_name);
-                        if (db_it->second.empty()) {
-                            m_state_map.erase(db_name);
-                        }
-                    }
+                    auto& field_status = m_state_map[db_name][tb_name].m_field_map[field_name];
+                    field_status.m_is_registered.store(false);
                 }
             }
         }
 
     private:
+        ConditionCallback m_condition_callback;  // 存储回调函数
+
         struct FieldInfo
         {
             std::atomic<bool> m_is_registered;
@@ -121,8 +137,7 @@ namespace dt::tsm
 
         struct TableInfo
         {
-            std::atomic<bool> m_is_registered;
-            std::map<string, FieldInfo> map;
+            std::map<string, FieldInfo> m_field_map;  // 映射到对应的跳表
         };
 
         //       db_name          tb_name
