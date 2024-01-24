@@ -36,10 +36,11 @@ void Write::write(
     auto _str = _field->write(timestamp, data, db_name, tb_name);
     if (!_str.empty())  // 有field_name 返回,说明已经生成data_block
     {
+        // 这里就算是多线程出来一定只有一个线程会执行
         std::unique_lock<std::mutex> lock(m_thread_mutex);
         push_back_field_list(_str);  // 添加,让其可以映射map
 
-        // 激活子线程去处理数据块
+        // 从线程池拿线程去执行写入操作
         std::cout << "激活" << std::endl;
         ++m_is_ready;
         std::cout << "m_is_ready = " << m_is_ready << std::endl;
@@ -56,7 +57,6 @@ void Write::write(
 void Write::flush_disk()
 {
     std::cout << "Writing" << std::endl;
-
     while (true)
     {
         {
@@ -358,4 +358,18 @@ int Write::size_field_list()
 {
     std::lock_guard<std::mutex> lock(m_field_list_mutex);
     return m_field_list.size();
+}
+
+/**
+ * 获取对应跳表的时间戳
+ */
+high_resolution_clock::time_point Write::get_field_time_point(
+        const string & field_name)
+{
+    std::shared_lock<std::shared_mutex> lock(m_filed_map_mutex);  // 读锁
+    auto field_it = m_field_map.find(field_name);
+    if (field_it != m_field_map.end())  // 拿到对应Field
+    {
+        return field_it->second->get_skip_list_time_point();
+    }
 }

@@ -122,6 +122,11 @@ SkipList<string> & Field::get_skip_list()
     return m_sl;
 }
 
+high_resolution_clock::time_point Field::get_skip_list_time_point()
+{
+    return m_sl.get_timestamp();
+}
+
 bool Field::get_data_status()
 {
     std::lock_guard<std::mutex> lock(m_data_lock);

@@ -81,15 +81,15 @@ namespace dt::tsm
         void del(high_resolution_clock::time_point key);
         void cle();
 
-        bool empty();
-
         high_resolution_clock::time_point min_key();  // 获取最小键
         high_resolution_clock::time_point max_key();  // 获取最大键
 
         void traverse();
-
         size_t size();
+        bool empty();
 
+        void update_timestamp(std::chrono::high_resolution_clock::time_point new_time); // 修改时间戳
+        std::chrono::high_resolution_clock::time_point get_timestamp();// 读取时间戳
 
     public:
         struct Node
@@ -101,11 +101,14 @@ namespace dt::tsm
             Node(high_resolution_clock::time_point key, T value, int level): m_key(key), m_value(value), m_nexts(level, nullptr) {}
         };
 
+        high_resolution_clock::time_point timestamp;  // 刷写时间，要保证线程安全
+
     private:
         Node*                                   m_head;  // 头结点
         size_t                                  m_bottom_level_node_count; // 计数器
         std::list<ITableStateObserver*>         m_observers;
         mutable std::shared_mutex               m_mutex;  // 读写锁
+        mutable std::shared_mutex               m_tp_mutex; // 对于时间戳的读写锁, mutable 允许在const成员函数中修改
         std::mutex                              m_sl_mutex;  // 互斥锁, 性能瓶颈, 未来再说
 
         int random_level()
@@ -338,4 +341,25 @@ namespace dt::tsm
         }
         return {};
     }
+
+    /**
+     * 修改时间戳
+     */
+    template <class T>
+    void SkipList<T>::update_timestamp(std::chrono::high_resolution_clock::time_point new_time)
+    {
+        std::unique_lock<std::shared_mutex> writeLock(m_tp_mutex);
+        timestamp = new_time;
+    }
+
+    /**
+     * 获取时间戳
+     */
+    template <class T>
+    std::chrono::high_resolution_clock::time_point SkipList<T>::get_timestamp()
+    {
+        std::shared_lock<std::shared_mutex> readLock(m_tp_mutex);
+        return timestamp;
+    }
 }
+

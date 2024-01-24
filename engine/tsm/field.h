@@ -25,6 +25,7 @@ namespace dt::tsm
         bool get_index_status();
         int get_index_deque_size();
         SkipList<string> & get_skip_list();
+        high_resolution_clock::time_point get_skip_list_time_point();  // 获取到跳表的时间戳
         void push_data_to_deque(std::shared_ptr<DataBlock> data_block);
         std::shared_ptr<DataBlock> pop_data_from_deque();
         void push_index_to_deque(std::shared_ptr<IndexEntry> & index_block);

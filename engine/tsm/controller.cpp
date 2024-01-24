@@ -93,7 +93,7 @@ void Controller::insert_thread(
         string & tb_name,
         string & db_name)
 {
-    std::unique_lock<std::shared_mutex> read_lock(m_mutex);
+    std::unique_lock<std::shared_mutex> write_lock(m_mutex);
     std::cout << "tsm调用线程池处理插入任务..." << std::endl;
 
     // 先看文件管理器里面有没有
@@ -120,7 +120,7 @@ void Controller::insert_thread(
 
     // 拿取出对应表的writer (这里一定是读取)
     auto & _writer = m_map[db_name].m_table_map[tb_name].m_writer;
-    read_lock.unlock();
+    write_lock.unlock();
     DataBlock::Type _type;
     if (type == IEngine::Type::DATA_STRING)
     {
@@ -221,4 +221,27 @@ bool Controller::exists_table(
         }
     }
     return false;
+}
+
+/**
+ * 获取对应跳表的时间戳
+ * @param db_name 数据库名
+ * @param tb_name 表名
+ * @return 返回时间戳
+ */
+high_resolution_clock::time_point Controller::get_time_point(
+        const string & db_name,
+        const string & tb_name,
+        const string & field_name)
+{
+    std::shared_lock<std::shared_mutex> write_lock(m_mutex);
+    auto db_it = m_map.find(db_name);
+    if (db_it != m_map.end())
+    {
+        auto tb_it = db_it->second.m_table_map.find(tb_name);
+        if (tb_it != db_it->second.m_table_map.end())
+        {
+
+        }
+    }
 }

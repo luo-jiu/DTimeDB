@@ -96,6 +96,9 @@ namespace dt::tsm
                 // ...
                 std::cout << "监控到跳表注册的事件" << std::endl;
 
+                // 在此执行回调函数
+                // ...
+
                 // 移除掉状态
                 {
                     std::unique_lock<std::shared_mutex> write_lock(m_mutex);
@@ -111,9 +114,15 @@ namespace dt::tsm
         }
 
     private:
+        struct FieldInfo
+        {
+            std::atomic<bool> m_is_registered;
+        };
+
         struct TableInfo
         {
             std::atomic<bool> m_is_registered;
+            std::map<string, FieldInfo> map;
         };
 
         //       db_name          tb_name

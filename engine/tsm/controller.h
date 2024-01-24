@@ -59,6 +59,9 @@ namespace dt::tsm
         void stop_monitoring_thread();
         bool exists_table(string & db_name, string & tb_name);
 
+        // 回调函数
+        high_resolution_clock::time_point get_time_point(const string & db_name, const string & tb_name, const string & field_name);  // 获取对应跳表的时间戳
+
     private:
         struct Table
         {

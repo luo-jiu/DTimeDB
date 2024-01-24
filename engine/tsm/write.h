@@ -38,6 +38,8 @@ namespace dt::tsm
         bool empty_field_list();
         int size_field_list();
 
+        high_resolution_clock::time_point get_field_time_point(const string & field_name);
+
     private:
         void flush_entry_disk(string & field_name, bool is_remove);
 
@@ -45,21 +47,22 @@ namespace dt::tsm
         bool fields_empty();
 
     private:
-        string                                                  m_measurement;  // 测量值/表名
+        string                                                  m_measurement;      // 测量值/表名
 
-        int                                                     m_head_offset;  // 头指针偏移量
-        int                                                     m_tail_offset;  // 尾指针偏移量
-        int                                                     m_margin;       // 空间余量
+        int                                                     m_head_offset;      // 头指针偏移量
+        int                                                     m_tail_offset;      // 尾指针偏移量
+        int                                                     m_margin;           // 空间余量
 
         std::mutex                                              m_write_mutex;
         std::mutex                                              m_thread_mutex;
         std::mutex                                              m_field_list_mutex;
+        mutable std::shared_mutex                               m_filed_map_mutex;  // 针对m_field_map 安全的读写所
         std::condition_variable                                 m_cv;
         int                                                     m_is_ready;
 
         TSM                                                     m_tsm;
-        std::list<string>                                       m_field_list;  // 该list 表明哪些字段有块待写入
-        std::set<string>                                        m_index_set;   // 该set 用于创建新TSM 刷入没处理完的meta 和entry
+        std::list<string>                                       m_field_list;       // 该list 表明哪些字段有块待写入
+        std::set<string>                                        m_index_set;        // 该set 用于创建新TSM 刷入没处理完的meta 和entry
         std::unordered_map<string, std::shared_ptr<Field>>      m_field_map;
     };
 }

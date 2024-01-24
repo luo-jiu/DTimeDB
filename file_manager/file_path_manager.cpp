@@ -49,7 +49,7 @@ bool FilePathManager::create_table(
     std::unique_lock<std::shared_mutex> map_lock(m_mutex);  // 先锁整个m_map
 
     // 检查数据库是否存在
-    auto db_it = m_map.find(tb_name);
+    auto db_it = m_map.find(db_name);
     if (db_it == m_map.end())
     {
         std::cout << "Database does not exist\n";

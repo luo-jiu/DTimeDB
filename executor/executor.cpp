@@ -49,21 +49,22 @@ void Executor::execute_plan(
         else  // table
         {
             // 遍历每个引擎，让他们打印出自己数据库对应的表
-            for (auto &engine_it: m_engine_map) {
+            for (auto & engine_it : m_engine_map) {
                 node->execute(*engine_it.second);
             }
         }
     }
     else if (node->name() == "use")
     {
-        for (auto &engine_it: m_engine_map) {
+        // 遍历引擎
+        for (auto & engine_it : m_engine_map) {
             node->execute(*engine_it.second);
         }
     }
     else
     {
         // 执行当前节点的操作(抉择是哪个引擎)
-        auto m_tsm = m_engine_map["tsm"];
+        auto m_tsm = m_engine_map["tsm"];  // 先写死tsm
         node->execute(*m_tsm);
     }
 
