@@ -5,12 +5,13 @@
 #define DTIMEDB_CONNECTION_POOL_H
 using namespace std;
 #include "queue"
+#include "connection.h"
 class ConnectionPool{
 public:
     static ConnectionPool *getConnectionPool();
     ConnectionPool (const ConnectionPool &obj)=delete;
 private:
     ConnectionPool();
-    queue<Connection>
+   queue<Connection> queue;
 };
 #endif //DTIMEDB_CONNECTION_POOL_H
