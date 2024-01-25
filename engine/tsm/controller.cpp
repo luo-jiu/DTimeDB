@@ -118,6 +118,7 @@ void Controller::insert_thread(
     // 拿取出对应表的writer (这里一定是读取)
     auto & _writer = m_map[db_name].m_table_map[tb_name].m_writer;
     write_lock.unlock();
+    // 类型转换
     DataBlock::Type _type;
     if (type == IEngine::Type::DATA_STRING)
     {
@@ -222,23 +223,45 @@ bool Controller::exists_table(
 
 /**
  * 获取对应跳表的时间戳
- * @param db_name 数据库名
- * @param tb_name 表名
- * @return 返回时间戳
  */
-high_resolution_clock::time_point Controller::get_time_point(
+bool Controller::is_ready_disk_write(
         const string & db_name,
         const string & tb_name,
         const string & field_name)
 {
-    std::shared_lock<std::shared_mutex> write_lock(m_mutex);
+    std::shared_lock<std::shared_mutex> read_lock(m_mutex);
     auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())
     {
         auto tb_it = db_it->second.m_table_map.find(tb_name);
         if (tb_it != db_it->second.m_table_map.end())
         {
+            auto _writer = tb_it->second.m_writer;
+            if (_writer)
+            {
+                std::cout << "---进入判断是否需要刷盘逻辑...\n";
+                // 拿取到时间戳
+                auto tp_it = tb_it->second.m_writer->get_field_time_point(field_name);
+                auto current_time = system_clock::now();
+                if (current_time - tp_it >= seconds(5))
+                {
+                    std::cout << "---满足刷盘\n";
 
+                    // 刷跳表(传入空数据激活即可)
+                    // 获取对应字段类型
+                    auto _fd = field_name;
+                    auto _tb = tb_name;
+                    auto _db = db_name;
+                    m_thread_pool.enqueue(&Controller::insert_thread, this, system_clock::now(), "", Type::DATA_STRING, _fd, _tb, _db);
+
+                    return true;  // 这里还有判断空没有写
+                }
+                else
+                {
+                    std::cout << "---本轮不满足刷盘\n";
+                }
+            }
         }
     }
+    return false;
 }

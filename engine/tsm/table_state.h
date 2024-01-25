@@ -10,6 +10,7 @@ using namespace dt::impl;
 #include <mutex>
 #include <shared_mutex>
 #include <string>
+#include <utility>
 using std::string;
 
 namespace dt::tsm
@@ -19,9 +20,10 @@ namespace dt::tsm
     public:
         using ConditionCallback = std::function<bool(const string&, const string&, const string&)>;
 
+        // 设置回调函数
         void set_condition_callback(ConditionCallback callback)
         {
-            m_condition_callback = callback;
+            m_condition_callback = std::move(callback);
         }
 
         void update(const string & db_name, const string & tb_name, const string & field_name, bool is_registered) override
@@ -87,6 +89,7 @@ namespace dt::tsm
 
         void iterate_map() {
             std::vector<std::tuple<string, string, string>> items_to_process;
+            std::vector<std::tuple<string, string, string>> items_to_remove;  // 存储需要移除的状态
             // 收集待处理的数据库、表和字段
             {
                 std::shared_lock<std::shared_mutex> read_lock(m_mutex);
@@ -115,15 +118,48 @@ namespace dt::tsm
                 // ...
                 std::cout << "监控到跳表注册事件：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
 
-                // 在此执行回调函数
-                // ...
+                // 执行回调函数获取时间
+                if (m_condition_callback && m_condition_callback(db_name, tb_name, field_name))
+                {
+                    // 添加到移除列表
+                    items_to_remove.emplace_back(db_name, tb_name, field_name);
+                    std::cout << "监控到跳表数据符合刷盘条件：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
+                }
+                else
+                {
+                    std::cout << "不满足刷盘条件\n";
+                }
+            }
 
-                // 移除掉状态
+            // 移除满足条件的字段状态
+            for (const auto& item : items_to_remove) {
+                const auto& db_name = std::get<0>(item);
+                const auto& tb_name = std::get<1>(item);
+                const auto& field_name = std::get<2>(item);
                 {
                     std::unique_lock<std::shared_mutex> write_lock(m_mutex);
-                    auto& field_status = m_state_map[db_name][tb_name].m_field_map[field_name];
-                    field_status.m_is_registered.store(false);
+                    // 检查数据库和表是否存在
+                    auto db_it = m_state_map.find(db_name);
+                    if (db_it != m_state_map.end()) {
+                        auto& tb_map = db_it->second;
+                        auto tb_it = tb_map.find(tb_name);
+                        if (tb_it != tb_map.end()) {
+                            // 从表映射中移除字段
+                            tb_it->second.m_field_map.erase(field_name);
+
+                            // 如果表中没有更多字段，则移除整个表
+                            if (tb_it->second.m_field_map.empty()) {
+                                tb_map.erase(tb_it);
+                            }
+
+                            // 如果数据库中没有更多表，则移除整个数据库
+                            if (tb_map.empty()) {
+                                m_state_map.erase(db_it);
+                            }
+                        }
+                    }
                 }
+                std::cout << "监控线程移除：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
             }
         }
 

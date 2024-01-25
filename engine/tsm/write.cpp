@@ -11,6 +11,7 @@ void Write::write(
         TableState & tb_state)
 {
     std::shared_ptr<Field> _field(new Field());
+    // 寻找或创建field
     switch(type)
     {
         case DataBlock::DATA_STRING:
@@ -34,18 +35,18 @@ void Write::write(
         }
     }
     auto _str = _field->write(timestamp, data, db_name, tb_name);
-    if (!_str.empty())  // 有field_name 返回,说明已经生成data_block
-    {
-        // 这里就算是多线程出来一定只有一个线程会执行
-        std::unique_lock<std::mutex> lock(m_thread_mutex);
-        push_back_field_list(_str);  // 添加,让其可以映射map
-
-        // 从线程池拿线程去执行写入操作
-        std::cout << "激活" << std::endl;
-        ++m_is_ready;
-        std::cout << "m_is_ready = " << m_is_ready << std::endl;
-        m_cv.notify_one();
-    }
+//    if (!_str.empty())  // 有field_name 返回,说明已经生成data_block
+//    {
+//        // 这里就算是多线程出来一定只有一个线程会执行
+//        std::unique_lock<std::mutex> lock(m_thread_mutex);
+//        push_back_field_list(_str);  // 添加,让其可以映射map
+//
+//        // 从线程池拿线程去执行写入操作
+//        std::cout << "激活" << std::endl;
+//        ++m_is_ready;
+//        std::cout << "m_is_ready = " << m_is_ready << std::endl;
+//        m_cv.notify_one();
+//    }
 }
 
 /**

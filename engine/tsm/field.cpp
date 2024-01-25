@@ -7,17 +7,34 @@ string Field::write(
         string & db_name,
         string & tb_name)
 {
-    std::lock_guard<std::mutex> lock(m_sl_mutex);  // 直接上互斥锁
-    m_sl.put(timestamp, data);
 
-    if(m_sl.size() == 1)
+    std::lock_guard<std::mutex> lock(m_sl_mutex);  // 直接上互斥锁
+    /**
+     * 重置数据模块
+     */
+    if(m_need_reset.load())
     {
+        std::unique_lock<std::shared_mutex> write_lock(m_time_mutex);  // 采用写锁修改时间
         m_sl_last_time = high_resolution_clock::now();
+        write_lock.unlock();
+
         std::cout << "初始化/重置m_sl_last_time, table: " << tb_name << ", field:" << m_field_name << std::endl;
-        m_sl.notify(db_name, tb_name, m_field_name, true);
+        m_sl.notify(db_name, tb_name, m_field_name, true);  // 注册事件
+        std::cout << "注册事件, table: " << tb_name << ", field:" << m_field_name << std::endl;
     }
 
-    // 跳表是否需要刷新
+    /**
+     * 跳表组织数据模块
+     */
+    if (!data.empty())
+    {
+        m_sl.put(timestamp, data);
+        m_need_reset.store(false);  // 不需要重置数据
+    }
+
+    /**
+     * 跳表是否需要刷写到队列
+     */
     if (should_flush_data())
     {
         // 确保m_current_data 不为空
@@ -62,6 +79,8 @@ string Field::write(
         m_current_data = std::make_shared<DataBlock>();  // 重置m_current_data 以便接收新数据
         m_sl.cle();  // 清空跳表
 
+        std::cout << "数据已入队列...\n";
+        m_need_reset.store(true);
         // 需要给write.h 中的m_fields_list中添加映射
         return m_field_name;
     }
@@ -73,8 +92,9 @@ string Field::write(
  */
 bool Field::should_flush_data()
 {
+    std::shared_lock<std::shared_mutex> read_lock(m_time_mutex);
     auto current_time = std::chrono::system_clock::now();
-    return m_sl.size() >= 10 || (current_time - m_sl_last_time >= seconds(1) && !m_sl.empty());
+    return m_sl.size() >= 10 || (current_time - m_sl_last_time >= seconds(5) && !m_sl.empty());
 }
 
 /**
@@ -122,9 +142,14 @@ SkipList<string> & Field::get_skip_list()
     return m_sl;
 }
 
+/**
+ * 获取跳表的时间戳
+ * 采取读锁
+ */
 high_resolution_clock::time_point Field::get_skip_list_time_point()
 {
-    return m_sl.get_timestamp();
+    std::shared_lock<std::shared_mutex> read_lock(m_time_mutex);
+    return m_sl_last_time;
 }
 
 bool Field::get_data_status()

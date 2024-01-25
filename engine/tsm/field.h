@@ -5,6 +5,7 @@
 #include <engine/tsm/skip_list.h>
 #include <engine/tsm/tsm.h>
 
+#include <atomic>
 #include <list>
 #include <memory>
 #include <deque>
@@ -33,11 +34,12 @@ namespace dt::tsm
 
     public:
         string                                      m_field_name;           // 字段名
-        DataBlock::Type                             m_type;                 // 字段数据类型
+        DataBlock::Type                             m_type;                 // 类型
         high_resolution_clock::time_point           m_index_last_time;      // 索引刷盘计时器
 
     private:
         SkipList<string>                            m_sl;                   // 跳表
+        std::atomic<bool>                           m_need_reset{true};     // 是否需要重置
 
         bool                                        m_status;               // 状态
         high_resolution_clock::time_point           m_sl_last_time;         // 跳表刷块计时器
@@ -45,6 +47,7 @@ namespace dt::tsm
         std::mutex                                  m_sl_mutex;             // 有关跳表逻辑的锁
         std::mutex                                  m_data_lock;
         std::mutex                                  m_index_lock;
+        mutable std::shared_mutex                   m_time_mutex;           // 有关时间戳的读写锁
 
         std::shared_ptr<DataBlock>                  m_current_data;         // 当前块
 

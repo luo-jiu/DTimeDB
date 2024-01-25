@@ -28,6 +28,11 @@ namespace dt::tsm
         Controller(): m_thread_pool(8), m_running(true), m_file("tsm")
         {
             init();
+
+            // 设置回调函数
+            m_state.set_condition_callback([this](const string & db_name, const string & tb_name, const string & field_name) {
+                return is_ready_disk_write(db_name, tb_name, field_name);
+            });
         }
 
         ~Controller()
@@ -60,7 +65,7 @@ namespace dt::tsm
         bool exists_table(string & db_name, string & tb_name);
 
         // 回调函数
-        high_resolution_clock::time_point get_time_point(const string & db_name, const string & tb_name, const string & field_name);  // 获取对应跳表的时间戳
+        bool is_ready_disk_write(const string & db_name, const string & tb_name, const string & field_name);  // 获取对应跳表的时间戳
 
     private:
         struct Table
