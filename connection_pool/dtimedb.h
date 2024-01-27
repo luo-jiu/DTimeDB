@@ -24,23 +24,28 @@ typedef struct dtimedb_field{
 }DT_FIELD;
 //底层网络io
 typedef struct dtimedb_nio{
-    bool  localhost;  //是否来自localhost
-
-};
-typedef struct dtimedb_net{
     my_socket fd;
-    unsigned int write_timeout,read_timeout,retry_count;
+    bool  localhost;  //是否来自localhost
+    bool is_closed;
 
+}NIO;
+typedef struct dtimedb_net{
+    NIO         *nio;
+    my_socket fd;
+    //错误状态代码
+    unsigned int write_timeout,read_timeout,retry_count;
+    
 }NET;
 /**数据库链接对象**/
-struct conn{
+typedef struct dtime_db{
     NET                         *net;         /**网络io指针**/
     char                          *host,*unix_socket,*host_info,*user,*password;        /**连接的主机、用户名、密码、Unix socket 路径**/
     char                           *db,*info;           /**数据库的信息**/
     DT_FIELD                *fields;        /**传递字段信息**/
-    int                              port;
+    unsigned int                              port;
     bool                            free;           /**是否需要释放链接**/
     enum dtimedb_status    status;
 }DTIMEDB;
-
+//初始化连接环境
+DTIMEDB *conn_init(DTIMEDB *dtimedb);
 #endif //DTIMEDB_DTIMEDB_H

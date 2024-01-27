@@ -12,8 +12,17 @@ class Connection{
     //
     ~Connection();
     //链接数据库
+    /**没有加上用户权限管理**/
+    //bool connect(std::string db_name,std::string ip,std::string user,std::string password,unsigned int port=1110);
+    bool connect(std::string db_name,std::string ip,unsigned int port=1110);
     //更新数据库
+    bool update(std::string sql);
     //执行数据库操作
+    bool insert(std::string &data);
+    //遍历查询获得的结果集
+    bool next();
+    //查询返回字段
+    string value(int index);
 private:
     int                db_port_;
     std::string      db_ip_;
