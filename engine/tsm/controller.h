@@ -14,6 +14,7 @@ using namespace dt::tsm;
 using namespace dt::thread;
 
 #include <engine/tsm/table_state.h>
+#include <engine/tsm/queue_state.h>
 
 namespace dt::tsm
 {
@@ -25,13 +26,16 @@ namespace dt::tsm
     class Controller : public IEngine
     {
     public:
-        Controller(): m_thread_pool(8), m_running(true), m_file("tsm")
+        Controller(): m_producer_thread_pool(8), m_consumer_thread_pool(6), m_running(true), m_file("tsm")
         {
             init();
 
             // 设置回调函数
-            m_state.set_condition_callback([this](const string & db_name, const string & tb_name, const string & field_name) {
+            m_table_state.set_condition_callback([this](const string & db_name, const string & tb_name, const string & field_name) {
                 return is_ready_disk_write(db_name, tb_name, field_name);
+            });
+            m_queue_state.set_condition_callback([this](const string & db_name, const string & tb_name, const string & field_name) {
+                return disk_write_thread(db_name, tb_name, field_name);
             });
         }
 
@@ -65,7 +69,8 @@ namespace dt::tsm
         bool exists_table(string & db_name, string & tb_name);
 
         // 回调函数
-        bool is_ready_disk_write(const string & db_name, const string & tb_name, const string & field_name);  // 获取对应跳表的时间戳
+        bool is_ready_disk_write(const string & db_name, const string & tb_name, const string & field_name);
+        void disk_write_thread(const string & db_name, const string & tb_name, const string & field_name);
 
     private:
         struct Table
@@ -82,13 +87,15 @@ namespace dt::tsm
 
         //       db_name
         std::map<string, Database>      m_map;
-        ThreadPool                      m_thread_pool;  // 线程池
-        FilePathManager                 m_file;         // 文件管理器(每个引擎都有自己的管理系统)
+        ThreadPool                      m_producer_thread_pool;  // 生产者线程池
+        ThreadPool                      m_consumer_thread_pool;  // 消费者(刷盘)线程池
+        FilePathManager                 m_file;                  // 文件管理器(每个引擎都有自己的管理系统)
 
-        TableState                      m_state;        // 为监控线程提供表状态
-        std::atomic<bool>               m_running;      // 用于退出监控线程
+        TableState                      m_table_state;           // 为监控线程提供表状态
+        QueueState                      m_queue_state;
+        std::atomic<bool>               m_running;               // 用于退出监控线程
         std::thread                     m_monitor_thread;
-        mutable std::shared_mutex       m_mutex;        // 读写锁保证m_map 安全
+        mutable std::shared_mutex       m_mutex;                 // 读写锁保证m_map 安全
     };
 }
 

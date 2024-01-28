@@ -78,7 +78,7 @@ bool Controller::insert(
         string & db_name)
 {
     // 从线程池分配任务
-    m_thread_pool.enqueue(&Controller::insert_thread, this, timestamp, value, type, field_name, tb_name, db_name);
+    m_producer_thread_pool.enqueue(&Controller::insert_thread, this, timestamp, value, type, field_name, tb_name, db_name);
     return true;
 }
 
@@ -137,7 +137,7 @@ void Controller::insert_thread(
         std::cerr << "Error : unknown type " << type << std::endl;
         return;
     }
-    _writer->write(timestamp, value, _type, field_name, db_name, tb_name, m_state);
+    _writer->write(timestamp, value, _type, field_name, db_name, tb_name, m_table_state, m_queue_state);
 }
 
 /**
@@ -188,7 +188,8 @@ void Controller::monitoring_thread()
 {
     while(m_running.load())
     {
-        m_state.iterate_map();
+        m_table_state.iterate_map();
+        m_queue_state.iterate_map();
         // 等待一段时间再次检查
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -222,7 +223,7 @@ bool Controller::exists_table(
 }
 
 /**
- * 获取对应跳表的时间戳
+ * 残余数据刷盘
  */
 bool Controller::is_ready_disk_write(
         const string & db_name,
@@ -252,7 +253,7 @@ bool Controller::is_ready_disk_write(
                     auto _fd = field_name;
                     auto _tb = tb_name;
                     auto _db = db_name;
-                    m_thread_pool.enqueue(&Controller::insert_thread, this, system_clock::now(), "", Type::DATA_STRING, _fd, _tb, _db);
+                    m_producer_thread_pool.enqueue(&Controller::insert_thread, this, system_clock::now(), "", Type::DATA_STRING, _fd, _tb, _db);
 
                     return true;  // 这里还有判断空没有写
                 }
@@ -264,4 +265,15 @@ bool Controller::is_ready_disk_write(
         }
     }
     return false;
+}
+
+/**
+ * 开启刷盘线程
+ */
+void Controller::disk_write_thread(
+        const string & db_name,
+        const string & tb_name,
+        const string & field_name)
+{
+    std::cout << "================disk_write_thread==============" << std::endl;
 }

@@ -3,6 +3,7 @@
 
 #include <engine/tsm/field.h>
 #include <engine/tsm/table_state.h>
+#include <engine/tsm/queue_state.h>
 
 #include <chrono>
 using namespace std::chrono;
@@ -25,10 +26,10 @@ namespace dt::tsm
     class Write
     {
     public:
-        Write() {}
+        Write() = default;
         Write(string & measurement) : m_measurement(measurement), m_head_offset(8), m_tail_offset(4 * 1024 * 1024), m_margin(4 * 1024 * 1024), m_is_ready(0){}
 
-        void write(high_resolution_clock::time_point timestamp, string & data, DataBlock::Type type, string & field_name, string & db_name, string & tb_name, TableState & tb_state);
+        void write(high_resolution_clock::time_point timestamp, string & data, DataBlock::Type type, string & field_name, string & db_name, string & tb_name, TableState & tb_state, QueueState & queue_state);
         void flush_disk();
         void flush_all_sl();
 
@@ -43,7 +44,7 @@ namespace dt::tsm
     private:
         void flush_entry_disk(string & field_name, bool is_remove);
 
-        std::shared_ptr<Field> get_field(string & field_name, const string & type, TableState & tb_state);
+        std::shared_ptr<Field> get_field(string & field_name, const string & type, TableState & tb_state, QueueState & queue_state);
         bool fields_empty();
 
     private:

@@ -75,6 +75,7 @@ string Field::write(
         m_current_data->m_length = m_sl.size();  // 设置长度
 
         push_data_to_deque(m_current_data);  // 存放在队列中
+        notify(db_name, tb_name, m_field_name, true);
 
         m_current_data = std::make_shared<DataBlock>();  // 重置m_current_data 以便接收新数据
         m_sl.cle();  // 清空跳表
@@ -170,3 +171,37 @@ int Field::get_index_deque_size()
     return m_index_deque.size();
 }
 
+/**
+ * 添加观察者
+ */
+void Field::attach(ITableStateObserver * observer)
+{
+    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    m_observers.push_back(observer);
+}
+
+/**
+ * 移除观察者
+ */
+void Field::detach(ITableStateObserver * observer)
+{
+    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    m_observers.remove(observer);
+}
+
+/**
+ * 注册时间
+ */
+void Field::notify(
+        const string & db_name,
+        const string & tb_name,
+        const string & field_name,
+        bool is_registered)
+{
+    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    // 通知所有观察者发生变化
+    for (auto observer : m_observers)
+    {
+        observer->update(db_name, tb_name, field_name, is_registered);
+    }
+}
