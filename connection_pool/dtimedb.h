@@ -34,7 +34,7 @@ typedef struct dtimedb_net{
     my_socket fd;
     //错误状态代码
     unsigned int write_timeout,read_timeout,retry_count;
-    
+
 }NET;
 /**数据库链接对象**/
 typedef struct dtime_db{

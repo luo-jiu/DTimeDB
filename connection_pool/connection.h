@@ -23,9 +23,6 @@ class Connection{
     bool next();
     //查询返回字段
     string value(int index);
-private:
-    int                db_port_;
-    std::string      db_ip_;
 
 };
 #endif //DTIMEDB_CONNECTION_H
