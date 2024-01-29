@@ -3,18 +3,20 @@
 
 #include <engine/tsm/field.h>
 #include <engine/tsm/table_state.h>
+#include <engine/tsm/tsm_ingredient.h>
 #include <engine/tsm/queue_state.h>
-
-#include <chrono>
-using namespace std::chrono;
-
-#include <unordered_map>
-#include <string>
-using std::string;
+#include <file_manager/file_path_manager.h>
+using namespace dt::file;
 
 #include <list>
 #include <set>
 #include <condition_variable>
+#include <unordered_map>
+#include <string>
+using std::string;
+
+#include <chrono>
+using namespace std::chrono;
 
 namespace dt::tsm
 {
@@ -27,10 +29,13 @@ namespace dt::tsm
     {
     public:
         Write() = default;
-        Write(string & measurement) : m_measurement(measurement), m_head_offset(8), m_tail_offset(4 * 1024 * 1024), m_margin(4 * 1024 * 1024), m_is_ready(0){}
+        Write(string & db_name, string & tb_name) : m_tb_name(tb_name), m_db_name(db_name), m_head_offset(8), m_tail_offset(4 * 1024 * 1024), m_margin(4 * 1024 * 1024), m_is_ready(0){}
+
+        void set_file_path_manager(FilePathManager * file_path_manager);
 
         void write(high_resolution_clock::time_point timestamp, string & data, DataBlock::Type type, string & field_name, string & db_name, string & tb_name, TableState & tb_state, QueueState & queue_state);
         void flush_disk();
+        void field_flush_disk(const string & field_name);
         void flush_all_sl();
 
         // field_list (都是线程安全的)
@@ -48,11 +53,13 @@ namespace dt::tsm
         bool fields_empty();
 
     private:
-        string                                                  m_measurement;      // 测量值/表名
+        string                                                  m_db_name;          // 数据库名
+        string                                                  m_tb_name;          // 测量值/表名
 
         int                                                     m_head_offset;      // 头指针偏移量
         int                                                     m_tail_offset;      // 尾指针偏移量
         int                                                     m_margin;           // 空间余量
+        string                                                  m_curr_file_path;   // 当前需要刷写的文件
 
         std::mutex                                              m_write_mutex;
         std::mutex                                              m_thread_mutex;
@@ -60,6 +67,8 @@ namespace dt::tsm
         mutable std::shared_mutex                               m_filed_map_mutex;  // 针对m_field_map 安全的读写所
         std::condition_variable                                 m_cv;
         int                                                     m_is_ready;
+
+        FilePathManager *                                       m_file_path;        // 依赖注入，文件管理器
 
         TSM                                                     m_tsm;
         std::list<string>                                       m_field_list;       // 该list 表明哪些字段有块待写入

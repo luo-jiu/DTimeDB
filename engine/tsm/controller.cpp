@@ -101,9 +101,11 @@ void Controller::insert_thread(
 //            read_lock.unlock();
 //            std::unique_lock<std::shared_mutex> write_lock(m_mutex);
             // 不存在需要初始化
-            std::map<string, Table> _table;
-            _table[tb_name] = Table{std::make_shared<Write>()};
-            m_map[db_name] = Database{"", _table};
+            std::map<string, Table> table;
+            auto write = std::make_shared<Write>(db_name, tb_name);
+            write->set_file_path_manager(&m_file);  // 依赖注入
+            table[tb_name] = Table{write};
+            m_map[db_name] = Database{"", table};
 
 //            write_lock.unlock();
 //            read_lock.lock();
@@ -116,28 +118,28 @@ void Controller::insert_thread(
     }
 
     // 拿取出对应表的writer (这里一定是读取)
-    auto & _writer = m_map[db_name].m_table_map[tb_name].m_writer;
+    auto & writer = m_map[db_name].m_table_map[tb_name].m_writer;
     write_lock.unlock();
     // 类型转换
-    DataBlock::Type _type;
+    DataBlock::Type type_temp;
     if (type == IEngine::Type::DATA_STRING)
     {
-        _type = DataBlock::DATA_STRING;
+        type_temp = DataBlock::DATA_STRING;
     }
     else if (type == IEngine::Type::DATA_INTEGER)
     {
-        _type = DataBlock::DATA_INTEGER;
+        type_temp = DataBlock::DATA_INTEGER;
     }
     else if (type == IEngine::Type::DATA_FLOAT)
     {
-        _type = DataBlock::DATA_FLOAT;
+        type_temp = DataBlock::DATA_FLOAT;
     }
     else
     {
         std::cerr << "Error : unknown type " << type << std::endl;
         return;
     }
-    _writer->write(timestamp, value, _type, field_name, db_name, tb_name, m_table_state, m_queue_state);
+    writer->write(timestamp, value, type_temp, field_name, db_name, tb_name, m_table_state, m_queue_state);
 }
 
 /**
@@ -177,6 +179,19 @@ bool Controller::get_range_datas(
         std::vector<string> datas)
 {
 
+}
+
+/**
+ * 扫描全表
+ */
+std::list<string> Controller::scan_full_table(
+        const string & db_name,
+        const string & tb_name)
+{
+    std::cout << "Scan full table, db_name:'" << db_name << "',tb_name:" << tb_name << std::endl;
+    // 单独开启一个线程去执行
+    std::list<string> result;
+    return result;
 }
 
 /**
@@ -250,10 +265,10 @@ bool Controller::is_ready_disk_write(
 
                     // 刷跳表(传入空数据激活即可)
                     // 获取对应字段类型
-                    auto _fd = field_name;
-                    auto _tb = tb_name;
-                    auto _db = db_name;
-                    m_producer_thread_pool.enqueue(&Controller::insert_thread, this, system_clock::now(), "", Type::DATA_STRING, _fd, _tb, _db);
+                    auto fd = field_name;
+                    auto tb = tb_name;
+                    auto db = db_name;
+                    m_producer_thread_pool.enqueue(&Controller::insert_thread, this, system_clock::now(), "", Type::DATA_STRING, fd, tb, db);
 
                     return true;  // 这里还有判断空没有写
                 }
@@ -270,10 +285,27 @@ bool Controller::is_ready_disk_write(
 /**
  * 开启刷盘线程
  */
+void Controller::disk_write(
+        const string & db_name,
+        const string & tb_name,
+        const string & field_name)
+{
+    // 从线程池拿取线程进行刷盘操作
+    m_consumer_thread_pool.enqueue(&Controller::disk_write_thread, this, db_name, tb_name, field_name);
+}
+
 void Controller::disk_write_thread(
         const string & db_name,
         const string & tb_name,
         const string & field_name)
 {
     std::cout << "================disk_write_thread==============" << std::endl;
+    // 拿到对饮Writer
+    auto writer = m_map[db_name].m_table_map[tb_name].m_writer;
+
+    if (writer)
+    {
+        // 调用其刷盘函数
+        writer->field_flush_disk(field_name);
+    }
 }

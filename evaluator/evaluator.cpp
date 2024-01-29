@@ -86,12 +86,7 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval(
         case Node::NODE_SELECT:  // select 处理
         {
             auto select = std::dynamic_pointer_cast<ast::Select>(node);
-
-            // 解析field
-
-            auto where = eval(select->m_where, env, root);  // 解析where
-
-            return eval(select, env, root);
+            return eval_select(select, root);
         }
         case Node::NODE_INSERT:  // insert 处理
         {

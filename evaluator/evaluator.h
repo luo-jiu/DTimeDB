@@ -40,7 +40,8 @@ namespace dt::evaluator
         std::shared_ptr<ExecutionPlanNode> eval_use(const std::shared_ptr<Use> & node);
         std::shared_ptr<ExecutionPlanNode> eval_create(const std::shared_ptr<ast::Create> & node);
         std::shared_ptr<ExecutionPlanNode> eval_insert(const std::shared_ptr<ast::Insert> & node);
-        std::shared_ptr<ExecutionPlanNode> eval_select(const std::shared_ptr<ast::Select> & node);
+        std::shared_ptr<ExecutionPlanNode> eval_select(const std::shared_ptr<ast::Select> & node, const std::shared_ptr<ExecutionPlanNode> & root);
+
 
         // 前缀表达式求值
         std::shared_ptr<ExecutionPlanNode> eval_prefix(const std::shared_ptr<ast::Prefix> & node, Environment * env, const std::shared_ptr<ExecutionPlanNode> & root);

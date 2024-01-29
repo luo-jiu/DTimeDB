@@ -7,3 +7,5 @@ create table school()engine=tsm
 insert into school,local='中德',class='软工1班' '温度'=24.1
 insert into school,local='中德',class='软工1班' '出勤'=25
 test push
+
+select * from school

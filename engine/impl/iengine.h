@@ -83,8 +83,6 @@ namespace dt::impl
                 string & tb_name,
                 string & db_name) = 0;
 
-//        virtual bool insert() = 0;
-
 
         virtual bool update(
                 high_resolution_clock::time_point timestamp,
@@ -137,6 +135,13 @@ namespace dt::impl
 //         */
 //        virtual FilePathManager get_file_manager() = 0;
 
+        /**
+         * [共有]
+         * 全表扫描
+         */
+        virtual std::list<string> scan_full_table(
+                const string & db_name,
+                const string & tb_name) = 0;
     };
 }
 

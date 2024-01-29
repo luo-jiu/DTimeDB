@@ -1,9 +1,6 @@
 #ifndef DTIMEDB_QUERY_PLAN_H
 #define DTIMEDB_QUERY_PLAN_H
 
-#include <engine/iengine/iengine.h>
-using namespace dt::iengine;
-
 #include <iostream>
 #include <utility>
 #include <vector>

@@ -29,9 +29,11 @@ namespace dt::ast
             NODE_SHOW,
             NODE_USE,
             NODE_CREATE,
-            NODE_SELECT,
+            NODE_SELECT,  // 对应ScanNode
             NODE_INSERT,
             NODE_UPDATE,
+
+            NODE_WHERE,  // 对应FilterNode
         };
 
         Node() {}

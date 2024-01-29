@@ -20,7 +20,7 @@ namespace dt::tsm
     public:
         Field() = default;
         Field(DataBlock::Type type, string field_name) : m_type(type), m_field_name(field_name), m_status(false) {}
-        string write(high_resolution_clock::time_point timestamp, string & data, string & db_name, string & tb_name);
+        void write(high_resolution_clock::time_point timestamp, string & data, string & db_name, string & tb_name);
         bool get_status() const { return m_status; }
 
         bool should_flush_data();

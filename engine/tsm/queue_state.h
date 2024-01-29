@@ -117,10 +117,13 @@ namespace dt::tsm
 
                 // 执行相关操作，例如更新字段的状态或刷新数据到磁盘
                 // ...
-                std::cout << "===================" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
+                std::cout << "监控线程观测到队列:" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
 
                 // 执行回调函数获取时间
                 m_condition_callback(db_name, tb_name, field_name);
+
+                // 添加到移除列表
+                items_to_remove.emplace_back(db_name, tb_name, field_name);
             }
 
             // 移除满足条件的字段状态

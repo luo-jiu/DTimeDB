@@ -13,13 +13,13 @@ std::shared_ptr<Expression> Parser::parse_select()
     while (m_curr.type() != Token::TOKEN_FROM)  // 不是from
     {
         if (m_curr.type() == Token::TOKEN_ASTERISK) {  // 如果是*
-            std::shared_ptr<String> s(new String());
-            s->m_value = "*";
-            e->fields.push_back(s);
+//            std::shared_ptr<String> s(new String());
+//            s->m_value = "*";
+            e->fields.push_back("*");
             next_token();  // 跳过 '*'
             break;
         }
-        e->fields.push_back(parse_string());
+//        e->fields.push_back(parse_string());
         next_token();
         if(m_curr.type() == Token::TOKEN_COMMA){
             next_token();  // 跳过 ','
@@ -27,9 +27,12 @@ std::shared_ptr<Expression> Parser::parse_select()
     }
     next_token();
     e->m_from = parse_string();
-    next_token();
-    next_token();
-    e->m_where = parse_expression(LOWEST);
+    if (!peek_token_is(Token::TOKEN_EOF))  // 说明有where
+    {
+        next_token();
+        next_token();
+        e->m_where = parse_expression(LOWEST);
+    }
     return e;
 }
 

@@ -84,7 +84,6 @@ namespace dt::execution
         virtual string str() const { return ""; }
         void execute(IEngine & engine) override
         {
-//            std::cout << "show: " << m_type << std::endl;
             if (m_current_db.empty())
             {
                 std::cout << "Database not selected, 'use' command" << std::endl;
@@ -143,9 +142,20 @@ namespace dt::execution
         ~ScanNode() {}
 
         virtual string str() const { return m_table_name; }
-        void execute(IEngine & engine) override { std::cout << "scan : " << m_table_name << std::endl; }
+
+        void execute(IEngine & engine) override
+        {
+            if (m_current_db.empty())
+            {
+                std::cout << "Database not selected, 'use' command" << std::endl;
+                return;
+            }
+            std::cout << "scan : " << m_table_name << std::endl;
+            engine.scan_full_table(m_current_db, m_table_name);
+        }
+
         std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
-        void set_child(std::shared_ptr<ExecutionPlanNode> & child) { m_child = child; }
+        void set_child(std::shared_ptr<ExecutionPlanNode> child) { m_child = child; }
 
     public:
         string                                 m_table_name;
@@ -170,6 +180,8 @@ namespace dt::execution
 
     public:
         string                                  m_condition;
+        std::list<string>                       m_fields;
+        std::map<Token::Type, string>           m_where;
         std::shared_ptr<ExecutionPlanNode>      m_child;
     };
 

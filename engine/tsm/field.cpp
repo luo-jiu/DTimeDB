@@ -1,13 +1,12 @@
 #include <engine/tsm/field.h>
 using namespace dt::tsm;
 
-string Field::write(
+void Field::write(
         high_resolution_clock::time_point timestamp,
         string & data,
         string & db_name,
         string & tb_name)
 {
-
     std::lock_guard<std::mutex> lock(m_sl_mutex);  // 直接上互斥锁
     /**
      * 重置数据模块
@@ -29,7 +28,9 @@ string Field::write(
     if (!data.empty())
     {
         m_sl.put(timestamp, data);
-        m_need_reset.store(false);  // 不需要重置数据
+
+        // 不需要重置数据
+        m_need_reset.store(false);
     }
 
     /**
@@ -44,7 +45,7 @@ string Field::write(
         }
 
         // 写入DataBlock
-        int32_t _data_size = 0;
+        int32_t data_size = 0;
         if (m_type == DataBlock::Type::DATA_STRING)  // string
         {
             for (auto it = m_sl.begin(); it != m_sl.end(); ++it)  // 迭代器
@@ -53,39 +54,43 @@ string Field::write(
                 {
                     auto key_value = *it;
                     m_current_data->write(key_value.first, key_value.second);
-                    _data_size += (8 + key_value.second.length());
+                    data_size += (8 + key_value.second.length());
                 }
             }
         }
         else
         {
-            for (auto it = m_sl.begin(); it != m_sl.end(); ++it)  // 迭代器
+            for (auto it = m_sl.begin(); it != m_sl.end(); ++it)
             {
-                if (it != m_sl.end())  // 校验
+                if (it != m_sl.end())
                 {
                     auto key_value = *it;
                     m_current_data->write(key_value.first, key_value.second);
                 }
             }
-            _data_size += 12 * m_sl.size();
+            data_size += 12 * m_sl.size();
         }
+        // 设置大小和长度
         m_current_data->m_max_timestamp = m_sl.max_key();
         m_current_data->m_min_timestamp = m_sl.max_key();
-        m_current_data->m_size = _data_size;  // 设置大小
-        m_current_data->m_length = m_sl.size();  // 设置长度
+        m_current_data->m_size = data_size;
+        m_current_data->m_length = m_sl.size();
+        // 存放在队列中
+        push_data_to_deque(m_current_data);
 
-        push_data_to_deque(m_current_data);  // 存放在队列中
+        // 注册事件
         notify(db_name, tb_name, m_field_name, true);
 
-        m_current_data = std::make_shared<DataBlock>();  // 重置m_current_data 以便接收新数据
+        // 重置m_current_data 以便接收新数据
+        m_current_data = std::make_shared<DataBlock>();
         m_sl.cle();  // 清空跳表
 
         std::cout << "数据已入队列...\n";
         m_need_reset.store(true);
         // 需要给write.h 中的m_fields_list中添加映射
-        return m_field_name;
+//        return m_field_name;
     }
-    return "";
+//    return "";
 }
 
 /**

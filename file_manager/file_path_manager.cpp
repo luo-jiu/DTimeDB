@@ -62,6 +62,7 @@ bool FilePathManager::create_table(
 
     // 创建表(创建系统表文件就行)
     string sys_file_path;
+    // 这里需要修改为map映射，以便于未来多个引擎不会造成if-else if-else 逻辑冗余
     if (engine == "tsm")
     {
         sys_file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
@@ -127,9 +128,9 @@ string FilePathManager::create_file(
 {
     if (exists_table(db_name, tb_name, false))
     {
-        auto current_time = std::chrono::high_resolution_clock::now();
+        auto current_time = high_resolution_clock::now();
         string file_name = tb_name + "-" + std::to_string(current_time.time_since_epoch().count()) + "." + engine_abbrev;
-        string file_path = m_default_base_path + "/" + file_name;
+        string file_path = m_default_base_path + "/" + db_name + "/" + file_name;
 
         // 创建文件
         int fd = open(file_path.c_str(), O_CREAT | O_WRONLY, 0666);
@@ -140,7 +141,7 @@ string FilePathManager::create_file(
         }
 
         // 把文件名存入对应表目录下
-        m_map[db_name][tb_name].m_files.push_back(file_name);
+//        m_map[db_name][tb_name].m_files.push_back(file_name);
         return file_path;
     }
 

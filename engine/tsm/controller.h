@@ -35,7 +35,7 @@ namespace dt::tsm
                 return is_ready_disk_write(db_name, tb_name, field_name);
             });
             m_queue_state.set_condition_callback([this](const string & db_name, const string & tb_name, const string & field_name) {
-                return disk_write_thread(db_name, tb_name, field_name);
+                return disk_write(db_name, tb_name, field_name);
             });
         }
 
@@ -64,13 +64,16 @@ namespace dt::tsm
         bool get_range_datas(const high_resolution_clock::time_point & start, const high_resolution_clock::time_point & end, std::vector<string> & datas) override;
         bool get_range_datas(std::vector<string> tags, std::vector<string> datas) override;
 
+        std::list<string> scan_full_table(const string & db_name, const string & tb_name);
+
         void monitoring_thread();
         void stop_monitoring_thread();
+        void disk_write_thread(const string & db_name, const string & tb_name, const string & field_name);
         bool exists_table(string & db_name, string & tb_name);
 
         // 回调函数
         bool is_ready_disk_write(const string & db_name, const string & tb_name, const string & field_name);
-        void disk_write_thread(const string & db_name, const string & tb_name, const string & field_name);
+        void disk_write(const string & db_name, const string & tb_name, const string & field_name);
 
     private:
         struct Table

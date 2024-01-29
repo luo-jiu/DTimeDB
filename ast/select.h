@@ -18,7 +18,8 @@ namespace dt::ast
             Json clause;
             for (auto & cla : fields)
             {
-                clause.append(cla->json());
+//                clause.append(cla->json());
+                clause.append(cla);
             }
             json["fields"] = clause;
             json["from"] = m_from->json();
@@ -27,8 +28,8 @@ namespace dt::ast
         }
 
     public:
-        std::list<std::shared_ptr<Expression>>      fields;
-        std::shared_ptr<Expression>                 m_from;
-        std::shared_ptr<Expression>                 m_where;
+        std::list<string>                       fields;
+        std::shared_ptr<Expression>             m_from;
+        std::shared_ptr<Expression>             m_where;
     };
 }
