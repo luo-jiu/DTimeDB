@@ -13,5 +13,7 @@ public:
 private:
     ConnectionPool();
    queue<Connection> queue;
+   int  max_threads;
+   int  min_threads;
 };
 #endif //DTIMEDB_CONNECTION_POOL_H

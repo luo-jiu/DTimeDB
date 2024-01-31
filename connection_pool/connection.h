@@ -9,12 +9,12 @@
 class Connection{
     //初始化数据库链接
     Connection();
-    //
+    //释放数据库连接
     ~Connection();
     //链接数据库
     /**没有加上用户权限管理**/
     //bool connect(std::string db_name,std::string ip,std::string user,std::string password,unsigned int port=1110);
-    bool connect(std::string db_name,std::string ip,unsigned int port=1110);
+    bool connect(std::string db_name,std::string ip,std::string user,std::string password,unsigned int port=1110);
     //更新数据库
     bool update(std::string sql);
     //执行数据库操作

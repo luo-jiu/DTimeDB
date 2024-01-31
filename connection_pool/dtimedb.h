@@ -1,7 +1,10 @@
+/**
+*这里是dtimedb基础io结构库
+ */
 #pragma once
-typedef int my_socket;
-#ifndef DTIMEDB_DTIMEDB_H
-#define DTIMEDB_DTIMEDB_H
+#include <stddef.h>
+#include <arpa/inet.h>
+typedef int db_socket;
 enum dtimedb_status{
     DB_STATUS_CONNECTED,                             /**建立链接成功**/
     DB_STATUS_GET_RESULT,                            /** 查询结果集**/
@@ -23,22 +26,33 @@ typedef struct dtimedb_field{
 //    Type            field_type;               /**值的类型，到最后会将值整体的统一，放在根目录下的type文件夹内**/
 }DT_FIELD;
 //底层网络io
-typedef struct dtimedb_nio{
-    my_socket fd;
-    bool  localhost;  //是否来自localhost
-    bool is_closed;
 
-}NIO;
+typedef struct dtimedb_nio{
+    //网络套接子
+    db_socket fd;
+    bool  localhost;  //是否来自localhost
+    sockaddr db_socket;
+    bool is_closed;   //连接是否关闭
+    int    read_timeout;    //读超时
+    int    write_timeout;   //写超时
+    /**
+     * nio操作函数
+     */
+     void (*nio_delete)(dtimedb_nio*);
+     size_t (*nio_read)(dtimedb_nio*,unsigned char *,size_t);
+     size_t (*nio_write)(dtimedb_nio*,const unsigned char*,size_t);
+}Nio;
+
 typedef struct dtimedb_net{
-    NIO         *nio;
-    my_socket fd;
+    Nio         *nio;
+    db_socket fd;
     //错误状态代码
     unsigned int write_timeout,read_timeout,retry_count;
 
-}NET;
+}Net;
 /**数据库链接对象**/
 typedef struct dtime_db{
-    NET                         *net;         /**网络io指针**/
+    Net                         *net;         /**网络io指针**/
     char                          *host,*unix_socket,*host_info,*user,*password;        /**连接的主机、用户名、密码、Unix socket 路径**/
     char                           *db,*info;           /**数据库的信息**/
     DT_FIELD                *fields;        /**传递字段信息**/
@@ -48,4 +62,4 @@ typedef struct dtime_db{
 }DTIMEDB;
 //初始化连接环境
 DTIMEDB *conn_init(DTIMEDB *dtimedb);
-#endif //DTIMEDB_DTIMEDB_H
+
