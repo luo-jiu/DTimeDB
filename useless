@@ -9,3 +9,4 @@ insert into school,local='中德',class='软工1班' '出勤'=25
 test push
 
 select * from school
+test ssh push
