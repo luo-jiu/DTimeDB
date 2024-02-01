@@ -3,7 +3,7 @@
  */
 #ifndef DTIMEDB_CONNECTION_H
 #define DTIMEDB_CONNECTION_H
-
+#include "dtimedb.h"
 #include <string>
 
 class Connection{
@@ -16,13 +16,20 @@ class Connection{
     //bool connect(std::string db_name,std::string ip,std::string user,std::string password,unsigned int port=1110);
     bool connect(std::string db_name,std::string ip,std::string user,std::string password,unsigned int port=1110);
     //更新数据库
-    bool update(std::string sql);
-    //执行数据库操作
-    bool insert(std::string &data);
+    bool update_db(std::string sql);
+    //查询数据库
+    bool query_db(const char *str);
     //遍历查询获得的结果集
     bool next();
     //查询返回字段
     string value(int index);
+private:
+    DTIMEDB *dtimedb= nullptr;
+    DT_FIELD  *field= nullptr;
+    //查询结果的api
+    //1. tsm
+
+    //2. clt
 
 };
 #endif //DTIMEDB_CONNECTION_H

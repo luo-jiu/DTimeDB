@@ -11,6 +11,10 @@ enum dtimedb_status{
     DB_STATUS_USE_RESULT,                            /**使用服务端返回的结果集**/
     DB_STATUS_STATEMENT_RESULT,              /**正在获取结果**/
 };
+//网络类型，可以选择是ipv4也能选择ipv6
+typedef struct db_socket_addr{
+
+}SOCKET;
 /**
  *查询结果的具体信息
  */
@@ -31,8 +35,13 @@ typedef struct dtimedb_nio{
     //网络套接子
     db_socket fd;
     bool  localhost;  //是否来自localhost
-    sockaddr db_socket;
+    sockaddr_in6 socket;
+    size_t  addr_len;
+    char  *desc[1024];//连接的描述字符串
     bool is_closed;   //连接是否关闭
+    char *read_buffer;
+    char *read_pos; //读取数据的指针
+    char *read_end;//数据的结束位置
     int    read_timeout;    //读超时
     int    write_timeout;   //写超时
     /**
