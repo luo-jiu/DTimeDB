@@ -166,17 +166,17 @@ void Controller::begin_indexed_scan(
 
 }
 
-bool Controller::get_range_datas(
+bool Controller::get_range_data(
         const high_resolution_clock::time_point & start,
         const high_resolution_clock::time_point & end,
-        std::vector<string> & datas)
+        std::vector<string> & data)
 {
 
 }
 
-bool Controller::get_range_datas(
+bool Controller::get_range_data(
         std::vector<string> tags,
-        std::vector<string> datas)
+        std::vector<string> data)
 {
 
 }

@@ -100,7 +100,7 @@ bool Field::should_flush_data()
 {
     std::shared_lock<std::shared_mutex> read_lock(m_time_mutex);
     auto current_time = std::chrono::system_clock::now();
-    return m_sl.size() >= 10 || (current_time - m_sl_last_time >= seconds(5) && !m_sl.empty());
+    return m_sl.size() >= 100 || (current_time - m_sl_last_time >= seconds(5) && !m_sl.empty());
 }
 
 /**

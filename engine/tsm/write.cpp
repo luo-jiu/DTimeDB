@@ -237,6 +237,8 @@ void Write::field_flush_disk(
         // 再次判断队列里面有没元素
         if(field->get_data_status())
         {
+            // 队列为空结束刷盘
+            std::cout << "结束刷盘\n";
             break;
         }
         else

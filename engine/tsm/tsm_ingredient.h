@@ -166,26 +166,26 @@ namespace dt::tsm
         };
 
         IndexBlockMeta() {}
-        IndexBlockMeta(u_int16_t key_size, string key, Type type): m_key_size(key_size), m_key(std::move(key)), m_type(type){}
+        IndexBlockMeta(uint16_t key_size, string key, Type type): m_key_size(key_size), m_key(std::move(key)), m_type(type){}
         ~IndexBlockMeta() {}
 
         // get and set
-        u_int16_t get_key_length() const { return m_key_size; }
-        void set_key_length(u_int16_t key_length) {
+        uint16_t get_key_length() const { return m_key_size; }
+        void set_key_length(uint16_t key_length) {
             m_key_size = key_length;
         }
         const string & get_key() const { return m_key; }
         void set_key(const string & key) { m_key = key; }
         Type get_type() const { return m_type; }
         void set_type(Type type) { m_type = type; }
-        u_int16_t get_count() const { return m_count; }
-        void set_count(u_int16_t count) { m_count = count; }
+        uint16_t get_count() const { return m_count; }
+        void set_count(uint16_t count) { m_count = count; }
 
     private:
-        u_int16_t                   m_key_size;
+        uint16_t                    m_key_size;
         string                      m_key;  // seriesKey + fieldKey
         Type                        m_type;
-        u_int16_t                   m_count;  // entry count
+        uint16_t                    m_count;  // entry count
     };
 }
 

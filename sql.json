@@ -1,1 +1,1 @@
-{"statements":[{"expression":{"database":"db_test","type":""},"type":"ExpressionStatement"},{"expression":{"fields":null,"from":"school","tags":["local=中德","class=软工1班"],"timestamp":"1706111192588898426","type":"Insert","values":null},"type":"ExpressionStatement"}],"type":"Program"}
+{"statements":[{"expression":{"database":"db_test","type":""},"type":"ExpressionStatement"},{"expression":{"fields":null,"from":"school","tags":["local=中德","class=软工1班"],"timestamp":"1707022073302603914","type":"Insert","values":null},"type":"ExpressionStatement"}],"type":"Program"}

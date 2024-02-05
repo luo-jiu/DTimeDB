@@ -116,19 +116,19 @@ namespace dt::impl
          * [共有]
          * 获取范围数据 (通过索引 [时间戳timestamp])
          */
-        virtual bool get_range_datas(
+        virtual bool get_range_data(
                 const high_resolution_clock::time_point & start,
                 const high_resolution_clock::time_point & end,
-                std::vector<string> & datas) = 0;
+                std::vector<string> & data) = 0;
 
 
         /**
          * [tsm]
          * 获取范围数据 (通过索引 [标签tag])
          */
-        virtual bool get_range_datas(
+        virtual bool get_range_data(
                 std::vector<string> tags,
-                std::vector<string> datas) = 0;
+                std::vector<string> data) = 0;
 
 //        /**
 //         * 获取对应引擎的文件管理器

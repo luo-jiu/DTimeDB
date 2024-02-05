@@ -227,8 +227,8 @@ namespace dt::execution
         {
             // 先给时间戳转类型
             long long nanoseconds_count = std::stoll(m_timestamp);
-            std::chrono::nanoseconds nanoseconds(nanoseconds_count);
-            std::chrono::high_resolution_clock::time_point timestamp(std::chrono::duration_cast<std::chrono::high_resolution_clock::duration>(nanoseconds));
+            nanoseconds nanoseconds(nanoseconds_count);
+            high_resolution_clock::time_point timestamp(duration_cast<high_resolution_clock::duration>(nanoseconds));
 
             // 调用存储引擎接口的插入函数
             for (string fv : m_fv)

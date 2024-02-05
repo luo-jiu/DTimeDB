@@ -1,4 +1,6 @@
 #include <engine/tsm/tsm.h>
+#include <cstring>
+
 using namespace dt::tsm;
 
 /**
@@ -40,74 +42,85 @@ bool TSM::read_header_from_file(
     return true;
 }
 
-u_int64_t TSM::write_data_to_file(
+uint64_t TSM::write_data_to_file(
         const std::shared_ptr<DataBlock> & data_block ,
         const string & file_path,
         int64_t offset)
 {
-    auto file = m_file_manager.get_file_stream(file_path);
-    if (!file->is_open())
-    {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/tsm_.h" << std::endl;
-        return -1;
-    }
-    file->seekp(offset);  // 移动到指定位置
-    int _size;
+//    auto file = m_file_manager.get_file_stream(file_path);
+//    if (!file->is_open())
+//    {
+//        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/tsm_.h" << std::endl;
+//        return -1;
+//    }
+//    file->seekp(offset);  // 移动到指定位置
+//    int size;
 
-    // 将类型 长度写入文件
-    file->write(reinterpret_cast<const char*>(&data_block->m_type), sizeof(data_block->m_type));
-    file->write(reinterpret_cast<const char*>(&data_block->m_length), sizeof(data_block->m_length));
+    // 对时间戳进行差值计算
+    auto timestamp_differences = calculate_differences(data_block->m_timestamps);
 
-    // 将时间戳写入文件
-    _size = sizeof(high_resolution_clock::time_point);
-    for (const auto & timestamp : data_block->m_timestamps)
-    {
-        file->write(reinterpret_cast<const char*>(&timestamp), _size);
-    }
+    // 序列化差值后的时间戳
+    auto timestamp_serialize = serialize_differences(timestamp_differences);
+    std::cout << timestamp_serialize << std::endl;
 
-    // 将数据写入文件
-    if (data_block->m_type == DataBlock::Type::DATA_STRING)
-    {
-        _size = sizeof(u_int16_t);
-        for (const string & value : data_block->m_values)
-        {
-            auto length = static_cast<u_int16_t>(value.length());
-            file->write(reinterpret_cast<const char*>(&length), _size);  // 写大小
-            file->write(value.c_str(), length);  // 写字符串
-        }
+    auto temp = deserialize_differences(timestamp_serialize);
+    // 将差值计算后的时间戳使用snappy 压缩
+    auto compress = compress_data(timestamp_serialize);
 
-        file->flush();
-        m_file_manager.release_file_stream(file_path);
-        return data_block->m_size + 4 * data_block->m_values.size();
-    }
-    else if (data_block->m_type == DataBlock::Type::DATA_FLOAT)
-    {
-        float _data;
-        _size = sizeof(float);
-        for (const auto & value : data_block->m_values)
-        {
-            _data = stof(value);
-            file->write(reinterpret_cast<const char*>(&_data), _size);
-        }
-    }
-    else if (data_block->m_type == DataBlock::Type::DATA_INTEGER)
-    {
-        int _data;
-        _size = sizeof(int);
-        for (const auto & value : data_block->m_values)
-        {
-            _data = stoi(value);
-            file->write(reinterpret_cast<const char*>(&_data), _size);
-        }
-    }
-    else
-    {
-        std::cerr << "Error : Unknown type - m_from engine/tsm/tsm.cpp" << std::endl;
-    }
-
-    file->flush();
-    m_file_manager.release_file_stream(file_path);
-    return data_block->m_size;
+//    // 将类型 长度写入文件
+//    file->write(reinterpret_cast<const char*>(&data_block->m_type), sizeof(data_block->m_type));
+//    file->write(reinterpret_cast<const char*>(&data_block->m_length), sizeof(data_block->m_length));
+//
+//    // 将时间戳写入文件
+//    size = sizeof(high_resolution_clock::time_point);
+//    for (const auto & timestamp : data_block->m_timestamps)
+//    {
+//        file->write(reinterpret_cast<const char*>(&timestamp), size);
+//    }
+//
+//    // 将数据写入文件
+//    if (data_block->m_type == DataBlock::Type::DATA_STRING)
+//    {
+//        size = sizeof(uint16_t);
+//        for (const string & value : data_block->m_values)
+//        {
+//            auto length = static_cast<uint16_t>(value.length());
+//            file->write(reinterpret_cast<const char*>(&length), size);  // 写大小
+//            file->write(value.c_str(), length);  // 写字符串
+//        }
+//
+//        file->flush();
+//        m_file_manager.release_file_stream(file_path);
+//        return data_block->m_size + 4 * data_block->m_values.size();
+//    }
+//    else if (data_block->m_type == DataBlock::Type::DATA_FLOAT)
+//    {
+//        float data;
+//        size = sizeof(float);
+//        for (const auto & value : data_block->m_values)
+//        {
+//            data = stof(value);
+//            file->write(reinterpret_cast<const char*>(&data), size);
+//        }
+//    }
+//    else if (data_block->m_type == DataBlock::Type::DATA_INTEGER)
+//    {
+//        int data;
+//        size = sizeof(int);
+//        for (const auto & value : data_block->m_values)
+//        {
+//            data = stoi(value);
+//            file->write(reinterpret_cast<const char*>(&data), size);
+//        }
+//    }
+//    else
+//    {
+//        std::cerr << "Error : Unknown type - m_from engine/tsm/tsm.cpp" << std::endl;
+//    }
+//
+//    file->flush();
+//    m_file_manager.release_file_stream(file_path);
+//    return data_block->m_size;
 }
 
 bool TSM::read_data_from_file(
@@ -127,16 +140,16 @@ bool TSM::read_data_from_file(
     file->read(reinterpret_cast<char*>(&data_block->m_type), sizeof(data_block->m_type));
     file->read(reinterpret_cast<char*>(&data_block->m_length), sizeof(data_block->m_length));
 
-    int _size;
+    int size;
 
     // 读取时间戳
     data_block->m_timestamps.clear();
     auto num = data_block->m_length;
-    _size = sizeof(high_resolution_clock::time_point);
+    size = sizeof(high_resolution_clock::time_point);
     for (size_t i = 0; i < num; ++i)
     {
         high_resolution_clock::time_point timestamp;
-        file->read(reinterpret_cast<char*>(&timestamp), _size);
+        file->read(reinterpret_cast<char*>(&timestamp), size);
         data_block->m_timestamps.push_back(timestamp);
     }
 
@@ -146,8 +159,8 @@ bool TSM::read_data_from_file(
     {
         for (size_t i = 0; i < num; ++i)
         {
-            u_int16_t length;
-            file->read(reinterpret_cast<char*>(&length), sizeof(u_int16_t));
+            uint16_t length;
+            file->read(reinterpret_cast<char*>(&length), sizeof(uint16_t));
             if (file->good())
             {
                 char buffer[length + 1];
@@ -159,26 +172,26 @@ bool TSM::read_data_from_file(
     }
     else if (data_block->m_type == DataBlock::Type::DATA_INTEGER)
     {
-        int _value;
-        string _data;
-        _size = sizeof(int);
+        int value;
+        string data;
+        size = sizeof(int);
         for (size_t i = 0; i < num; ++i)
         {
-            file->read(reinterpret_cast<char*>(&_value), _size);
-            _data = std::to_string(_value);
-            data_block->m_values.push_back(_data);
+            file->read(reinterpret_cast<char*>(&value), size);
+            data = std::to_string(value);
+            data_block->m_values.push_back(data);
         }
     }
     else if (data_block->m_type == DataBlock::Type::DATA_FLOAT)
     {
-        float _value;
-        string _data;
-        _size = sizeof(float);
+        float value;
+        string data;
+        size = sizeof(float);
         for (size_t i = 0; i < num; ++i)
         {
-            file->read(reinterpret_cast<char*>(&_value), _size);
-            _data = std::to_string(_value);
-            data_block->m_values.push_back(_data);
+            file->read(reinterpret_cast<char*>(&value), size);
+            data = std::to_string(value);
+            data_block->m_values.push_back(data);
         }
     }
     else
@@ -189,7 +202,7 @@ bool TSM::read_data_from_file(
     return true;
 }
 
-u_int64_t TSM::write_index_entry_to_file(
+uint64_t TSM::write_index_entry_to_file(
         const std::shared_ptr<IndexEntry> & index_entry,
         const string & file_path,
         int64_t offset)
@@ -207,11 +220,11 @@ u_int64_t TSM::write_index_entry_to_file(
     file->write(reinterpret_cast<const char*>(&index_entry->get_max_time()), timestamp_size);
     file->write(reinterpret_cast<const char*>(&index_entry->get_min_time()), timestamp_size);
 
-    int64_t _offset = index_entry->get_offset();
-    file->write(reinterpret_cast<const char*>(&_offset), sizeof(int64_t));
+    int64_t get_offset = index_entry->get_offset();
+    file->write(reinterpret_cast<const char*>(&get_offset), sizeof(int64_t));
 
-    int64_t _size = index_entry->get_size();
-    file->write(reinterpret_cast<const char*>(&_size), sizeof(int32_t));
+    int64_t size = index_entry->get_size();
+    file->write(reinterpret_cast<const char*>(&size), sizeof(int32_t));
 
     file->flush();
     m_file_manager.release_file_stream(file_path);
@@ -247,17 +260,17 @@ bool TSM::write_index_meta_to_file(
     file->seekp(offset);
 
     size_t size = 12;
-    u_int16_t _length = index_meta->get_key_length();
-    file->write(reinterpret_cast<const char*>(&_length), sizeof(u_int16_t));
-    file->write(index_meta->get_key().c_str(), _length);  // 写字符串
-    auto _type = index_meta->get_type();
-    file->write(reinterpret_cast<const char*>(&_type), sizeof(index_meta->get_type()));
-    u_int16_t _count = index_meta->get_count();
-    file->write(reinterpret_cast<const char*>(&_count), sizeof(u_int16_t));
+    uint16_t length = index_meta->get_key_length();
+    file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
+    file->write(index_meta->get_key().c_str(), length);  // 写字符串
+    auto type = index_meta->get_type();
+    file->write(reinterpret_cast<const char*>(&type), sizeof(index_meta->get_type()));
+    uint16_t count = index_meta->get_count();
+    file->write(reinterpret_cast<const char*>(&count), sizeof(uint16_t));
 
     file->flush();
     m_file_manager.release_file_stream(file_path);
-    return size + _length;
+    return size + length;
 }
 
 bool TSM::read_index_meta_from_file(
@@ -273,23 +286,23 @@ bool TSM::read_index_meta_from_file(
     }
     file->seekg(offset);
 
-    u_int16_t _key_size;
-    file->read(reinterpret_cast<char*>(&_key_size), sizeof(u_int16_t));
+    uint16_t key_size;
+    file->read(reinterpret_cast<char*>(&key_size), sizeof(uint16_t));
 
-    char buffer[_key_size + 1];
-    file->read(buffer, _key_size);
-    buffer[_key_size] = '\0';
+    char buffer[key_size + 1];
+    file->read(buffer, key_size);
+    buffer[key_size] = '\0';
 
-    IndexBlockMeta::Type _type;
-    file->read(reinterpret_cast<char*>(&_type), sizeof(IndexBlockMeta::Type));
+    IndexBlockMeta::Type type;
+    file->read(reinterpret_cast<char*>(&type), sizeof(IndexBlockMeta::Type));
 
-    u_int16_t _count;
-    file->read(reinterpret_cast<char*>(&_count), sizeof(u_int16_t));
+    uint16_t count;
+    file->read(reinterpret_cast<char*>(&count), sizeof(uint16_t));
 
-    index_meta->set_key_length(_key_size);
+    index_meta->set_key_length(key_size);
     index_meta->set_key(buffer);
-    index_meta->set_type(_type);
-    index_meta->set_count(_count);
+    index_meta->set_type(type);
+    index_meta->set_count(count);
 
     m_file_manager.release_file_stream(file_path);
     return true;
@@ -358,7 +371,7 @@ std::shared_ptr<IndexBlockMeta> TSM::create_index_meta(
         const string & field)
 {
     string series_key = measurement + field;
-    auto length = static_cast<u_int16_t>(series_key.length());
+    auto length = static_cast<uint16_t>(series_key.length());
 
     switch (type) {
         case IndexBlockMeta::DATA_INTEGER:
@@ -406,4 +419,74 @@ bool TSM::create_tsm(
 
     m_file_manager.release_file_stream(file_path);
     return true;
+}
+
+std::vector<nanoseconds> TSM::calculate_differences(
+        const std::list<high_resolution_clock::time_point> & timestamps)
+{
+    std::vector<nanoseconds> differences;
+    auto it = timestamps.begin();
+    auto end = timestamps.end();
+
+    // 确保至少有一个时间点
+    if (it != end) {
+        // 保存第一个时间点，转换为自纪元以来的纳秒数
+        auto epoch = *it;
+        auto firstTimestamp = duration_cast<nanoseconds>(epoch.time_since_epoch());
+        differences.push_back(firstTimestamp);
+
+        // 设置previous为第一个时间点
+        auto previous = *it;
+        ++it;
+
+        // 遍历并计算与前一个时间点的差异
+        for (; it != end; ++it) {
+            auto diff = duration_cast<nanoseconds>(*it - previous);
+            differences.push_back(diff);
+            previous = *it;
+        }
+    }
+
+    return differences;
+}
+
+string TSM::serialize_differences(const std::vector<nanoseconds> & differences)
+{
+    string serializedData;
+    for (const auto& diff : differences)
+    {
+        auto count = diff.count();
+        serializedData.append(reinterpret_cast<const char*>(&count), sizeof(count));
+    }
+    return serializedData;
+}
+
+std::vector<nanoseconds> TSM::deserialize_differences(const std::string & serialized_data)
+{
+    std::vector<std::chrono::nanoseconds> differences;
+    size_t i = 0;
+    while (i < serialized_data.size())
+    {
+        long long count;
+        // 确保在读取之前有足够的数据以避免越界
+        if (i + sizeof(count) <= serialized_data.size())
+        {
+            std::memcpy(&count, serialized_data.data() + i, sizeof(count));
+            differences.push_back(std::chrono::nanoseconds(count));
+            i += sizeof(count);
+        }
+        else
+        {
+            // 处理错误或者不完整的序列化数据
+            throw std::runtime_error("Serialized data is corrupted or incomplete.");
+        }
+    }
+    return differences;
+}
+
+string TSM::compress_data(const string & serialized_data)
+{
+    string compressed_data;
+    snappy::Compress(serialized_data.data(), serialized_data.size(), &compressed_data);
+    return compressed_data;
 }

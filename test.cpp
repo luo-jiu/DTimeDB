@@ -22,7 +22,7 @@ using std::string;
 
 
 // 随机选择一个字符串数组中的元素
-std::string getRandomElement(const std::vector<std::string>& strArray) {
+std::string get_random_element(const std::vector<std::string>& strArray) {
     if (strArray.empty()) {
         return ""; // 如果数组为空，返回空字符串
     }
@@ -33,7 +33,7 @@ std::string getRandomElement(const std::vector<std::string>& strArray) {
 
 
     // 返回随机选择的元素
-    return strArray[dis(gen)%strArray.size()];
+    return strArray[dis(gen) % strArray.size()];
 }
 
 int main() {
@@ -46,7 +46,7 @@ int main() {
     // 暴力测试
     for (int i = 0; i < 100000; ++i)
     {
-        string randomElement = getRandomElement(sqls);
+        string randomElement = get_random_element(sqls);
 //        std::cout << "Random Element #" << i + 1 << ": " << randomElement << std::endl;
 
         std::shared_ptr<Lexer> lexer(new Lexer(randomElement.c_str(), randomElement.size()));

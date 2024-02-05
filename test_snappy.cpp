@@ -10,6 +10,7 @@ public:
 
     void saveToFile(const std::string& filename) const {
         std::ofstream file(filename, std::ios::binary);
+        std::cout << compressedData << std::endl;
         if (file.is_open()) {
             file.write(compressedData.data(), compressedData.size());
             file.close();
@@ -51,6 +52,7 @@ private:
 
     void compressData() {
         snappy::Compress(originalData.data(), originalData.size(), &compressedData);
+//        snappy::Compress(originalData.data(), originalData.size(), &compressedData);
     }
 
     void decompressData() {
