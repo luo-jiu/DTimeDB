@@ -33,7 +33,7 @@ namespace dt::tsm
 
         void set_file_path_manager(FilePathManager * file_path_manager);
 
-        void write(high_resolution_clock::time_point timestamp, string & data, DataBlock::Type type, string & field_name, string & db_name, string & tb_name, TableState & tb_state, QueueState & queue_state);
+        void write(high_resolution_clock::time_point timestamp, string & series_key, string & data, DataBlock::Type type, string & field_name, string & db_name, string & tb_name, TableState & tb_state, QueueState & queue_state);
         void flush_disk();
         void field_flush_disk(const string & field_name);
         void flush_all_sl();
@@ -44,12 +44,12 @@ namespace dt::tsm
         bool empty_field_list();
         int size_field_list();
 
-        high_resolution_clock::time_point get_field_time_point(const string & field_name);
+        bool skip_need_flush_data_block(const string & field_name);
 
     private:
         void flush_entry_disk(string & field_name, bool is_remove);
 
-        std::shared_ptr<Field> get_field(string & field_name, const string & type, TableState & tb_state, QueueState & queue_state);
+        std::shared_ptr<Field> get_field(string & field_name, string & series_key, const string & type, TableState & tb_state, QueueState & queue_state);
         bool fields_empty();
 
     private:

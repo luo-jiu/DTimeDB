@@ -78,7 +78,7 @@ int main() {
 //        return row.m_age > 20;
 //    });
 //    ProjectOperator project(&select, [](const Row & row){
-//        std::cout << "ID: " << row.m_id << ", Name: " << row.m_name << std::endl;
+//        std::cout << "ID: " << row.m_id << ", Name: " << row.m_series_key << std::endl;
 //    });
 //
 //    // 执行查询计划

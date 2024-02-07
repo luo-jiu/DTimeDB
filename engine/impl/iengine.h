@@ -77,11 +77,21 @@ namespace dt::impl
          */
         virtual bool insert(
                 high_resolution_clock::time_point timestamp,
+                string & tags_str,
                 string value,
                 Type type,
                 string & field_name,
                 string & tb_name,
                 string & db_name) = 0;
+
+        /**
+         * [tsm]
+         *
+         * 构建索引
+         */
+        virtual bool create_index(
+                string & measurement,
+                std::list<string> & tags) = 0;
 
 
         virtual bool update(

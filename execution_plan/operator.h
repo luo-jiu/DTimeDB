@@ -57,7 +57,7 @@ namespace dt::execution
             }
             if (res)
             {
-                std::cout << "create: " << m_type << ", m_name: " << m_name << std::endl;
+                std::cout << "create: " << m_type << ", m_series_key: " << m_name << std::endl;
             }
         }
         std::shared_ptr<ExecutionPlanNode> get_child() const override
@@ -230,6 +230,14 @@ namespace dt::execution
             nanoseconds nanoseconds(nanoseconds_count);
             high_resolution_clock::time_point timestamp(duration_cast<high_resolution_clock::duration>(nanoseconds));
 
+            // 对tags 进行排序
+            m_tags.sort();
+            string tags_str;
+            for (const auto& tag : m_tags)
+            {
+                tags_str += tag;
+            }
+
             // 调用存储引擎接口的插入函数
             for (string fv : m_fv)
             {
@@ -240,8 +248,11 @@ namespace dt::execution
                     fv.erase(0, pos + 1);
                 }
                 value = fv;
-                engine.insert(timestamp, value, IEngine::Type::DATA_STRING, field, m_table, m_current_db);
+                engine.insert(timestamp, tags_str, value, IEngine::Type::DATA_STRING, field, m_table, m_current_db);
             }
+
+            // 制作内存索引
+            engine.create_index(m_table, m_tags);
         }
         std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
         void set_child(std::shared_ptr<ExecutionPlanNode> child) override { m_child = child; }

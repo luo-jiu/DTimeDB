@@ -16,7 +16,7 @@ using namespace dt::executor;
 
 const string prompt = "<<";
 
-#define TEST_COUNT 99
+#define TEST_COUNT 100
 
 // 随机选择一个字符串数组中的元素
 std::string get_random_element(const std::vector<std::string>& strArray) {

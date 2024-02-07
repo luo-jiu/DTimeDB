@@ -83,14 +83,13 @@ void Field::write(
 
         // 重置m_current_data 以便接收新数据
         m_current_data = std::make_shared<DataBlock>();
-        m_sl.cle();  // 清空跳表
-
+        // 清空跳表
+        m_sl.cle();
+        // 刷了块取消监控事件
+        m_sl.notify(db_name, tb_name, m_field_name, false);
         std::cout << "数据已入队列...\n";
         m_need_reset.store(true);
-        // 需要给write.h 中的m_fields_list中添加映射
-//        return m_field_name;
     }
-//    return "";
 }
 
 /**
@@ -100,7 +99,7 @@ bool Field::should_flush_data()
 {
     std::shared_lock<std::shared_mutex> read_lock(m_time_mutex);
     auto current_time = std::chrono::system_clock::now();
-    return m_sl.size() >= 100 || (current_time - m_sl_last_time >= seconds(5) && !m_sl.empty());
+    return m_sl.size() >= 10 || (current_time - m_sl_last_time >= seconds(5) && !m_sl.empty());
 }
 
 /**
@@ -152,10 +151,10 @@ SkipList<string> & Field::get_skip_list()
  * 获取跳表的时间戳
  * 采取读锁
  */
-high_resolution_clock::time_point Field::get_skip_list_time_point()
+bool Field::skip_need_flush_data_block()
 {
     std::shared_lock<std::shared_mutex> read_lock(m_time_mutex);
-    return m_sl_last_time;
+    return should_flush_data();
 }
 
 bool Field::get_data_status()

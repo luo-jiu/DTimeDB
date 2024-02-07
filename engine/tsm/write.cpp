@@ -8,6 +8,7 @@ void Write::set_file_path_manager(FilePathManager * file_path_manager)
 
 void Write::write(
         high_resolution_clock::time_point timestamp,
+        string & series_key,
         string & data,
         DataBlock::Type type,
         string & field_name,
@@ -22,17 +23,17 @@ void Write::write(
     {
         case DataBlock::DATA_STRING:
         {
-            field = get_field(field_name, "string", tb_state, queue_state);
+            field = get_field(field_name, series_key, "string", tb_state, queue_state);
             break;
         }
         case DataBlock::DATA_INTEGER:
         {
-            field = get_field(field_name, "integer", tb_state, queue_state);
+            field = get_field(field_name, series_key, "integer", tb_state, queue_state);
             break;
         }
         case DataBlock::DATA_FLOAT:
         {
-            field = get_field(field_name, "float", tb_state, queue_state);
+            field = get_field(field_name, series_key, "float", tb_state, queue_state);
             break;
         }
         default:
@@ -382,6 +383,7 @@ void Write::flush_all_sl()
 
 std::shared_ptr<Field> Write::get_field(
         string & field_name,
+        string & series_key,
         const string & type,
         TableState & tb_state,
         QueueState & queue_state)
@@ -415,6 +417,10 @@ std::shared_ptr<Field> Write::get_field(
         std::cerr << "Error : Unknown type " << type << std::endl;
         return nullptr;
     }
+    // 设置key
+    string meta_key = series_key + field_name;
+    field->m_index_block_meta_key = meta_key;
+
     // 注册观察者
     field->attach(&queue_state);
     field->get_skip_list().attach(&tb_state);
@@ -463,13 +469,13 @@ int Write::size_field_list()
 /**
  * 获取对应跳表的时间戳
  */
-high_resolution_clock::time_point Write::get_field_time_point(
+bool Write::skip_need_flush_data_block(
         const string & field_name)
 {
     std::shared_lock<std::shared_mutex> lock(m_filed_map_mutex);  // 读锁
     auto field_it = m_field_map.find(field_name);
     if (field_it != m_field_map.end())  // 拿到对应Field
     {
-        return field_it->second->get_skip_list_time_point();
+        return field_it->second->skip_need_flush_data_block();
     }
 }

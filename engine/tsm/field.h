@@ -29,7 +29,7 @@ namespace dt::tsm
         bool get_index_status();
         int get_index_deque_size();
         SkipList<string> & get_skip_list();
-        high_resolution_clock::time_point get_skip_list_time_point();  // 获取到跳表的时间戳
+        bool skip_need_flush_data_block();  // 判断是否需要刷盘
         void push_data_to_deque(std::shared_ptr<DataBlock> data_block);
         std::shared_ptr<DataBlock> pop_data_from_deque();
         void push_index_to_deque(std::shared_ptr<IndexEntry> & index_block);
@@ -41,6 +41,7 @@ namespace dt::tsm
 
     public:
         string                                      m_field_name;           // 字段名
+        string                                      m_index_block_meta_key; // series_key + field
         DataBlock::Type                             m_type;                 // 类型
         high_resolution_clock::time_point           m_index_last_time;      // 索引刷盘计时器
 

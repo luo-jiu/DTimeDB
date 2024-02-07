@@ -7,11 +7,11 @@ using namespace dt::file;
 #include <engine/impl/iengine.h>
 using namespace dt::impl;
 
-#include <engine/tsm/write.h>
-using namespace dt::tsm;
-
 #include <thread_manager/thread_pool.h>
 using namespace dt::thread;
+
+#include <engine/tsm/write.h>
+#include <engine/tsm/index.h>
 
 #include <engine/tsm/table_state.h>
 #include <engine/tsm/queue_state.h>
@@ -55,8 +55,10 @@ namespace dt::tsm
         bool create_database(string & db_name) override;
         bool create_table(string & tb_name, string & db_name) override;
 
-        bool insert(high_resolution_clock::time_point timestamp, string value, Type type, string & field_name, string & tb_name, string & db_name) override;
-        void insert_thread(high_resolution_clock::time_point timestamp, string value, Type type, string & field_name, string & tb_name, string & db_name);
+        bool insert(high_resolution_clock::time_point timestamp, string & tags_str, string value, Type type, string & field_name, string & tb_name, string & db_name) override;
+        void insert_thread(high_resolution_clock::time_point timestamp, const string& tags_str, string value, Type type, string & field_name, string & tb_name, string & db_name);
+        bool create_index(string & measurement, std::list<string> & tags) override;
+        void create_index_thread(string & measurement, std::list<string> & tags);
         bool update(high_resolution_clock::time_point timestamp, string value, Type type, string & table_name) override;
 
         bool get_next_data(string & data) override;
@@ -99,6 +101,8 @@ namespace dt::tsm
         std::atomic<bool>               m_running;               // 用于退出监控线程
         std::thread                     m_monitor_thread;
         mutable std::shared_mutex       m_mutex;                 // 读写锁保证m_map 安全
+
+        Index                           m_index;                 // 索引
     };
 }
 

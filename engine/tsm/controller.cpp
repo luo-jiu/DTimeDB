@@ -71,6 +71,7 @@ bool Controller::create_table(
  */
 bool Controller::insert(
         high_resolution_clock::time_point timestamp,
+        string & tags_str,
         string value,
         Type type,
         string & field_name,
@@ -78,12 +79,13 @@ bool Controller::insert(
         string & db_name)
 {
     // 从线程池分配任务
-    m_producer_thread_pool.enqueue(&Controller::insert_thread, this, timestamp, value, type, field_name, tb_name, db_name);
+    m_producer_thread_pool.enqueue(&Controller::insert_thread, this, timestamp, tags_str, value, type, field_name, tb_name, db_name);
     return true;
 }
 
 void Controller::insert_thread(
         high_resolution_clock::time_point timestamp,
+        const string & tags_str,
         string value,
         Type type,
         string & field_name,
@@ -98,17 +100,12 @@ void Controller::insert_thread(
     {
         if (!exists_table(db_name, tb_name))
         {
-//            read_lock.unlock();
-//            std::unique_lock<std::shared_mutex> write_lock(m_mutex);
             // 不存在需要初始化
             std::map<string, Table> table;
             auto write = std::make_shared<Write>(db_name, tb_name);
             write->set_file_path_manager(&m_file);  // 依赖注入
             table[tb_name] = Table{write};
             m_map[db_name] = Database{"", table};
-
-//            write_lock.unlock();
-//            read_lock.lock();
         }
     }
     else
@@ -139,7 +136,30 @@ void Controller::insert_thread(
         std::cerr << "Error : unknown type " << type << std::endl;
         return;
     }
-    writer->write(timestamp, value, type_temp, field_name, db_name, tb_name, m_table_state, m_queue_state);
+
+    // 拼接seriesKey
+    string series_key = field_name + tags_str;
+
+    writer->write(timestamp, series_key, value, type_temp, field_name, db_name, tb_name, m_table_state, m_queue_state);
+}
+
+/**
+ * 创建索引
+ */
+bool Controller::create_index(
+        string & measurement,
+        std::list<string> & tags)
+{
+    // 从线程池分配任务
+    m_producer_thread_pool.enqueue(&Controller::create_index_thread, this, measurement, tags);
+    return true;
+}
+
+void Controller::create_index_thread(
+        string & measurement,
+        std::list<string> & tags)
+{
+    m_index.create_index(measurement, tags);
 }
 
 /**
@@ -252,14 +272,11 @@ bool Controller::is_ready_disk_write(
         auto tb_it = db_it->second.m_table_map.find(tb_name);
         if (tb_it != db_it->second.m_table_map.end())
         {
-            auto _writer = tb_it->second.m_writer;
-            if (_writer)
+            auto writer = tb_it->second.m_writer;
+            if (writer)
             {
                 std::cout << "---进入判断是否需要刷盘逻辑...\n";
-                // 拿取到时间戳
-                auto tp_it = tb_it->second.m_writer->get_field_time_point(field_name);
-                auto current_time = system_clock::now();
-                if (current_time - tp_it >= seconds(5))
+                if (tb_it->second.m_writer->skip_need_flush_data_block(field_name))
                 {
                     std::cout << "---满足刷盘\n";
 
@@ -268,7 +285,7 @@ bool Controller::is_ready_disk_write(
                     auto fd = field_name;
                     auto tb = tb_name;
                     auto db = db_name;
-                    m_producer_thread_pool.enqueue(&Controller::insert_thread, this, system_clock::now(), "", Type::DATA_STRING, fd, tb, db);
+                    m_producer_thread_pool.enqueue(&Controller::insert_thread, this, system_clock::now(), "", "", Type::DATA_STRING, fd, tb, db);
 
                     return true;  // 这里还有判断空没有写
                 }
