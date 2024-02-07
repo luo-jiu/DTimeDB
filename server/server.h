@@ -6,7 +6,7 @@ class Server{
     //初始化服务器端口
     bool socket_init();
 //发送消息给客户端
-    void sned_runnable( );
+    void send_runnable( );
 //读取客户端消息
     void read_runnable();
 
