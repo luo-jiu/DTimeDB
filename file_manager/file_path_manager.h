@@ -43,6 +43,13 @@ namespace dt::file
         bool show_data(const string & type);
         bool exists_table(const string & db_name, const string & tb_name, bool print);
 
+        bool create_tsm_file_update_sys_info(const string & db_name, const string & tb_name, const string & file_name, uint64_t margin);
+        bool update_system_file_name(const string & db_name, const string & tb_name);
+        // 修改系统文件中待写入文件剩余容量大小
+        bool update_system_file_margin(const string & db_name, const string & tb_name);
+        // 修改系统文件中待写入文件指针偏移量
+        bool update_system_file_offset(const string & db_name, const string & tb_name);
+
     public:
         mutable std::shared_mutex m_mutex;
 

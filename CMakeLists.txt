@@ -16,6 +16,7 @@ file(GLOB_RECURSE SOURCES "token/*.cpp" "lexer/*.cpp" "json/*.cpp" "ast/*.cpp"
 
 add_executable(ast ${SOURCES} ast.cpp)
 add_executable(eval_repl ${SOURCES} eval_repl.cpp)
+add_executable(eval_repl_pro ${SOURCES} eval_repl_pro.cpp)
 add_executable(token ${SOURCES} token.cpp)
 add_executable(tsm ${SOURCES} tsm.cpp)
 add_executable(test ${SOURCES} test.cpp)
@@ -24,6 +25,7 @@ add_executable(test_snappy ${SOURCES} test_snappy.cpp)
 # 链接 Snappy 库到可执行文件
 target_link_libraries(ast snappy)
 target_link_libraries(eval_repl snappy)
+target_link_libraries(eval_repl_pro snappy)
 target_link_libraries(token snappy)
 target_link_libraries(tsm snappy)
 target_link_libraries(test snappy)

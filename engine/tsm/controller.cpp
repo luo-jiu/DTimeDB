@@ -202,7 +202,7 @@ bool Controller::get_range_data(
 }
 
 /**
- * 扫描全表
+ * 范围扫描拿出集合
  */
 std::list<string> Controller::scan_full_table(
         const string & db_name,

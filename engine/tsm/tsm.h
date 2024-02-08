@@ -43,12 +43,15 @@ namespace dt::tsm
 
         // 差值计算
         std::vector<nanoseconds> calculate_differences(const std::list<high_resolution_clock::time_point> & timestamps);
-        // 序列化
+        // 序列化 &反序列化 timestamp
         string serialize_differences(const std::vector<nanoseconds> & differences);
-        // 反序列化
         std::vector<nanoseconds> deserialize_differences(const std::string & serialized_data);
-        // snappy压缩
+        // 序列化 &反序列化 string
+        string serialize_strings(const std::list<string>& strings);
+        std::list<string> deserialize_strings(const string& serialized);
+        // snappy压缩 &解压
         string compress_data(const string & serialized_data);
+        string decompress_data(const string & compressed_data);
 
     private:
         FileIOManager m_file_manager;

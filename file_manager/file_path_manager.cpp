@@ -400,3 +400,48 @@ bool FilePathManager::show_data(const string & db_name)
     }
     return true;
 }
+
+/**
+ * 初始化新创建的tsm file 文件信息
+ * @param path
+ * @return
+ */
+bool FilePathManager::create_tsm_file_update_sys_info(
+        const string & db_name,
+        const string & tb_name,
+        const string & file_name,
+        uint64_t margin)
+{
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    auto file = m_io_file.get_file_stream(file_path);
+    if (!file->is_open())
+    {
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        return false;
+    }
+    file->seekp(std::ios::beg);
+    auto length = static_cast<uint16_t>(file_name.length());
+    // 写file_name
+    file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
+    file->write(file_name.c_str(), length);  // 写字符串
+    // 写offset
+    int64_t offset = 5;
+    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
+    // 写margin
+    file->write(reinterpret_cast<const char*>(&margin), sizeof(uint64_t));
+    file->flush();
+
+    m_io_file.release_file_stream(file_path);
+    std::cout << "sys更新成功" << std::endl;
+    return true;
+}
+
+/**
+ * 修改系统文件中待写入文件名
+ */
+bool update_system_file_name(
+        const string & db_name,
+        const string & tb_name)
+{
+
+}

@@ -61,7 +61,7 @@ private:
 };
 
 int main() {
-    std::string originalText = "1001 1002 1003 1004 1005 1006 1007 1008 1009 1010";
+    std::string originalText = "100001100002100003100004100005100007100008100009100010";
 
     // Create CompressedData object with Snappy compression
     CompressedData compressedData(originalText);

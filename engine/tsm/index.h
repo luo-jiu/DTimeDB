@@ -20,7 +20,7 @@ namespace dt::tsm
      * 中的所有的series_key 持久化到SeriesKeyChunk
      *
      * [查询策略]
-     * 1. 通过measurement 拿到双map,然后通过tag_key 定位内部map,再利用tag_value 定位所有的由该tag组成过的series_key
+     * 1. 通过measurement 拿tag_block, 里面有双map, 然后通过tag_key 定位内部map,再利用tag_value 定位所有的由该tag组成过的series_key
      * 2. 多组tag可以分组查询聚合
      */
     class Index
@@ -44,7 +44,6 @@ namespace dt::tsm
              * 注意这里结构是set 红黑树 + hash index,influxdb采用的是b+ Tree和hash index
              * 进行定位SeriesKey
              */
-//            std::unordered_map<string, std::set<SeriesKey>> m_series_key;
             std::set<SeriesKey> m_series_key_chunks;
         };
 
@@ -55,7 +54,7 @@ namespace dt::tsm
              * map<tag_key, map<tag_value, list<series_key>>
              * 需要排序,目的是可以进行范围查询
              */
-            std::unordered_map<string, std::unordered_map<string, std::vector<string>>> m_series_by_tag_key_value;
+            std::unordered_map<string, std::unordered_map<string, std::set<string>>> m_series_by_tag_key_value;
         };
 
         /**
@@ -64,6 +63,12 @@ namespace dt::tsm
          * 需要排序,目的是可以实现范围查询
          */
         std::unordered_map<string, TagBlock> m_mea_tag_keys;
+
+        /**
+         * 记录该measurement 中有多少的纬度值
+         * map<measurement, list<tag_key>>
+         */
+        std::unordered_map<string, std::set<string>> m_mea_tags;
         SeriesBlock m_series_block;
     };
 }

@@ -47,37 +47,45 @@ uint64_t TSM::write_data_to_file(
         const string & file_path,
         int64_t offset)
 {
-//    auto file = m_file_manager.get_file_stream(file_path);
-//    if (!file->is_open())
-//    {
-//        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/tsm_.h" << std::endl;
-//        return -1;
-//    }
-//    file->seekp(offset);  // 移动到指定位置
-//    int size;
+    auto file = m_file_manager.get_file_stream(file_path);
+    if (!file->is_open())
+    {
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/tsm_.h" << std::endl;
+        return -1;
+    }
+    file->seekp(offset);  // 移动到指定位置
+    int32_t timestamps_size, values_size;
 
     // 对时间戳进行差值计算
     auto timestamp_differences = calculate_differences(data_block->m_timestamps);
 
-    // 序列化差值后的时间戳
+    // 序列化差值后的timestamp
     auto timestamp_serialize = serialize_differences(timestamp_differences);
-    std::cout << timestamp_serialize << std::endl;
+    // 序列化val
+    auto val_serialize = serialize_strings(data_block->m_values);
 
-    auto temp = deserialize_differences(timestamp_serialize);
     // 将差值计算后的时间戳使用snappy 压缩
-    auto compress = compress_data(timestamp_serialize);
+    auto compress_timestamp = compress_data(timestamp_serialize);
+    timestamps_size = compress_timestamp.size();
+    auto compress_val = compress_data(val_serialize);
+    values_size = compress_val.size();
 
-//    // 将类型 长度写入文件
-//    file->write(reinterpret_cast<const char*>(&data_block->m_type), sizeof(data_block->m_type));
-//    file->write(reinterpret_cast<const char*>(&data_block->m_length), sizeof(data_block->m_length));
-//
+    // 将类型 长度写入文件
+    file->write(reinterpret_cast<const char*>(&data_block->m_type), sizeof(data_block->m_type));
+    file->write(reinterpret_cast<const char*>(&timestamps_size), sizeof(int32_t));
+    file->write(reinterpret_cast<const char*>(&values_size), sizeof(int32_t));
+
+    // 将压缩后的timestamp 写入文件
+    file->write(compress_timestamp.data(), timestamps_size);
+    // 将压缩后的val 写入文件
+    file->write(compress_val.data(), values_size);
 //    // 将时间戳写入文件
 //    size = sizeof(high_resolution_clock::time_point);
 //    for (const auto & timestamp : data_block->m_timestamps)
 //    {
 //        file->write(reinterpret_cast<const char*>(&timestamp), size);
 //    }
-//
+
 //    // 将数据写入文件
 //    if (data_block->m_type == DataBlock::Type::DATA_STRING)
 //    {
@@ -117,10 +125,10 @@ uint64_t TSM::write_data_to_file(
 //    {
 //        std::cerr << "Error : Unknown type - m_from engine/tsm/tsm.cpp" << std::endl;
 //    }
-//
-//    file->flush();
-//    m_file_manager.release_file_stream(file_path);
-//    return data_block->m_size;
+
+    file->flush();
+    m_file_manager.release_file_stream(file_path);
+    return timestamps_size + values_size;
 }
 
 bool TSM::read_data_from_file(
@@ -450,7 +458,11 @@ std::vector<nanoseconds> TSM::calculate_differences(
     return differences;
 }
 
-string TSM::serialize_differences(const std::vector<nanoseconds> & differences)
+/**
+ * 序列化timestamp
+ */
+string TSM::serialize_differences(
+        const std::vector<nanoseconds> & differences)
 {
     string serializedData;
     for (const auto& diff : differences)
@@ -461,7 +473,8 @@ string TSM::serialize_differences(const std::vector<nanoseconds> & differences)
     return serializedData;
 }
 
-std::vector<nanoseconds> TSM::deserialize_differences(const std::string & serialized_data)
+std::vector<nanoseconds> TSM::deserialize_differences(
+        const std::string & serialized_data)
 {
     std::vector<std::chrono::nanoseconds> differences;
     size_t i = 0;
@@ -484,9 +497,64 @@ std::vector<nanoseconds> TSM::deserialize_differences(const std::string & serial
     return differences;
 }
 
-string TSM::compress_data(const string & serialized_data)
+string TSM::serialize_strings(
+        const std::list<std::string>& strings)
+{
+    std::string serialized;
+    for (const auto& str : strings)
+    {
+        // 序列化字符串长度
+        int length = str.size();
+        serialized.append(reinterpret_cast<const char*>(&length), sizeof(length));
+        // 序列化字符串内容
+        serialized.append(str);
+    }
+    return serialized;
+}
+
+std::list<std::string> TSM::deserialize_strings(
+        const string & serialized) {
+    std::list<std::string> strings;
+    size_t i = 0;
+    while (i < serialized.size())
+    {
+        // 反序列化字符串长度
+        if (i + sizeof(int) > serialized.size())
+        {
+            throw std::runtime_error("Serialized data is corrupted or incomplete.");
+        }
+        int length;
+        std::memcpy(&length, serialized.data() + i, sizeof(int));
+        i += sizeof(int);
+
+        // 反序列化字符串内容
+        if (i + length > serialized.size())
+        {
+            throw std::runtime_error("Serialized data is corrupted or incomplete.");
+        }
+        strings.emplace_back(serialized.substr(i, length));
+        i += length;
+    }
+    return strings;
+}
+
+
+string TSM::compress_data(
+        const string & serialized_data)
 {
     string compressed_data;
     snappy::Compress(serialized_data.data(), serialized_data.size(), &compressed_data);
-    return compressed_data;
+    return compressed_data;  // 注意压缩完后是一个二进制格式存储在string 里面
+}
+
+string TSM::decompress_data(
+        const string & compressed_data)
+{
+    string decompressed_data;
+    // 使用 Snappy 的 Uncompress 方法解压数据
+    if (!snappy::Uncompress(compressed_data.data(), compressed_data.size(), &decompressed_data)) {
+        std::cerr << "Failed to decompress data." << std::endl;
+        // 处理解压失败的情况
+    }
+    return decompressed_data;
 }

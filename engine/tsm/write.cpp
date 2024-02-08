@@ -248,47 +248,95 @@ void Write::field_flush_disk(
             std::cout << "开始刷写块,field:" << field_name << std::endl;
             auto data_block = field_it->second->pop_data_from_deque();
 
-            if (field->get_index_status())  // 该文件第一次写入
+            // 先压缩块
+
+
+            // 获取待写入的文件以及偏移量,还有容量是否足够(放在了sys-tb_name.tsm里面)
+            bool need_create_file = false;
+            if (!m_curr_file_path.empty())  // 先判断有没有能刷写的文件
             {
-                // 去掉meta 大小
-                m_margin -= (12 + m_tb_name.length() + field->m_field_name.length());
+                if (m_margin < data_block->m_size) need_create_file = true;
             }
-            // 在去除data_block 和 entry
-            m_margin -= (28 + data_block->m_size);
-
-            if (m_margin > 0)  // 说明容量足够
+            if (need_create_file || m_curr_file_path.empty()) // 需要创建文件
             {
-                // 创建entry [唯一生成]
-                auto entry = m_tsm.create_index_entry(data_block->m_max_timestamp, data_block->m_min_timestamp, m_head_offset, data_block->m_size);
-                field->push_index_to_deque(entry);  // 存入队列
+                m_curr_file_path = m_file_path->create_file(m_tb_name, m_db_name, "tsm");
+                std::cout << "创建文件:m_curr_file_path:" << m_curr_file_path << "\n";
 
-                auto it = m_index_set.find(field_name);
-                if(it == m_index_set.end())  // 第一次放入块对其初始化计时器
+                // 第一次创建需要写入头部信息
+                Header header(1, 1);
+                m_tsm.write_header_to_file(header, m_curr_file_path);
+
+                // 拿到新创建的文件名
+                string file_path = m_curr_file_path;
+                size_t last_slash_pos = file_path.find_last_of('/');
+                string file_name;
+                if (last_slash_pos != std::string::npos)
                 {
-                    m_index_set.insert(field_name);  // 表示这个字段有entry 未写入
-                    field->m_index_last_time = high_resolution_clock::now();
+                    file_name = file_path.substr(last_slash_pos + 1);
+                }
+                else
+                {
+                    file_name = file_path;
                 }
 
-                // 获取文件用于刷盘
-                if (m_curr_file_path.empty())
-                {
-                    m_curr_file_path = m_file_path->create_file(m_tb_name, m_db_name, "tsm");
-                    std::cout << "创建文件:m_curr_file_path:" << m_curr_file_path << "\n";
-
-                    // 第一次创建需要写入头部信息
-                    Header header(1, 1);
-                    m_tsm.write_header_to_file(header, m_curr_file_path);
-                }
-
-                // 刷盘
-                m_tsm.write_data_to_file(data_block, m_curr_file_path, m_head_offset);
-
-                // 修改头偏移量
-                m_head_offset += data_block->m_size;
+                // 初始化各项信息
+                m_file_path->create_tsm_file_update_sys_info(m_db_name, m_tb_name, file_name, DATA_BLOCK_MARGIN);
+                m_margin = DATA_BLOCK_MARGIN;
+                m_head_offset = 5;  // 跳过开头
             }
-            else  // 容量不足
-            {
-                std::cout << "余量不足" << std::endl;
+
+            // 刷盘
+            auto use_size = m_tsm.write_data_to_file(data_block, m_curr_file_path, m_head_offset);
+            std::cout << "size:" << data_block->m_size << std::endl;
+            std::cout << "size-:" << use_size << std::endl;
+
+            // 到这里 肯定是有文件写，且大小也足够用的时候
+            m_margin -= use_size;  // 去除大小
+
+
+
+//            if (m_first_write)  // 该文件第一次写入
+//            {
+//                // 去掉meta 大小
+//                m_margin -= (12 + m_tb_name.length() + field->m_field_name.length());
+//                m_first_write = false;
+//            }
+//            // 在去除data_block 和 entry
+//            m_margin -= (28 + data_block->m_size);
+//
+//            if (m_margin > 0)  // 说明容量足够
+//            {
+//                // 创建entry [唯一生成]
+//                auto entry = m_tsm.create_index_entry(data_block->m_max_timestamp, data_block->m_min_timestamp, m_head_offset, data_block->m_size);
+//                field->push_index_to_deque(entry);  // 存入队列
+//
+//                auto it = m_index_set.find(field_name);
+//                if(it == m_index_set.end())  // 第一次放入块对其初始化计时器
+//                {
+//                    m_index_set.insert(field_name);  // 表示这个字段有entry 未写入
+//                    field->m_index_last_time = high_resolution_clock::now();
+//                }
+//
+//                // 获取文件用于刷盘
+//                if (m_curr_file_path.empty())
+//                {
+//                    m_curr_file_path = m_file_path->create_file(m_tb_name, m_db_name, "tsm");
+//                    std::cout << "创建文件:m_curr_file_path:" << m_curr_file_path << "\n";
+//
+//                    // 第一次创建需要写入头部信息
+//                    Header header(1, 1);
+//                    m_tsm.write_header_to_file(header, m_curr_file_path);
+//                }
+//
+//                // 刷盘
+//                m_tsm.write_data_to_file(data_block, m_curr_file_path, m_head_offset);
+//
+//                // 修改头偏移量
+//                m_head_offset += data_block->m_size;
+//            }
+//            else  // 容量不足
+//            {
+//                std::cout << "余量不足" << std::endl;
 
                 // 准备全部刷盘
 //                for (string field_name_temp : m_index_set)  // 遍历set
@@ -312,7 +360,7 @@ void Write::field_flush_disk(
                  */
 //                string file_path = m_file_path->create_file(m_tb_name, m_db_name, "tsm");  // 获取一个全新的文件
 //                std::cout << file_path << std::endl;
-            }
+//            }
         }
     }
 }

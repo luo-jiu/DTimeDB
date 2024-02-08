@@ -18,6 +18,8 @@ using std::string;
 #include <chrono>
 using namespace std::chrono;
 
+#define DATA_BLOCK_MARGIN 4 * 1024 * 1024
+
 namespace dt::tsm
 {
     /**
@@ -29,7 +31,7 @@ namespace dt::tsm
     {
     public:
         Write() = default;
-        Write(string & db_name, string & tb_name) : m_tb_name(tb_name), m_db_name(db_name), m_head_offset(8), m_tail_offset(4 * 1024 * 1024), m_margin(4 * 1024 * 1024), m_is_ready(0){}
+        Write(string & db_name, string & tb_name) : m_tb_name(tb_name), m_db_name(db_name), m_head_offset(8), m_tail_offset(4 * 1024 * 1024), m_margin(DATA_BLOCK_MARGIN), m_is_ready(0){}
 
         void set_file_path_manager(FilePathManager * file_path_manager);
 
@@ -56,10 +58,11 @@ namespace dt::tsm
         string                                                  m_db_name;          // 数据库名
         string                                                  m_tb_name;          // 测量值/表名
 
-        int                                                     m_head_offset;      // 头指针偏移量
-        int                                                     m_tail_offset;      // 尾指针偏移量
-        int                                                     m_margin;           // 空间余量
+        int64_t                                                 m_head_offset;      // 头指针偏移量
+        int64_t                                                 m_tail_offset;      // 尾指针偏移量
+        uint64_t                                                m_margin;           // data block 空间余量
         string                                                  m_curr_file_path;   // 当前需要刷写的文件
+        bool                                                    m_first_write{true};// 该文件是否第一次写入
 
         std::mutex                                              m_write_mutex;
         std::mutex                                              m_thread_mutex;
