@@ -1,7 +1,7 @@
 #include "boost/asio.hpp"
 #include <sys/socket.h>
 #include "iostream"
-#include "server.h"
+#include "server/include/server.h"
 /**
  * 初始化服务器端口
  * @return
@@ -37,21 +37,24 @@ bool  server_socket_bind(){
     }
     return true;
 }
+//接受客户端连接
 bool accept_new_connection(){
-
+    const int BACK_LOG_SIZE= 30;
+    boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address_v4::any(),port_num);
+    boost::asio::io_service ios;
+    try {
+        boost::asio::ip::tcp::acceptor acceptor(ios,ep.protocol());
+        acceptor.bind(ep);
+        acceptor.listen(BACK_LOG_SIZE);
+        boost::asio::ip::tcp::socket sock(ios);
+        acceptor.accept(sock);
+    }catch(boost::system::system_error &error) {
+        std::cout << "Error occured! Error code = " << error.code()
+                  << ". Message: " << error.what();
+        return error.code().value();
+    }
 }
-//初始化socket
-bool Server::socket_init() {
 
-}
-//向客户端发送消息
-void Server::send_runnable() {
-
-}
-//接收消息
-void Server::read_runnable() {
-
-}
 //关闭连接
 //bool server_init(){
 //    int _socket=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);

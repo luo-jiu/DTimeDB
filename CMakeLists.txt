@@ -11,15 +11,13 @@ include_directories(./)
 
 file(GLOB_RECURSE SOURCES "token/*.cpp" "lexer/*.cpp" "json/*.cpp" "ast/*.cpp"
         "parser/*.cpp" "engine/tsm/*.cpp" "engine/circularList/*.cpp" "executor/*.cpp"
-        "file_manager/*.cpp" "execution_plan/*.cpp" "evaluator/*.cpp" "thread_manager/*.cpp" "")
+        "file_manager/*.cpp" "execution_plan/*.cpp" "evaluator/*.cpp" "thread_manager/*.cpp" "server/*.cpp")
 
-add_executable(ast ${SOURCES} ast.cpp
-        server/package.cpp
-        client/client.cpp
-        client/client.h)
+add_executable(ast ${SOURCES} ast.cpp)
 add_executable(eval_repl ${SOURCES} eval_repl.cpp)
 add_executable(token ${SOURCES} token.cpp)
 add_executable(tsm ${SOURCES} tsm.cpp)
 add_executable(test ${SOURCES} test.cpp)
+add_executable(server ${SOURCES} server.cpp)
 
 
