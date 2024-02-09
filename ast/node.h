@@ -34,6 +34,8 @@ namespace dt::ast
             NODE_UPDATE,
 
             NODE_WHERE,  // 对应FilterNode
+
+            NODE_SYS,
         };
 
         Node() {}

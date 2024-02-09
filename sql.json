@@ -1,1 +1,1 @@
-{"statements":[{"expression":{"database":"db_test","type":""},"type":"ExpressionStatement"},{"expression":{"fields":null,"from":"school","tags":["local=中德","class=软工1班"],"timestamp":"1707022073302603914","type":"Insert","values":null},"type":"ExpressionStatement"}],"type":"Program"}
+{"statements":[{"expression":{"from":{"type":"String","value":"school"},"option":"show","where":"NULL"},"type":"ExpressionStatement"}],"type":"Program"}

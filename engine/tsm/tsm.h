@@ -15,11 +15,11 @@ namespace dt::tsm
         bool read_header_from_file(Header & header, const string & file_path);
 
         // 写入读取data block
-        uint64_t write_data_to_file(const std::shared_ptr<DataBlock> & data_block, const string & file_path, int64_t offset);
+        int64_t write_data_to_file(DataBlock::Type type, int32_t data_num, const string & compress_timestamp, const string & compress_val, const string & file_path, int64_t offset);
         bool read_data_from_file(std::shared_ptr<DataBlock> & data_block, const string & file_path, int64_t offset);
 
         // 写入读取index entry
-        uint64_t write_index_entry_to_file(const std::shared_ptr<IndexEntry> & index_entry, const string & file_path, int64_t offset);
+        int64_t write_index_entry_to_file(const std::shared_ptr<IndexEntry> & index_entry, const string & file_path, int64_t offset);
         bool read_index_entry_from_file(std::shared_ptr<IndexEntry> & index_entry, const string & file_path, int64_t offset);
 
         // 写入读取index meta
@@ -41,17 +41,21 @@ namespace dt::tsm
 
         void set_size(uint64_t size) { m_tsm_size = size; }
 
-        // 差值计算
+        // 差值计算 &恢复差值
         std::vector<nanoseconds> calculate_differences(const std::list<high_resolution_clock::time_point> & timestamps);
+        std::list<high_resolution_clock::time_point> restore_timestamps(const std::vector<nanoseconds> & differences);
         // 序列化 &反序列化 timestamp
         string serialize_differences(const std::vector<nanoseconds> & differences);
         std::vector<nanoseconds> deserialize_differences(const std::string & serialized_data);
         // 序列化 &反序列化 string
-        string serialize_strings(const std::list<string>& strings);
-        std::list<string> deserialize_strings(const string& serialized);
+        string serialize_strings(const std::list<string> & strings);
+        std::list<string> deserialize_strings(const string & serialized);
         // snappy压缩 &解压
         string compress_data(const string & serialized_data);
         string decompress_data(const string & compressed_data);
+        // 计算timestamp & val 需要对空间
+        string calculate_timestamp_size(const std::list<high_resolution_clock::time_point> & timestamps);
+        string calculate_val_size(const std::list<string> & strings);
 
     private:
         FileIOManager m_file_manager;

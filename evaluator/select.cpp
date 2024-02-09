@@ -3,6 +3,7 @@ using namespace dt::evaluator;
 
 std::shared_ptr<ExecutionPlanNode> Evaluator::eval_select(
         const std::shared_ptr<ast::Select> & node,
+        const std::shared_ptr<ExecutionPlanNode> & where,
         const std::shared_ptr<ExecutionPlanNode> & root)
 {
     auto temp = root;

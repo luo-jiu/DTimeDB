@@ -36,6 +36,7 @@ namespace dt::execution
             OBJECT_FILTER,
             OBJECT_PROJECT,
             OBJECT_INSERT,
+            OBJECT_SYSTEM,
         };
 
         ExecutionPlanNode() {}

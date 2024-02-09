@@ -29,6 +29,28 @@ namespace dt::impl
         };
 
     public:
+        /**
+         * 查看表系统文件信息
+         */
+        virtual bool sys_show_file(
+                const string & db_name,
+                const string & tb_name) = 0;
+
+        /**
+         * 修改系统表信息
+         */
+        virtual bool sys_update_file(
+                const string & db_name,
+                const string & tb_name,
+                const string & where) = 0;
+
+        /**
+         * 清空系统表信息
+         */
+        virtual bool sys_clear_file(
+                const string & db_name,
+                const string & tb_name) = 0;
+
 
         /**
          * [共有]

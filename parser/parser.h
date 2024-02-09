@@ -71,6 +71,8 @@ namespace dt::parser
         std::shared_ptr<Expression> parse_select();
         std::shared_ptr<Expression> parse_insert();
 
+        std::shared_ptr<Expression> parse_system();
+
         // 中缀表达式
         std::shared_ptr<Expression> parse_infix(const std::shared_ptr<Expression> &left);
 

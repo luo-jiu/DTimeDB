@@ -33,6 +33,7 @@ namespace dt::tsm
         Write() = default;
         Write(string & db_name, string & tb_name) : m_tb_name(tb_name), m_db_name(db_name), m_head_offset(8), m_tail_offset(4 * 1024 * 1024), m_margin(DATA_BLOCK_MARGIN), m_is_ready(0){}
 
+        void init();
         void set_file_path_manager(FilePathManager * file_path_manager);
 
         void write(high_resolution_clock::time_point timestamp, string & series_key, string & data, DataBlock::Type type, string & field_name, string & db_name, string & tb_name, TableState & tb_state, QueueState & queue_state);

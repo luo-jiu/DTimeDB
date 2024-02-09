@@ -74,7 +74,7 @@ void Field::write(
         m_current_data->m_max_timestamp = m_sl.max_key();
         m_current_data->m_min_timestamp = m_sl.max_key();
         m_current_data->m_size = data_size;
-        m_current_data->m_length = m_sl.size();
+        m_current_data->m_num = m_sl.size();
         // 存放在队列中
         push_data_to_deque(m_current_data);
 

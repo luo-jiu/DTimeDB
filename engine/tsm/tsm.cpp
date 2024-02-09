@@ -42,8 +42,11 @@ bool TSM::read_header_from_file(
     return true;
 }
 
-uint64_t TSM::write_data_to_file(
-        const std::shared_ptr<DataBlock> & data_block ,
+int64_t TSM::write_data_to_file(
+        DataBlock::Type type,
+        int32_t data_num,
+        const string & compress_timestamp,
+        const string & compress_val,
         const string & file_path,
         int64_t offset)
 {
@@ -54,24 +57,13 @@ uint64_t TSM::write_data_to_file(
         return -1;
     }
     file->seekp(offset);  // 移动到指定位置
-    int32_t timestamps_size, values_size;
 
-    // 对时间戳进行差值计算
-    auto timestamp_differences = calculate_differences(data_block->m_timestamps);
-
-    // 序列化差值后的timestamp
-    auto timestamp_serialize = serialize_differences(timestamp_differences);
-    // 序列化val
-    auto val_serialize = serialize_strings(data_block->m_values);
-
-    // 将差值计算后的时间戳使用snappy 压缩
-    auto compress_timestamp = compress_data(timestamp_serialize);
-    timestamps_size = compress_timestamp.size();
-    auto compress_val = compress_data(val_serialize);
-    values_size = compress_val.size();
+    int64_t timestamps_size = compress_timestamp.size();
+    int64_t values_size = compress_val.size();
 
     // 将类型 长度写入文件
-    file->write(reinterpret_cast<const char*>(&data_block->m_type), sizeof(data_block->m_type));
+    file->write(reinterpret_cast<const char*>(&type), sizeof(type));
+    file->write(reinterpret_cast<const char*>(&data_num), sizeof(int32_t));
     file->write(reinterpret_cast<const char*>(&timestamps_size), sizeof(int32_t));
     file->write(reinterpret_cast<const char*>(&values_size), sizeof(int32_t));
 
@@ -79,56 +71,16 @@ uint64_t TSM::write_data_to_file(
     file->write(compress_timestamp.data(), timestamps_size);
     // 将压缩后的val 写入文件
     file->write(compress_val.data(), values_size);
-//    // 将时间戳写入文件
-//    size = sizeof(high_resolution_clock::time_point);
-//    for (const auto & timestamp : data_block->m_timestamps)
-//    {
-//        file->write(reinterpret_cast<const char*>(&timestamp), size);
-//    }
-
-//    // 将数据写入文件
-//    if (data_block->m_type == DataBlock::Type::DATA_STRING)
-//    {
-//        size = sizeof(uint16_t);
-//        for (const string & value : data_block->m_values)
-//        {
-//            auto length = static_cast<uint16_t>(value.length());
-//            file->write(reinterpret_cast<const char*>(&length), size);  // 写大小
-//            file->write(value.c_str(), length);  // 写字符串
-//        }
-//
-//        file->flush();
-//        m_file_manager.release_file_stream(file_path);
-//        return data_block->m_size + 4 * data_block->m_values.size();
-//    }
-//    else if (data_block->m_type == DataBlock::Type::DATA_FLOAT)
-//    {
-//        float data;
-//        size = sizeof(float);
-//        for (const auto & value : data_block->m_values)
-//        {
-//            data = stof(value);
-//            file->write(reinterpret_cast<const char*>(&data), size);
-//        }
-//    }
-//    else if (data_block->m_type == DataBlock::Type::DATA_INTEGER)
-//    {
-//        int data;
-//        size = sizeof(int);
-//        for (const auto & value : data_block->m_values)
-//        {
-//            data = stoi(value);
-//            file->write(reinterpret_cast<const char*>(&data), size);
-//        }
-//    }
-//    else
-//    {
-//        std::cerr << "Error : Unknown type - m_from engine/tsm/tsm.cpp" << std::endl;
-//    }
 
     file->flush();
     m_file_manager.release_file_stream(file_path);
-    return timestamps_size + values_size;
+
+    // 测试读取
+    auto data = std::make_shared<DataBlock>();
+    read_data_from_file(data, file_path, 5);
+    std::cout << data->json() << std::endl;
+    int64_t block_size = 16 + timestamps_size + values_size;
+    return block_size;
 }
 
 bool TSM::read_data_from_file(
@@ -146,71 +98,30 @@ bool TSM::read_data_from_file(
 
     // 读取类型 长度
     file->read(reinterpret_cast<char*>(&data_block->m_type), sizeof(data_block->m_type));
-    file->read(reinterpret_cast<char*>(&data_block->m_length), sizeof(data_block->m_length));
+    file->read(reinterpret_cast<char*>(&data_block->m_num), sizeof(data_block->m_num));
+    file->read(reinterpret_cast<char*>(&data_block->m_tp_snappy_size), sizeof(data_block->m_tp_snappy_size));
+    file->read(reinterpret_cast<char*>(&data_block->m_val_snappy_size), sizeof(data_block->m_val_snappy_size));
 
-    int size;
+    // 读取并解压时间戳数据
+    string compressed_timestamp(data_block->m_tp_snappy_size, '\0');
+    file->read(&compressed_timestamp[0], data_block->m_tp_snappy_size);
+    string timestamp_serialize;
+    snappy::Uncompress(compressed_timestamp.data(), data_block->m_tp_snappy_size, &timestamp_serialize);
+    auto timestamps =  deserialize_differences(timestamp_serialize);
+    data_block->m_timestamps = restore_timestamps(timestamps);
 
-    // 读取时间戳
-    data_block->m_timestamps.clear();
-    auto num = data_block->m_length;
-    size = sizeof(high_resolution_clock::time_point);
-    for (size_t i = 0; i < num; ++i)
-    {
-        high_resolution_clock::time_point timestamp;
-        file->read(reinterpret_cast<char*>(&timestamp), size);
-        data_block->m_timestamps.push_back(timestamp);
-    }
+    // 读取并解压值数据
+    string compressed_val(data_block->m_val_snappy_size, '\0');
+    file->read(&compressed_val[0], data_block->m_val_snappy_size);
+    string val_serialize;
+    snappy::Uncompress(compressed_val.data(), data_block->m_val_snappy_size, &val_serialize);
+    data_block->m_values = deserialize_strings(val_serialize);
 
-    // 读取值
-    data_block->m_values.clear();
-    if (data_block->m_type == DataBlock::Type::DATA_STRING)
-    {
-        for (size_t i = 0; i < num; ++i)
-        {
-            uint16_t length;
-            file->read(reinterpret_cast<char*>(&length), sizeof(uint16_t));
-            if (file->good())
-            {
-                char buffer[length + 1];
-                file->read(buffer, length);
-                buffer[length] = '\0';
-                data_block->m_values.push_back(buffer);
-            }
-        }
-    }
-    else if (data_block->m_type == DataBlock::Type::DATA_INTEGER)
-    {
-        int value;
-        string data;
-        size = sizeof(int);
-        for (size_t i = 0; i < num; ++i)
-        {
-            file->read(reinterpret_cast<char*>(&value), size);
-            data = std::to_string(value);
-            data_block->m_values.push_back(data);
-        }
-    }
-    else if (data_block->m_type == DataBlock::Type::DATA_FLOAT)
-    {
-        float value;
-        string data;
-        size = sizeof(float);
-        for (size_t i = 0; i < num; ++i)
-        {
-            file->read(reinterpret_cast<char*>(&value), size);
-            data = std::to_string(value);
-            data_block->m_values.push_back(data);
-        }
-    }
-    else
-    {
-        std::cerr << "Error : Unknown type - m_from /engin/tsm/tsm.cpp" << std::endl;
-    }
     m_file_manager.release_file_stream(file_path);
     return true;
 }
 
-uint64_t TSM::write_index_entry_to_file(
+int64_t TSM::write_index_entry_to_file(
         const std::shared_ptr<IndexEntry> & index_entry,
         const string & file_path,
         int64_t offset)
@@ -429,6 +340,9 @@ bool TSM::create_tsm(
     return true;
 }
 
+/**
+ * 对时间戳进行差值计算
+ */
 std::vector<nanoseconds> TSM::calculate_differences(
         const std::list<high_resolution_clock::time_point> & timestamps)
 {
@@ -456,6 +370,35 @@ std::vector<nanoseconds> TSM::calculate_differences(
     }
 
     return differences;
+}
+
+/**
+ * 恢复差值的时间戳
+ * @param differences
+ * @return
+ */
+std::list<high_resolution_clock::time_point> TSM::restore_timestamps(
+        const std::vector<nanoseconds> & differences) {
+    std::list<high_resolution_clock::time_point> timestamps;
+
+    if (!differences.empty())
+    {
+        // 从差值序列的第一个元素恢复第一个时间戳
+        auto it = differences.begin();
+        auto epoch = high_resolution_clock::time_point(*it);
+        timestamps.push_back(epoch);
+
+        // 之后的每个时间戳都是前一个时间戳加上差值
+        auto previousTimestamp = epoch;
+        ++it;
+        for (; it != differences.end(); ++it)
+        {
+            previousTimestamp += *it;
+            timestamps.push_back(previousTimestamp);
+        }
+    }
+
+    return timestamps;
 }
 
 /**
@@ -557,4 +500,29 @@ string TSM::decompress_data(
         // 处理解压失败的情况
     }
     return decompressed_data;
+}
+
+/**
+ * 计算时间戳需要对实际大小
+ */
+string TSM::calculate_timestamp_size(
+        const std::list<high_resolution_clock::time_point> & timestamps)
+{
+    // 对时间戳进行差值计算
+    auto timestamp_differences = calculate_differences(timestamps);
+    // 序列化差值后的timestamp
+    auto timestamp_serialize = serialize_differences(timestamp_differences);
+    // 将差值计算后的时间戳使用snappy 压缩
+    return compress_data(timestamp_serialize);
+}
+
+/**
+ * 计算数据需要的实际大小
+ */
+string TSM::calculate_val_size(
+        const std::list<string> & values)
+{
+    // 序列化val
+    auto val_serialize = serialize_strings(values);
+    return compress_data(val_serialize);
 }

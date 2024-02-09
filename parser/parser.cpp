@@ -37,6 +37,7 @@ std::map<Token::Type, Parser::prefix_parse_fn> Parser::m_prefix_parse_fns = {
         {Token::TOKEN_CREATE,     &Parser::parse_create},
         {Token::TOKEN_SELECT,     &Parser::parse_select},
         {Token::TOKEN_INSERT,     &Parser::parse_insert},
+        {Token::TOKEN_SYSTEM,     &Parser::parse_system},
 };
 
 /**

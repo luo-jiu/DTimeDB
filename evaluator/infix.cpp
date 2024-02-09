@@ -17,12 +17,12 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval_infix(
         {
             if (right->type() == ExecutionPlanNode::OBJECT_STRING)  //  要么tag 要么 字段=值
             {
-                //
+                // 两边都是字符串，直接将key=value 拼接返回
                 return eval_string_infix_expression(op, left, right);
             }
             else
             {
-
+//                return eval_string_infix_expression(op, left, right);
             }
         }
         case ExecutionPlanNode::OBJECT_INTEGER:  // integer
@@ -54,7 +54,38 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval_string_infix_expression(
     auto r = std::dynamic_pointer_cast<execution::String>(right);
     if (op == "=")
     {
-
+        string kv = l->str() + "=" + r->str();
+        return new_string(kv);
+    }
+    else if (op == "<=")
+    {
+        string kv = l->str() + "<=" + r->str();
+        return new_string(kv);
+    }
+    else if (op == ">=")
+    {
+        string kv = l->str() + ">=" + r->str();
+        return new_string(kv);
+    }
+    else if (op == "<")
+    {
+        string kv = l->str() + "<" + r->str();
+        return new_string(kv);
+    }
+    else if (op == ">")
+    {
+        string kv = l->str() + ">" + r->str();
+        return new_string(kv);
+    }
+    else if (op == "and")
+    {
+        string kv = l->str() + "&" + r->str();
+        return new_string(kv);
+    }
+    else if (op == "or")
+    {
+        string kv = l->str() + "|" + r->str();
+        return new_string(kv);
     }
     else  // 字符串之前不支持其他符号运算
     {

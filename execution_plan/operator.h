@@ -30,6 +30,45 @@ namespace dt::execution
     };
 
     /**
+     * 系统操作符
+     */
+    class SysNode : public ExecutionPlanNode
+    {
+    public:
+        SysNode() : ExecutionPlanNode(OBJECT_SYSTEM) {}
+
+        virtual string str() const { return ""; }
+        void execute(IEngine & engine) override
+        {
+            if (m_current_db.empty())
+            {
+                std::cout << "Database not selected, 'use' command" << std::endl;
+                return;
+            }
+            if (m_option == "show")
+            {
+                engine.sys_show_file(m_current_db, m_table_name);
+            }
+            else if (m_option == "update")
+            {
+                engine.sys_update_file(m_current_db, m_table_name, m_where);
+            }
+            else if (m_option == "clear")
+            {
+                engine.sys_clear_file(m_current_db, m_table_name);
+            }
+        }
+        std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
+        void set_child(std::shared_ptr<ExecutionPlanNode> child) override { m_child = child; }
+
+    public:
+        string                                  m_option;
+        string                                  m_table_name;
+        string                                  m_where;
+        std::shared_ptr<ExecutionPlanNode>      m_child;
+    };
+
+    /**
      * 创建节点
      */
     class CreateNode : public ExecutionPlanNode

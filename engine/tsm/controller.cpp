@@ -104,6 +104,7 @@ void Controller::insert_thread(
             std::map<string, Table> table;
             auto write = std::make_shared<Write>(db_name, tb_name);
             write->set_file_path_manager(&m_file);  // 依赖注入
+            write->init();  // 初始化
             table[tb_name] = Table{write};
             m_map[db_name] = Database{"", table};
         }
@@ -212,6 +213,44 @@ std::list<string> Controller::scan_full_table(
     // 单独开启一个线程去执行
     std::list<string> result;
     return result;
+}
+
+bool Controller::sys_show_file(
+        const string & db_name,
+        const string & tb_name)
+{
+    m_file.sys_show_file(db_name, tb_name);
+    return true;
+}
+
+bool Controller::sys_update_file(
+        const string & db_name,
+        const string & tb_name,
+        const string & where)
+{
+    size_t pos = where.find('=');
+    string key, value;
+    if (pos != std::string::npos) {
+        key = where.substr(0, pos);
+        value = where.substr(pos + 1);
+    }
+    if (key == "offset")
+    {
+        return m_file.update_system_file_offset(db_name, tb_name, std::stoi(value));
+    }
+    else if (key == "margin")
+    {
+        return m_file.update_system_file_margin(db_name, tb_name, std::stoi(value));
+    }
+    return false;
+}
+
+bool Controller::sys_clear_file(
+        const string & db_name,
+        const string & tb_name)
+{
+    m_file.sys_clear_file(db_name, tb_name);
+    return true;
 }
 
 /**

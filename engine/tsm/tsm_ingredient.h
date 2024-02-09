@@ -78,15 +78,16 @@ namespace dt::tsm
             DATA_FLOAT,
         };
 
-        DataBlock(): m_size(0), m_length(0){}
-        DataBlock(Type type): m_type(type) , m_length(0){}
+        DataBlock(): m_size(0), m_num(0){}
+        DataBlock(Type type): m_type(type) , m_num(0){}
         ~DataBlock() = default;
 
         Json json()
         {
             Json json;
             json["type"] = m_type;
-            json["length"] = m_length;
+            json["tp_len"] = m_tp_snappy_size;
+            json["val_len"] = m_val_snappy_size;
 
             Json timestamps;
             for (const auto& timestamp : m_timestamps)
@@ -118,7 +119,9 @@ namespace dt::tsm
         high_resolution_clock::time_point                   m_min_timestamp;
 
         Type                                                m_type;
-        int32_t                                             m_length;
+        int32_t                                             m_num;
+        int32_t                                             m_tp_snappy_size;
+        int32_t                                             m_val_snappy_size;
         std::list<high_resolution_clock::time_point>        m_timestamps;
         std::list<string>                                   m_values;
     };

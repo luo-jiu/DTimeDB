@@ -21,7 +21,7 @@ bool DataBlock::write(
         m_size += 12;
     }
 
-    ++m_length;  // 记录数据数量
+    ++m_num;  // 记录数据数量
     return true;
 }
 

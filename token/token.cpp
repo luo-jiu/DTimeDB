@@ -51,6 +51,8 @@ std::map<Token::Type, string> Token::m_names = {
 
         {TOKEN_TSM,             "tsm"},
         {TOKEN_CLT,             "clt"},
+
+        {TOKEN_SYSTEM,  "system"},
 };
 
 /**
@@ -82,6 +84,8 @@ std::map<string, Token::Type> Token::m_keywords = {
 
         {"tsm",             TOKEN_TSM},
         {"clt",             TOKEN_CLT},
+
+        {"system",          TOKEN_SYSTEM},
 };
 
 Token::Token(): m_type(TOKEN_ILLEGAL)

@@ -68,6 +68,10 @@ namespace dt::tsm
 
         std::list<string> scan_full_table(const string & db_name, const string & tb_name) override;
 
+        bool sys_show_file(const string & db_name, const string & tb_name) override;
+        bool sys_update_file(const string & db_name, const string & tb_name, const string & where) override;
+        bool sys_clear_file(const string & db_name, const string & tb_name) override;
+
         void monitoring_thread();
         void stop_monitoring_thread();
         void disk_write_thread(const string & db_name, const string & tb_name, const string & field_name);

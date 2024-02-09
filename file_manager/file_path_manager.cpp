@@ -6,9 +6,6 @@ using namespace dt::file;
 #include <filesystem>
 namespace fs = std::filesystem;
 
-//string FilePathManager::m_default_base_path = "./../dbs";
-//std::map<string, std::map<string, FilePathManager::TableInfo>>  FilePathManager::m_map = {};
-
 /**
  * 创建数据库(文件夹)
  * @return 文件夹路径
@@ -402,9 +399,46 @@ bool FilePathManager::show_data(const string & db_name)
 }
 
 /**
- * 初始化新创建的tsm file 文件信息
- * @param path
+ * 加载系统文件信息
+ * @param db_name
+ * @param tb_name
  * @return
+ */
+std::tuple<int64_t, uint64_t, string> FilePathManager::load_system_info(
+        const string & db_name,
+        const string & tb_name)
+{
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    auto file = m_io_file.get_file_stream(file_path);
+    if (!file->is_open())
+    {
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        return std::make_tuple(0, 0, "");
+    }
+    file->seekg(std::ios::beg);
+
+    int64_t offset;
+    uint64_t margin;
+    file->read(reinterpret_cast<char*>(&offset), sizeof(offset));
+    file->read(reinterpret_cast<char*>(&margin), sizeof(margin));
+    int16_t length;
+    file->read(reinterpret_cast<char*>(&length), sizeof(length));
+    std::vector<char> file_name(length + 1);
+    if (file->good())
+    {
+        file->read(file_name.data(), length);
+        file_name[length] = '\0';
+    }
+
+    m_io_file.release_file_stream(file_path);
+    string read_file_path = "./../dbs/" + db_name + "/" + string(file_name.data());
+    std::cout << "offset:" << offset << ", margin:" << margin << ", file_name:" << file_name.data() << "\n";
+    std::cout << "read_file_path:" << read_file_path + "\n";
+    return std::make_tuple(offset, margin, read_file_path);
+}
+
+/**
+ * 初始化新创建的tsm file 文件信息
  */
 bool FilePathManager::create_tsm_file_update_sys_info(
         const string & db_name,
@@ -421,14 +455,15 @@ bool FilePathManager::create_tsm_file_update_sys_info(
     }
     file->seekp(std::ios::beg);
     auto length = static_cast<uint16_t>(file_name.length());
-    // 写file_name
-    file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
-    file->write(file_name.c_str(), length);  // 写字符串
+
     // 写offset
     int64_t offset = 5;
     file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
     // 写margin
     file->write(reinterpret_cast<const char*>(&margin), sizeof(uint64_t));
+    // 写file_name
+    file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
+    file->write(file_name.c_str(), length);  // 写字符串
     file->flush();
 
     m_io_file.release_file_stream(file_path);
@@ -439,9 +474,128 @@ bool FilePathManager::create_tsm_file_update_sys_info(
 /**
  * 修改系统文件中待写入文件名
  */
-bool update_system_file_name(
+bool FilePathManager::update_system_file_name(
+        const string & db_name,
+        const string & tb_name,
+        const string & file_name)
+{
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    auto file = m_io_file.get_file_stream(file_path);
+    if (!file->is_open())
+    {
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        return false;
+    }
+    file->seekp(16);
+    auto length = static_cast<uint16_t>(file_name.length());
+
+    // 写file_name
+    file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
+    file->write(file_name.c_str(), length);  // 写字符串
+    file->flush();
+
+    m_io_file.release_file_stream(file_path);
+    return true;
+}
+
+/**
+ * 修改系统文件中待写入文件剩余容量大小
+ */
+bool FilePathManager::update_system_file_margin(
+        const string & db_name,
+        const string & tb_name,
+        uint64_t margin)
+{
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    auto file = m_io_file.get_file_stream(file_path);
+    if (!file->is_open())
+    {
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        return false;
+    }
+    file->seekp(8);
+    file->write(reinterpret_cast<const char*>(&margin), sizeof(uint64_t));
+    file->flush();
+
+    m_io_file.release_file_stream(file_path);
+    return true;
+}
+
+/**
+ * 修改系统文件中待写入文件指针偏移量
+ */
+bool FilePathManager::update_system_file_offset(
+        const string & db_name,
+        const string & tb_name,
+        int64_t offset)
+{
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    auto file = m_io_file.get_file_stream(file_path);
+    if (!file->is_open())
+    {
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        return false;
+    }
+    file->seekp(std::ios::beg);
+    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
+    file->flush();
+
+    m_io_file.release_file_stream(file_path);
+    return true;
+}
+
+bool FilePathManager::sys_show_file(
         const string & db_name,
         const string & tb_name)
 {
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    auto file = m_io_file.get_file_stream(file_path);
+    if (!file->is_open())
+    {
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        return false;
+    }
+    file->seekg(std::ios::beg);
 
+    int64_t offset;
+    uint64_t margin;
+    file->read(reinterpret_cast<char*>(&offset), sizeof(offset));
+    file->read(reinterpret_cast<char*>(&margin), sizeof(margin));
+    int16_t length;
+    file->read(reinterpret_cast<char*>(&length), sizeof(length));
+    std::vector<char> file_name(length + 1);
+    if (file->good())
+    {
+        file->read(file_name.data(), length);
+        file_name[length] = '\0';
+    }
+    m_io_file.release_file_stream(file_path);
+    std::cout << "table:" << tb_name << ", filename:" << file_name.data() << ", margin:" << margin << ", offset:" << offset << std::endl;
+    return true;
+}
+
+bool FilePathManager::sys_clear_file(
+        const string & db_name,
+        const string & tb_name)
+{
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    auto file = m_io_file.get_file_stream(file_path);
+    if (!file->is_open())
+    {
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        return false;
+    }
+    int64_t offset = 0;
+    uint64_t margin = 0;
+    uint16_t length = 0;
+    file->seekp(std::ios::beg);
+    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
+    // 写margin
+    file->write(reinterpret_cast<const char*>(&margin), sizeof(uint64_t));
+    // 写file_name
+    file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
+    file->flush();
+
+    m_io_file.release_file_stream(file_path);
+    return true;
 }

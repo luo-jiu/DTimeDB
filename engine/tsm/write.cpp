@@ -1,6 +1,16 @@
 #include <engine/tsm/write.h>
 using namespace dt::tsm;
 
+void Write::init()
+{
+    auto tuple_obj =  m_file_path->load_system_info(m_db_name, m_tb_name);
+    m_head_offset = std::get<0>(tuple_obj);
+    m_margin = std::get<1>(tuple_obj);
+    m_curr_file_path = std::get<2>(tuple_obj);
+    if (m_margin == 0)
+        m_curr_file_path = "";
+}
+
 void Write::set_file_path_manager(FilePathManager * file_path_manager)
 {
     m_file_path = file_path_manager;
@@ -138,7 +148,7 @@ void Write::flush_disk()
                     }
 
                     // 刷盘
-                    m_tsm.write_data_to_file(data_block, "data.tsm", m_head_offset);
+//                    m_tsm.write_data_to_file(data_block, "data.tsm", m_head_offset);
 
                     // 修改头偏移量
                     m_head_offset += data_block->m_size;
@@ -248,14 +258,21 @@ void Write::field_flush_disk(
             std::cout << "开始刷写块,field:" << field_name << std::endl;
             auto data_block = field_it->second->pop_data_from_deque();
 
-            // 先压缩块
-
+            // 计算大小
+            auto compress_timestamp = m_tsm.calculate_timestamp_size(data_block->m_timestamps);
+            auto compress_val = m_tsm.calculate_val_size(data_block->m_values);
+            auto predict_size = 16 + compress_timestamp.size() + compress_val.size();
 
             // 获取待写入的文件以及偏移量,还有容量是否足够(放在了sys-tb_name.tsm里面)
             bool need_create_file = false;
             if (!m_curr_file_path.empty())  // 先判断有没有能刷写的文件
             {
-                if (m_margin < data_block->m_size) need_create_file = true;
+                if (m_margin < predict_size)  // 文件大小不够了
+                {
+                    need_create_file = true;  // 需要创建新文件
+
+                    // 开始刷写series index block 和footer
+                }
             }
             if (need_create_file || m_curr_file_path.empty()) // 需要创建文件
             {
@@ -285,13 +302,28 @@ void Write::field_flush_disk(
                 m_head_offset = 5;  // 跳过开头
             }
 
-            // 刷盘
-            auto use_size = m_tsm.write_data_to_file(data_block, m_curr_file_path, m_head_offset);
-            std::cout << "size:" << data_block->m_size << std::endl;
-            std::cout << "size-:" << use_size << std::endl;
-
             // 到这里 肯定是有文件写，且大小也足够用的时候
+            // 刷盘
+            auto use_size = m_tsm.write_data_to_file(data_block->m_type, data_block->m_num, compress_timestamp, compress_val, m_curr_file_path, m_head_offset);
+            std::cout << "压缩前大小:" << data_block->m_size << std::endl;
+            std::cout << "压缩后大小:" << use_size << std::endl;
+
             m_margin -= use_size;  // 去除大小
+            m_head_offset += use_size;  // 指针偏移
+            m_file_path->update_system_file_margin(m_db_name, m_tb_name, m_margin);
+            m_file_path->update_system_file_offset(m_db_name, m_tb_name, m_head_offset);
+
+            // 创建entry [唯一生成]
+            auto entry = m_tsm.create_index_entry(data_block->m_max_timestamp, data_block->m_min_timestamp, m_head_offset, data_block->m_size);
+            field->push_index_to_deque(entry);  // 存入队列
+
+            if (field->get_index_deque_size() >= 10)  // 如果超过10 个块
+            {
+                
+            }
+
+
+
 
 
 
@@ -527,3 +559,4 @@ bool Write::skip_need_flush_data_block(
         return field_it->second->skip_need_flush_data_block();
     }
 }
+

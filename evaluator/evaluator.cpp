@@ -61,6 +61,29 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval(
             auto s = std::dynamic_pointer_cast<ast::ExpressionStatement>(node);
             return eval(s->m_expression, env, root);  // 递归判断值类型
         }
+        case Node::NODE_SYS:  // sys 系统命令处理
+        {
+            auto sys = std::dynamic_pointer_cast<ast::System>(node);
+            std::shared_ptr<ExecutionPlanNode> where;
+            if (sys->m_where != nullptr)
+            {
+                auto e = std::dynamic_pointer_cast<ast::Infix>(sys->m_where);  // 先将类型转换为中缀表达式
+                auto left = eval(e->m_left, env, root);  // 对select 的where 的左子树进行求值
+                if (is_error(left))
+                {
+                    return left;
+                }
+                auto right = eval(e->m_right, env, root);  // 对右子树进行求值
+                if (is_error(right))
+                {
+                    return right;
+                }
+                where = eval_infix(e->m_operator, left, right);  // 先处理where
+            }
+            auto s = eval_sys(sys, where);
+            root->set_child(s);
+            return s;
+        }
         case Node::NODE_SHOW:  // show 处理
         {
             auto show = std::dynamic_pointer_cast<ast::Show>(node);
@@ -86,7 +109,19 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval(
         case Node::NODE_SELECT:  // select 处理
         {
             auto select = std::dynamic_pointer_cast<ast::Select>(node);
-            return eval_select(select, root);
+            auto e = std::dynamic_pointer_cast<ast::Infix>(select->m_where);  // 先将类型转换为中缀表达式
+            auto left = eval(e->m_left, env, root);  // 对select 的where 的左子树进行求值
+            if (is_error(left))
+            {
+                return left;
+            }
+            auto right = eval(e->m_right, env, root);  // 对右子树进行求值
+            if (is_error(right))
+            {
+                return right;
+            }
+            auto where = eval_infix(e->m_operator, left, right);  // 先处理where
+            return eval_select(select, where, root);
         }
         case Node::NODE_INSERT:  // insert 处理
         {
