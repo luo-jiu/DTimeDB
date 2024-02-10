@@ -20,5 +20,5 @@ private:
     static int _curr_conns;
     static pthread_mutex_t _mutex;
 public:
-    static
+
 };
