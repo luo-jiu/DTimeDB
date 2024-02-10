@@ -141,7 +141,7 @@ void Controller::insert_thread(
     // 拼接seriesKey
     string series_key = field_name + tags_str;
 
-    writer->write(timestamp, series_key, value, type_temp, field_name, db_name, tb_name, m_table_state, m_queue_state);
+    writer->write(timestamp, series_key, value, type_temp, field_name, db_name, tb_name, m_field_state, m_table_state);
 }
 
 /**
@@ -262,8 +262,8 @@ void Controller::monitoring_thread()
 {
     while(m_running.load())
     {
+        m_field_state.iterate_map(false);
         m_table_state.iterate_map();
-        m_queue_state.iterate_map();
         // 等待一段时间再次检查
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -314,23 +314,21 @@ bool Controller::is_ready_disk_write(
             auto writer = tb_it->second.m_writer;
             if (writer)
             {
-                std::cout << "---进入判断是否需要刷盘逻辑...\n";
-                if (tb_it->second.m_writer->skip_need_flush_data_block(field_name))
+                std::cout << "---判断是否需要刷块\n";
+                if (writer->skip_need_flush_data_block(field_name))
                 {
-                    std::cout << "---满足刷盘\n";
-
-                    // 刷跳表(传入空数据激活即可)
-                    // 获取对应字段类型
+                    std::cout << "---满足刷块\n";
+                    // 刷跳表(传入空数据激活即可) 获取对应字段类型
                     auto fd = field_name;
                     auto tb = tb_name;
                     auto db = db_name;
+                    // 利用插入数据语句,进入对应跳表激活判断逻辑引发刷块
                     m_producer_thread_pool.enqueue(&Controller::insert_thread, this, system_clock::now(), "", "", Type::DATA_STRING, fd, tb, db);
-
-                    return true;  // 这里还有判断空没有写
+                    return true;
                 }
                 else
                 {
-                    std::cout << "---本轮不满足刷盘\n";
+                    std::cout << "---本轮不满足刷块\n";
                 }
             }
         }
@@ -339,29 +337,53 @@ bool Controller::is_ready_disk_write(
 }
 
 /**
- * 开启刷盘线程
+ * 监控是否需要将index entry刷盘
  */
-void Controller::disk_write(
+bool Controller::is_ready_index_write(
         const string & db_name,
         const string & tb_name,
         const string & field_name)
 {
+    std::shared_lock<std::shared_mutex> read_lock(m_mutex);
+    auto db_it = m_map.find(db_name);
+    if (db_it != m_map.end())
+    {
+        auto tb_it = db_it->second.m_table_map.find(tb_name);
+        if (tb_it != db_it->second.m_table_map.end())
+        {
+            auto writer = tb_it->second.m_writer;
+            if (writer)
+            {
+                std::cout << "---判断是否需要将index entry刷写到磁盘\n";
+
+            }
+        }
+    }
+}
+
+/**
+ * 开启刷盘线程
+ */
+bool Controller::disk_write(
+        const string & db_name,
+        const string & tb_name)
+{
     // 从线程池拿取线程进行刷盘操作
-    m_consumer_thread_pool.enqueue(&Controller::disk_write_thread, this, db_name, tb_name, field_name);
+    m_consumer_thread_pool.enqueue(&Controller::disk_write_thread, this, db_name, tb_name);
+    return true;
 }
 
 void Controller::disk_write_thread(
         const string & db_name,
-        const string & tb_name,
-        const string & field_name)
+        const string & tb_name)
 {
     std::cout << "================disk_write_thread==============" << std::endl;
-    // 拿到对饮Writer
+    // 拿到对应Writer
     auto writer = m_map[db_name].m_table_map[tb_name].m_writer;
 
     if (writer)
     {
         // 调用其刷盘函数
-        writer->field_flush_disk(field_name);
+        writer->queue_flush_disk();
     }
 }

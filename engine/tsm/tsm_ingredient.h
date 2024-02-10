@@ -115,6 +115,7 @@ namespace dt::tsm
 
     public:
         int32_t                                             m_size;  // 大小(不存入磁盘)
+        string                                              m_field_name;  // 字段名(不存)
         high_resolution_clock::time_point                   m_max_timestamp;
         high_resolution_clock::time_point                   m_min_timestamp;
 

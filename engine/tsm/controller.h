@@ -13,8 +13,8 @@ using namespace dt::thread;
 #include <engine/tsm/write.h>
 #include <engine/tsm/index.h>
 
+#include <engine/tsm/field_state.h>
 #include <engine/tsm/table_state.h>
-#include <engine/tsm/queue_state.h>
 
 namespace dt::tsm
 {
@@ -29,14 +29,22 @@ namespace dt::tsm
         Controller(): m_producer_thread_pool(8), m_consumer_thread_pool(6), m_running(true), m_file("tsm")
         {
             init();
-
             // 设置回调函数
-            m_table_state.set_condition_callback([this](const string & db_name, const string & tb_name, const string & field_name) {
-                return is_ready_disk_write(db_name, tb_name, field_name);
-            });
-            m_queue_state.set_condition_callback([this](const string & db_name, const string & tb_name, const string & field_name) {
-                return disk_write(db_name, tb_name, field_name);
-            });
+            m_field_state.set_skip_condition_callback(
+                    [this](const string & db_name, const string & tb_name, const string & field_name) {
+                        // skip_list 数据监控 回调处理函数
+                        return is_ready_disk_write(db_name, tb_name, field_name);
+                    });
+            m_field_state.set_index_condition_callback(
+                    [this](const string & db_name, const string & tb_name, const string & field_name) {
+                        // index queue监控 回调处理函数
+                        return is_ready_index_write(db_name, tb_name, field_name);
+                    });
+            m_table_state.set_condition_callback(
+                    [this](const string & db_name, const string & tb_name) {
+                        // data block queue监控 回调处理函数
+                        return disk_write(db_name, tb_name);
+                    });
         }
 
         ~Controller()
@@ -74,12 +82,13 @@ namespace dt::tsm
 
         void monitoring_thread();
         void stop_monitoring_thread();
-        void disk_write_thread(const string & db_name, const string & tb_name, const string & field_name);
+        void disk_write_thread(const string & db_name, const string & tb_name);
         bool exists_table(string & db_name, string & tb_name);
 
         // 回调函数
         bool is_ready_disk_write(const string & db_name, const string & tb_name, const string & field_name);
-        void disk_write(const string & db_name, const string & tb_name, const string & field_name);
+        bool is_ready_index_write(const string & db_name, const string & tb_name, const string & field_name);
+        bool disk_write(const string & db_name, const string & tb_name);
 
     private:
         struct Table
@@ -100,8 +109,8 @@ namespace dt::tsm
         ThreadPool                      m_consumer_thread_pool;  // 消费者(刷盘)线程池
         FilePathManager                 m_file;                  // 文件管理器(每个引擎都有自己的管理系统)
 
-        TableState                      m_table_state;           // 为监控线程提供表状态
-        QueueState                      m_queue_state;
+        FieldState                      m_field_state;
+        TableState                      m_table_state;
         std::atomic<bool>               m_running;               // 用于退出监控线程
         std::thread                     m_monitor_thread;
         mutable std::shared_mutex       m_mutex;                 // 读写锁保证m_map 安全

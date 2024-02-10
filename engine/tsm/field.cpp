@@ -18,7 +18,7 @@ void Field::write(
         write_lock.unlock();
 
         std::cout << "初始化/重置m_sl_last_time, table: " << tb_name << ", field:" << m_field_name << std::endl;
-        m_sl.notify(db_name, tb_name, m_field_name, true);  // 注册事件
+        m_sl.notify(db_name, tb_name, m_field_name, true, false);  // 注册事件
         std::cout << "注册事件, table: " << tb_name << ", field:" << m_field_name << std::endl;
     }
 
@@ -73,20 +73,22 @@ void Field::write(
         // 设置大小和长度
         m_current_data->m_max_timestamp = m_sl.max_key();
         m_current_data->m_min_timestamp = m_sl.max_key();
+        m_current_data->m_field_name = m_field_name;
         m_current_data->m_size = data_size;
         m_current_data->m_num = m_sl.size();
+
         // 存放在队列中
         push_data_to_deque(m_current_data);
 
-        // 注册事件
-        notify(db_name, tb_name, m_field_name, true);
+        // 注册事件，data block queue有元素
+        notify(db_name, tb_name, m_field_name, true, false);
 
         // 重置m_current_data 以便接收新数据
         m_current_data = std::make_shared<DataBlock>();
         // 清空跳表
         m_sl.cle();
         // 刷了块取消监控事件
-        m_sl.notify(db_name, tb_name, m_field_name, false);
+        m_sl.notify(db_name, tb_name, m_field_name, false, false);
         std::cout << "数据已入队列...\n";
         // 使下一次写入数据时初始化时间戳
         m_need_reset.store(true);
@@ -109,22 +111,23 @@ bool Field::should_flush_data()
 void Field::push_data_to_deque(std::shared_ptr<DataBlock> data_block)
 {
     std::lock_guard<std::mutex> lock(m_data_lock);
-    m_data_deque.push_back(data_block);
+    // 回调将data block 写入到对应的writer
+    m_data_block_callback(data_block);
 }
 
 /**
  * 获取数据
  */
-std::shared_ptr<DataBlock> Field::pop_data_from_deque()
-{
-    std::lock_guard<std::mutex> lock(m_data_lock);
-    if (!m_data_deque.empty())
-    {
-        std::shared_ptr<DataBlock> data_block = m_data_deque.front();
-        m_data_deque.pop_front();
-        return data_block;
-    }
-}
+//std::shared_ptr<DataBlock> Field::pop_data_from_deque()
+//{
+//    std::lock_guard<std::mutex> lock(m_data_lock);
+//    if (!m_data_deque.empty())
+//    {
+//        std::shared_ptr<DataBlock> data_block = m_data_deque.front();
+//        m_data_deque.pop_front();
+//        return data_block;
+//    }
+//}
 
 void Field::push_index_to_deque(std::shared_ptr<IndexEntry> & index_block)
 {
@@ -158,11 +161,17 @@ bool Field::skip_need_flush_data_block()
     return should_flush_data();
 }
 
-bool Field::get_data_status()
+bool Field::index_need_flush_disk()
 {
-    std::lock_guard<std::mutex> lock(m_data_lock);
-    return m_data_deque.empty();
+    std::lock_guard<std::mutex> lock(m_index_lock);
+    if (m_index_deque.size() >=10 || );
 }
+
+//bool Field::get_data_status()
+//{
+//    std::lock_guard<std::mutex> lock(m_data_lock);
+//    return m_data_deque.empty();
+//}
 
 bool Field::get_index_status()
 {
@@ -174,6 +183,16 @@ int Field::get_index_deque_size()
 {
     std::lock_guard<std::mutex> lock(m_index_lock);
     return m_index_deque.size();
+}
+
+bool Field::get_mate_status()
+{
+    return m_create_meta.load();
+}
+
+void Field::set_mate_status(bool state)
+{
+    m_create_meta.store(state);
 }
 
 /**
@@ -201,12 +220,13 @@ void Field::notify(
         const string & db_name,
         const string & tb_name,
         const string & field_name,
-        bool is_registered)
+        bool is_registered,
+        bool use_index_entry_map)
 {
     std::shared_lock<std::shared_mutex> lock(m_mutex);
     // 通知所有观察者发生变化
     for (auto observer : m_observers)
     {
-        observer->update(db_name, tb_name, field_name, is_registered);
+        observer->update(db_name, tb_name, field_name, is_registered, use_index_entry_map);
     }
 }
