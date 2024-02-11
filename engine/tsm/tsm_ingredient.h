@@ -162,15 +162,8 @@ namespace dt::tsm
     class IndexBlockMeta
     {
     public:
-        enum Type
-        {
-            DATA_INTEGER,
-            DATA_STRING,
-            DATA_FLOAT,
-        };
-
         IndexBlockMeta() {}
-        IndexBlockMeta(uint16_t key_size, string key, Type type): m_key_size(key_size), m_key(std::move(key)), m_type(type){}
+        IndexBlockMeta(uint16_t key_size, string key, DataBlock::Type type): m_key_size(key_size), m_key(std::move(key)), m_type(type){}
         ~IndexBlockMeta() {}
 
         // get and set
@@ -180,15 +173,15 @@ namespace dt::tsm
         }
         const string & get_key() const { return m_key; }
         void set_key(const string & key) { m_key = key; }
-        Type get_type() const { return m_type; }
-        void set_type(Type type) { m_type = type; }
+        DataBlock::Type get_type() const { return m_type; }
+        void set_type(DataBlock::Type type) { m_type = type; }
         uint16_t get_count() const { return m_count; }
         void set_count(uint16_t count) { m_count = count; }
 
     private:
         uint16_t                    m_key_size;
         string                      m_key;  // seriesKey + fieldKey
-        Type                        m_type;
+        DataBlock::Type                        m_type;
         uint16_t                    m_count;  // entry count
     };
 }

@@ -404,7 +404,7 @@ bool FilePathManager::show_data(const string & db_name)
  * @param tb_name
  * @return
  */
-std::tuple<int64_t, uint64_t, string> FilePathManager::load_system_info(
+SystemInfo FilePathManager::load_system_info(
         const string & db_name,
         const string & tb_name)
 {
@@ -413,13 +413,14 @@ std::tuple<int64_t, uint64_t, string> FilePathManager::load_system_info(
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
-        return std::make_tuple(0, 0, "");
+        return {};
     }
     file->seekg(std::ios::beg);
 
-    int64_t offset;
+    int64_t head_offset, tail_offset;
     uint64_t margin;
-    file->read(reinterpret_cast<char*>(&offset), sizeof(offset));
+    file->read(reinterpret_cast<char*>(&head_offset), sizeof(head_offset));
+    file->read(reinterpret_cast<char*>(&tail_offset), sizeof(tail_offset));
     file->read(reinterpret_cast<char*>(&margin), sizeof(margin));
     int16_t length;
     file->read(reinterpret_cast<char*>(&length), sizeof(length));
@@ -432,9 +433,9 @@ std::tuple<int64_t, uint64_t, string> FilePathManager::load_system_info(
 
     m_io_file.release_file_stream(file_path);
     string read_file_path = "./../dbs/" + db_name + "/" + string(file_name.data());
-    std::cout << "offset:" << offset << ", margin:" << margin << ", file_name:" << file_name.data() << "\n";
+    std::cout << "head_offset:" << head_offset << ", tail_offset:" << tail_offset << ", margin:" << margin << ", file_name:" << file_name.data() << "\n";
     std::cout << "read_file_path:" << read_file_path + "\n";
-    return std::make_tuple(offset, margin, read_file_path);
+    return SystemInfo{head_offset, tail_offset, margin, read_file_path};
 }
 
 /**
@@ -456,9 +457,10 @@ bool FilePathManager::create_tsm_file_update_sys_info(
     file->seekp(std::ios::beg);
     auto length = static_cast<uint16_t>(file_name.length());
 
-    // 写offset
-    int64_t offset = 5;
-    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
+    // 写m_head_offset 和m_tail_offset
+    int64_t head_offset = 5, tail_offset = margin;
+    file->write(reinterpret_cast<const char*>(&head_offset), sizeof(int64_t));
+    file->write(reinterpret_cast<const char*>(&tail_offset), sizeof(int64_t));
     // 写margin
     file->write(reinterpret_cast<const char*>(&margin), sizeof(uint64_t));
     // 写file_name
@@ -486,7 +488,7 @@ bool FilePathManager::update_system_file_name(
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
         return false;
     }
-    file->seekp(16);
+    file->seekp(24);
     auto length = static_cast<uint16_t>(file_name.length());
 
     // 写file_name
@@ -513,7 +515,7 @@ bool FilePathManager::update_system_file_margin(
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
         return false;
     }
-    file->seekp(8);
+    file->seekp(16);
     file->write(reinterpret_cast<const char*>(&margin), sizeof(uint64_t));
     file->flush();
 
@@ -524,7 +526,7 @@ bool FilePathManager::update_system_file_margin(
 /**
  * 修改系统文件中待写入文件指针偏移量
  */
-bool FilePathManager::update_system_file_offset(
+bool FilePathManager::update_system_file_head_offset(
         const string & db_name,
         const string & tb_name,
         int64_t offset)
@@ -537,6 +539,26 @@ bool FilePathManager::update_system_file_offset(
         return false;
     }
     file->seekp(std::ios::beg);
+    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
+    file->flush();
+
+    m_io_file.release_file_stream(file_path);
+    return true;
+}
+
+bool FilePathManager::update_system_file_tail_offset(
+        const string & db_name,
+        const string & tb_name,
+        int64_t offset)
+{
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    auto file = m_io_file.get_file_stream(file_path);
+    if (!file->is_open())
+    {
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        return false;
+    }
+    file->seekp(8);
     file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
     file->flush();
 
@@ -557,9 +579,10 @@ bool FilePathManager::sys_show_file(
     }
     file->seekg(std::ios::beg);
 
-    int64_t offset;
+    int64_t head_offset, tail_offset;
     uint64_t margin;
-    file->read(reinterpret_cast<char*>(&offset), sizeof(offset));
+    file->read(reinterpret_cast<char*>(&head_offset), sizeof(head_offset));
+    file->read(reinterpret_cast<char*>(&tail_offset), sizeof(tail_offset));
     file->read(reinterpret_cast<char*>(&margin), sizeof(margin));
     int16_t length;
     file->read(reinterpret_cast<char*>(&length), sizeof(length));
@@ -570,7 +593,8 @@ bool FilePathManager::sys_show_file(
         file_name[length] = '\0';
     }
     m_io_file.release_file_stream(file_path);
-    std::cout << "table:" << tb_name << ", filename:" << file_name.data() << ", margin:" << margin << ", offset:" << offset << std::endl;
+    std::cout << "table:" << tb_name << ", filename:" << file_name.data()
+        << ", margin:" << margin << ", head_offset:" << head_offset << ", tail_offset:" << tail_offset << "\n";
     return true;
 }
 
@@ -589,6 +613,7 @@ bool FilePathManager::sys_clear_file(
     uint64_t margin = 0;
     uint16_t length = 0;
     file->seekp(std::ios::beg);
+    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
     file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
     // 写margin
     file->write(reinterpret_cast<const char*>(&margin), sizeof(uint64_t));

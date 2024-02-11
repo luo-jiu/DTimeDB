@@ -212,8 +212,8 @@ bool TSM::read_index_meta_from_file(
     file->read(buffer, key_size);
     buffer[key_size] = '\0';
 
-    IndexBlockMeta::Type type;
-    file->read(reinterpret_cast<char*>(&type), sizeof(IndexBlockMeta::Type));
+    DataBlock::Type type;
+    file->read(reinterpret_cast<char*>(&type), sizeof(DataBlock::Type));
 
     uint16_t count;
     file->read(reinterpret_cast<char*>(&count), sizeof(uint16_t));
@@ -285,27 +285,25 @@ std::shared_ptr<IndexEntry> TSM::create_index_entry(
  * 创建IndexBlockMeta
  */
 std::shared_ptr<IndexBlockMeta> TSM::create_index_meta(
-        IndexBlockMeta::Type type,
-        const string & measurement,
-        const string & field)
+        DataBlock::Type type,
+        const string & meta_key)
 {
-    string series_key = measurement + field;
-    auto length = static_cast<uint16_t>(series_key.length());
+    auto length = static_cast<uint16_t>(meta_key.length());
 
     switch (type) {
-        case IndexBlockMeta::DATA_INTEGER:
+        case DataBlock::DATA_INTEGER:
         {
-            std::shared_ptr<IndexBlockMeta> e(new IndexBlockMeta(length, series_key, IndexBlockMeta::DATA_INTEGER));
+            std::shared_ptr<IndexBlockMeta> e(new IndexBlockMeta(length, meta_key, DataBlock::DATA_INTEGER));
             return e;
         }
-        case IndexBlockMeta::DATA_STRING:
+        case DataBlock::DATA_STRING:
         {
-            std::shared_ptr<IndexBlockMeta> e(new IndexBlockMeta(length, series_key, IndexBlockMeta::DATA_STRING));
+            std::shared_ptr<IndexBlockMeta> e(new IndexBlockMeta(length, meta_key, DataBlock::DATA_STRING));
             return e;
         }
-        case IndexBlockMeta::DATA_FLOAT:
+        case DataBlock::DATA_FLOAT:
         {
-            std::shared_ptr<IndexBlockMeta> e(new IndexBlockMeta(length, series_key, IndexBlockMeta::DATA_FLOAT));
+            std::shared_ptr<IndexBlockMeta> e(new IndexBlockMeta(length, meta_key, DataBlock::DATA_FLOAT));
             return e;
         }
         default:

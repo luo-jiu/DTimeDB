@@ -34,7 +34,7 @@ namespace dt::tsm
         std::shared_ptr<IndexEntry> create_index_entry(high_resolution_clock::time_point max_time, high_resolution_clock::time_point min_time, int64_t offset, int32_t size);
 
         // 生成IndexBlockMeta
-        std::shared_ptr<IndexBlockMeta> create_index_meta(IndexBlockMeta::Type type, const string & measurement, const string & field);
+        std::shared_ptr<IndexBlockMeta> create_index_meta(DataBlock::Type type, const string & meta_key);
 
         // 生成完整的TSM File
         bool create_tsm(const Header & header, const Footer & footer, const string & file_path);

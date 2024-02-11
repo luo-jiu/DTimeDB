@@ -164,7 +164,7 @@ bool Field::skip_need_flush_data_block()
 bool Field::index_need_flush_disk()
 {
     std::lock_guard<std::mutex> lock(m_index_lock);
-    if (m_index_deque.size() >=10 || );
+//    if (m_index_deque.size() >=10 || );
 }
 
 //bool Field::get_data_status()

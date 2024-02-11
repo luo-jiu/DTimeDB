@@ -3,12 +3,14 @@ using namespace dt::tsm;
 
 void Write::init()
 {
-    auto tuple_obj =  m_file_path->load_system_info(m_db_name, m_tb_name);
-    m_head_offset = std::get<0>(tuple_obj);
-    m_margin = std::get<1>(tuple_obj);
-    m_curr_file_path = std::get<2>(tuple_obj);
-    if (m_margin == 0)
+    auto sys_info =  m_file_path->load_system_info(m_db_name, m_tb_name);
+    m_head_offset = sys_info.m_head_offset;
+    m_tail_offset = sys_info.m_tail_offset;
+    m_margin = sys_info.m_margin;
+    if (m_margin == 0)  // 没有容量把路径置位空自动生成新文件(其他数据都会刷新)
         m_curr_file_path = "";
+    else
+        m_curr_file_path = sys_info.m_curr_file_path;
 }
 
 void Write::set_file_path_manager(FilePathManager * file_path_manager)
@@ -237,7 +239,28 @@ void Write::queue_flush_disk()
     while(true)
     {
         // 最先处理任务队列里面需要写index entry 的块[监控到后给write 注册任务]
+        if (!task_queue_empty())  // 如果队列里面有任务
+        {
+            // 获取任务名
+            auto field_name = pop_task();
+            auto& index_deque = m_index_map[field_name];
+            if (index_deque.empty())  // 队列为空
+            {
+                std::cout << "字段："<< field_name << "field_name为空, 跳过本次刷盘\n";
+                continue;
+            }
 
+            // 获取series_key + field_key
+            string meta_key = m_field_map[field_name]->m_index_block_meta_key;
+            // 计算大小(index(28) * index_num + meta(12 + (series_key + field_key).size()))
+            auto size = 28 * index_deque.size() + 12 + meta_key.size();
+            // 生成meta
+            auto meta = m_tsm.create_index_meta(m_field_map[field_name]->m_type, meta_key);
+            // 偏移尾指针进行刷盘
+            m_tail_offset -= size;
+            // 给series index block 刷盘
+
+        }
 
 
         // 其次才是刷写data block
@@ -308,6 +331,7 @@ void Write::queue_flush_disk()
                 m_file_path->create_tsm_file_update_sys_info(m_db_name, m_tb_name, file_name, DATA_BLOCK_MARGIN);
                 m_margin = DATA_BLOCK_MARGIN;
                 m_head_offset = 5;  // 跳过开头
+                m_tail_offset = DATA_BLOCK_MARGIN;
             }
 
             // 到这里 肯定是有文件写，且大小也足够用的时候
@@ -335,7 +359,7 @@ void Write::queue_flush_disk()
         }
 
         m_file_path->update_system_file_margin(m_db_name, m_tb_name, m_margin);
-        m_file_path->update_system_file_offset(m_db_name, m_tb_name, m_head_offset);
+        m_file_path->update_system_file_head_offset(m_db_name, m_tb_name, m_head_offset);
 
 //            if (m_first_write)  // 该文件第一次写入
 //            {
@@ -425,15 +449,15 @@ void Write::flush_entry_disk(string & field_name, bool is_remove)
     std::shared_ptr<IndexBlockMeta> meta(new IndexBlockMeta());
     if (field->m_type == DataBlock::DATA_STRING)
     {
-        meta = m_tsm.create_index_meta(IndexBlockMeta::Type::DATA_STRING, m_tb_name, field->m_field_name);
+        meta = m_tsm.create_index_meta(DataBlock::Type::DATA_STRING, m_tb_name);
     }
     else if (field->m_type == DataBlock::DATA_INTEGER)
     {
-        meta = m_tsm.create_index_meta(IndexBlockMeta::Type::DATA_INTEGER, m_tb_name, field->m_field_name);
+        meta = m_tsm.create_index_meta(DataBlock::Type::DATA_INTEGER, m_tb_name);
     }
     else if (field->m_type == DataBlock::Type::DATA_FLOAT)
     {
-        meta = m_tsm.create_index_meta(IndexBlockMeta::Type::DATA_FLOAT, m_tb_name, field->m_field_name);
+        meta = m_tsm.create_index_meta(DataBlock::Type::DATA_FLOAT, m_tb_name);
     }
     meta->set_count(entry_size);  // 设置entry 数量
 
@@ -602,6 +626,41 @@ std::shared_ptr<IndexEntry> Write::pop_index_from_deque(
         return index_entry;
     }
     return {};
+}
+
+bool Write::task_queue_empty()
+{
+    std::lock_guard<std::mutex> lock(m_task_deque_mutex);
+    return m_index_task_queue.empty();
+}
+
+/**
+ * 向index entry 待刷写队列注册任务
+ */
+void Write::push_task(const string & field_name)
+{
+    std::lock_guard<std::mutex> lock(m_task_deque_mutex);
+    // 如果没有重复的任务注册
+    if (m_task_set.insert(field_name).second)
+    {
+        m_index_task_queue.push_back(field_name);
+    }
+}
+
+/**
+ * 获取index entry 任务队列消息
+ */
+string Write::pop_task()
+{
+    std::lock_guard<std::mutex> lock(m_task_deque_mutex);
+    if (m_index_task_queue.empty())
+    {
+        return "";
+    }
+    auto file_name = m_index_task_queue.front();
+    m_index_task_queue.pop_front();
+    m_index_set.erase(file_name);
+    return file_name;
 }
 
 bool Write::empty_field_list()

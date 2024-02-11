@@ -8,6 +8,7 @@
 #include <file_manager/file_path_manager.h>
 using namespace dt::file;
 
+#include <unordered_set>
 #include <list>
 #include <set>
 #include <condition_variable>
@@ -18,7 +19,7 @@ using std::string;
 #include <chrono>
 using namespace std::chrono;
 
-#define DATA_BLOCK_MARGIN 4 * 1024 * 1024
+#define DATA_BLOCK_MARGIN (4 * 1024 * 1024)
 
 namespace dt::tsm
 {
@@ -31,7 +32,7 @@ namespace dt::tsm
     {
     public:
         Write() = default;
-        Write(string & db_name, string & tb_name) : m_tb_name(tb_name), m_db_name(db_name), m_head_offset(8), m_tail_offset(4 * 1024 * 1024), m_margin(DATA_BLOCK_MARGIN), m_is_ready(0){}
+        Write(string & db_name, string & tb_name) : m_tb_name(tb_name), m_db_name(db_name), m_head_offset(8), m_tail_offset(DATA_BLOCK_MARGIN), m_margin(DATA_BLOCK_MARGIN), m_is_ready(0){}
 
         void init();
         void set_file_path_manager(FilePathManager * file_path_manager);
@@ -41,7 +42,6 @@ namespace dt::tsm
         void queue_flush_disk();
         void flush_all_sl();
 
-        // field_list (都是线程安全的)
         void push_back_field_list(const string & field);
         string pop_front_field_list();
         bool get_data_status();
@@ -49,6 +49,10 @@ namespace dt::tsm
         std::shared_ptr<DataBlock> pop_data_from_deque();
         void push_index_to_deque(const string & field_name, const std::shared_ptr<IndexEntry> & index_block);
         std::shared_ptr<IndexEntry> pop_index_from_deque(const string & field_name);
+        bool task_queue_empty();
+        void push_task(const string & field_name);
+        string pop_task();
+
 
         bool empty_field_list();
         int size_field_list();
@@ -71,7 +75,7 @@ namespace dt::tsm
         string                                                          m_curr_file_path;   // 当前需要刷写的文件
 
         std::mutex                                                      m_write_mutex;
-        std::mutex                                                      m_thread_mutex;
+        std::mutex                                                      m_task_deque_mutex;
         std::mutex                                                      m_data_lock;        // 保证m_data_deque 的线程安全
         std::mutex                                                      m_index_lock;       // 保证m_index_deque 的线程安全
         std::mutex                                                      m_field_list_mutex;
@@ -88,6 +92,8 @@ namespace dt::tsm
 
         std::deque<std::shared_ptr<DataBlock>>                          m_data_deque;       // 存储所有字段的 data block
         std::map<string, std::deque<std::shared_ptr<IndexEntry>>>       m_index_map;        // 存储所有字段的 index entry
+        std::unordered_set<string>                                      m_task_set;
+        std::list<string>                                               m_index_task_queue; // 使用list 配合set实现去重顺序任务注册
     };
 }
 #endif //DTIMEDB_WRITE_H

@@ -216,41 +216,78 @@ std::list<string> Controller::scan_full_table(
 }
 
 bool Controller::sys_show_file(
-        const string & db_name,
-        const string & tb_name)
+        string & db_name,
+        string & tb_name)
 {
-    m_file.sys_show_file(db_name, tb_name);
-    return true;
+    // 先看文件管理器里面有没有
+    if (m_file.exists_table(db_name, tb_name, true))
+    {
+        if (!exists_table(db_name, tb_name))
+        {
+            return false;
+        }
+        else  // 数据库和表都存在
+        {
+            return m_file.sys_show_file(db_name, tb_name);
+        }
+    }
+    return false;
 }
 
 bool Controller::sys_update_file(
-        const string & db_name,
-        const string & tb_name,
+        string & db_name,
+        string & tb_name,
         const string & where)
 {
-    size_t pos = where.find('=');
-    string key, value;
-    if (pos != std::string::npos) {
-        key = where.substr(0, pos);
-        value = where.substr(pos + 1);
-    }
-    if (key == "offset")
+    // 先看文件管理器里面有没有
+    if (m_file.exists_table(db_name, tb_name, true))
     {
-        return m_file.update_system_file_offset(db_name, tb_name, std::stoi(value));
-    }
-    else if (key == "margin")
-    {
-        return m_file.update_system_file_margin(db_name, tb_name, std::stoi(value));
+        if (!exists_table(db_name, tb_name))
+        {
+            return false;
+        }
+        else
+        {
+            size_t pos = where.find('=');
+            string key, value;
+            if (pos != std::string::npos) {
+                key = where.substr(0, pos);
+                value = where.substr(pos + 1);
+            }
+            if (key == "head_offset")
+            {
+                return m_file.update_system_file_head_offset(db_name, tb_name, std::stoi(value));
+            }
+            if (key == "tail_offset")
+            {
+                return m_file.update_system_file_tail_offset(db_name, db_name, std::stoi(value));
+            }
+            else if (key == "margin")
+            {
+                return m_file.update_system_file_margin(db_name, tb_name, std::stoi(value));
+            }
+        }
     }
     return false;
 }
 
 bool Controller::sys_clear_file(
-        const string & db_name,
-        const string & tb_name)
+        string & db_name,
+        string & tb_name)
 {
-    m_file.sys_clear_file(db_name, tb_name);
-    return true;
+    // 先看文件管理器里面有没有
+    if (m_file.exists_table(db_name, tb_name, true))
+    {
+        if (!exists_table(db_name, tb_name))
+        {
+            return false;
+        }
+        else
+        {
+            return m_file.sys_clear_file(db_name, tb_name);
+        }
+    }
+    return false;
 }
 
 /**
