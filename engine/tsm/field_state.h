@@ -152,7 +152,14 @@ namespace dt::tsm
 
                 // 执行相关操作，例如更新字段的状态或刷新数据到磁盘
                 // ...
-                std::cout << "监控到跳表注册事件：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
+                if (!use_index_entry_map)
+                {
+                    std::cout << "监控到跳表注册事件(skip_list)：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
+                }
+                else
+                {
+                    std::cout << "监控到跳表注册事件(index_entry)：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
+                }
 
                 // 执行回调函数获取时间
                 if (m_skip_condition_callback && m_skip_condition_callback(db_name, tb_name, field_name))
@@ -163,7 +170,14 @@ namespace dt::tsm
                 }
                 else
                 {
-                    std::cout << "不满足刷盘条件\n";
+                    if (!use_index_entry_map)
+                    {
+                        std::cout << "不满足刷盘条件(skip_list)\n";
+                    }
+                    else
+                    {
+                        std::cout << "不满足刷盘条件(index_entry)\n";
+                    }
                 }
             }
         }

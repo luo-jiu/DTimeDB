@@ -35,7 +35,6 @@ namespace dt::tsm
 
         bool should_flush_data();
 
-//        bool get_data_status();
         bool get_index_status();
         int get_index_deque_size();
         SkipList<string> & get_skip_list();
@@ -45,7 +44,6 @@ namespace dt::tsm
         void set_mate_status(bool state);
 
         void push_data_to_deque(std::shared_ptr<DataBlock> data_block);
-//        std::shared_ptr<DataBlock> pop_data_from_deque();
         void push_index_to_deque(std::shared_ptr<IndexEntry> & index_block);
         std::shared_ptr<IndexEntry> pop_index_from_deque();
 
@@ -57,7 +55,6 @@ namespace dt::tsm
         string                                      m_field_name;           // 字段名
         string                                      m_index_block_meta_key; // series_key + field
         DataBlock::Type                             m_type;                 // 类型
-        high_resolution_clock::time_point           m_index_last_time;      // 索引刷盘计时器
 
     private:
         DataBlockCallback                           m_data_block_callback;  // 存储回调函数

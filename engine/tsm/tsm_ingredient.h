@@ -181,7 +181,7 @@ namespace dt::tsm
     private:
         uint16_t                    m_key_size;
         string                      m_key;  // seriesKey + fieldKey
-        DataBlock::Type                        m_type;
+        DataBlock::Type             m_type;
         uint16_t                    m_count;  // entry count
     };
 }

@@ -66,8 +66,7 @@ namespace dt::token
             TOKEN_TSM,             // tsm
             TOKEN_CLT,             // clt
 
-            TOKEN_SYSTEM,  // system command
-
+            TOKEN_SYSTEM,          // system command
         };
 
         Token();

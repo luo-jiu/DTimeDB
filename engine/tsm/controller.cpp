@@ -53,7 +53,7 @@ bool Controller::create_table(
         string & db_name)
 {
     // 先判断表是否已经存在
-    if (m_file.exists_table(tb_name, db_name, false))
+    if (m_file.exists_table(db_name, tb_name, false))
     {
         // 表已经存在
         std::cout << tb_name << " exists" << std::endl;
@@ -222,14 +222,7 @@ bool Controller::sys_show_file(
     // 先看文件管理器里面有没有
     if (m_file.exists_table(db_name, tb_name, true))
     {
-        if (!exists_table(db_name, tb_name))
-        {
-            return false;
-        }
-        else  // 数据库和表都存在
-        {
-            return m_file.sys_show_file(db_name, tb_name);
-        }
+        return m_file.sys_show_file(db_name, tb_name);
     }
     return false;
 }
@@ -242,30 +235,23 @@ bool Controller::sys_update_file(
     // 先看文件管理器里面有没有
     if (m_file.exists_table(db_name, tb_name, true))
     {
-        if (!exists_table(db_name, tb_name))
-        {
-            return false;
+        size_t pos = where.find('=');
+        string key, value;
+        if (pos != std::string::npos) {
+            key = where.substr(0, pos);
+            value = where.substr(pos + 1);
         }
-        else
+        if (key == "head_offset")
         {
-            size_t pos = where.find('=');
-            string key, value;
-            if (pos != std::string::npos) {
-                key = where.substr(0, pos);
-                value = where.substr(pos + 1);
-            }
-            if (key == "head_offset")
-            {
-                return m_file.update_system_file_head_offset(db_name, tb_name, std::stoi(value));
-            }
-            if (key == "tail_offset")
-            {
-                return m_file.update_system_file_tail_offset(db_name, db_name, std::stoi(value));
-            }
-            else if (key == "margin")
-            {
-                return m_file.update_system_file_margin(db_name, tb_name, std::stoi(value));
-            }
+            return m_file.update_system_file_head_offset(db_name, tb_name, std::stoi(value));
+        }
+        if (key == "tail_offset")
+        {
+            return m_file.update_system_file_tail_offset(db_name, tb_name, std::stoi(value));
+        }
+        else if (key == "margin")
+        {
+            return m_file.update_system_file_margin(db_name, tb_name, std::stoi(value));
         }
     }
     return false;
@@ -278,14 +264,7 @@ bool Controller::sys_clear_file(
     // 先看文件管理器里面有没有
     if (m_file.exists_table(db_name, tb_name, true))
     {
-        if (!exists_table(db_name, tb_name))
-        {
-            return false;
-        }
-        else
-        {
-            return m_file.sys_clear_file(db_name, tb_name);
-        }
+        return m_file.sys_clear_file(db_name, tb_name);
     }
     return false;
 }
@@ -392,10 +371,18 @@ bool Controller::is_ready_index_write(
             if (writer)
             {
                 std::cout << "---判断是否需要将index entry刷写到磁盘\n";
-
+                if (writer->should_flush_index(field_name))
+                {
+                    // 需要刷盘, 注册事件队列然后触发刷盘函数即可
+                    writer->push_task(field_name);
+                    // 线程池触发index block 刷盘
+                    m_consumer_thread_pool.enqueue(&Controller::disk_write_thread, this, db_name, tb_name);
+                    return true;
+                }
             }
         }
     }
+    return false;
 }
 
 /**

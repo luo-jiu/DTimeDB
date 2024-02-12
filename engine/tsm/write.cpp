@@ -238,33 +238,43 @@ void Write::queue_flush_disk()
 {
     while(true)
     {
-        // 最先处理任务队列里面需要写index entry 的块[监控到后给write 注册任务]
-        if (!task_queue_empty())  // 如果队列里面有任务
+        /**
+         * [模块一]
+         *
+         * 最先处理任务队列里面需要写index entry 的块
+         * 如果队列里面有任务[有任务的的前提条件是 (数量达标)|| (时间达到)]
+         *
+         * 只有[监控线程] 和 [模块二] 发现了满足条件会写入任务队列
+         */
+        if (!task_queue_empty())
         {
             // 获取任务名
             auto field_name = pop_task();
-            auto& index_deque = m_index_map[field_name];
-            if (index_deque.empty())  // 队列为空
+            auto& index_info = m_index_map[field_name];
+            if (index_info.m_index_deque.empty())  // 队列为空
             {
                 std::cout << "字段："<< field_name << "field_name为空, 跳过本次刷盘\n";
                 continue;
             }
-
             // 获取series_key + field_key
             string meta_key = m_field_map[field_name]->m_index_block_meta_key;
             // 计算大小(index(28) * index_num + meta(12 + (series_key + field_key).size()))
-            auto size = 28 * index_deque.size() + 12 + meta_key.size();
+            auto size = 28 * index_info.m_index_deque.size() + 12 + meta_key.size();
             // 生成meta
             auto meta = m_tsm.create_index_meta(m_field_map[field_name]->m_type, meta_key);
             // 偏移尾指针进行刷盘
             m_tail_offset -= size;
             // 给series index block 刷盘
-
+            m_tsm.write_series_index_block_to_file(index_info.m_index_deque, meta, m_curr_file_path, m_tail_offset);
+            m_index_map.erase(field_name);
         }
 
-
-        // 其次才是刷写data block
-        // 判断队列中是否有data block
+        /**
+         * [模块二]
+         *
+         * 刷写data block, 判断队列中是否有data block
+         * 生成对应的index entry,注册监控事件，判断是否需要刷盘
+         */
         if (m_data_deque.empty())
         {
             // 队列为空结束刷盘
@@ -296,11 +306,12 @@ void Write::queue_flush_disk()
             // 先判断有没有能刷写的文件
             if (!m_curr_file_path.empty())
             {
-                if (m_margin < predict_size)  // 文件大小不够了
+                // 文件大小不够[至少要预留series index block 和data block 大小的空间]
+                if (m_margin < (predict_size + 40 + field->m_index_block_meta_key.size()))
                 {
                     need_create_file = true;  // 需要创建新文件
+                    // 开始刷写所有的series index block 和更新footer
 
-                    // 开始刷写所有的series index block 和footer
                 }
             }
 
@@ -310,9 +321,11 @@ void Write::queue_flush_disk()
                 m_curr_file_path = m_file_path->create_file(m_tb_name, m_db_name, "tsm");
                 std::cout << "创建文件:m_curr_file_path:" << m_curr_file_path << "\n";
 
-                // 第一次创建需要写入头部信息
+                // 第一次创建需要写入头部信息 和尾部信息
                 Header header(1, 1);
                 m_tsm.write_header_to_file(header, m_curr_file_path);
+                Footer footer(0);
+                m_tsm.write_footer_to_file(footer, m_curr_file_path, DATA_BLOCK_MARGIN);
 
                 // 拿到新创建的文件名
                 string file_path = m_curr_file_path;
@@ -330,8 +343,8 @@ void Write::queue_flush_disk()
                 // 初始化各项信息
                 m_file_path->create_tsm_file_update_sys_info(m_db_name, m_tb_name, file_name, DATA_BLOCK_MARGIN);
                 m_margin = DATA_BLOCK_MARGIN;
-                m_head_offset = 5;  // 跳过开头
-                m_tail_offset = DATA_BLOCK_MARGIN;
+                m_head_offset = 5;  // 跳过header
+                m_tail_offset = DATA_BLOCK_MARGIN - 8;  // 跳过footer
             }
 
             // 到这里 肯定是有文件写，且大小也足够用的时候
@@ -349,12 +362,21 @@ void Write::queue_flush_disk()
             field->notify(m_db_name, m_tb_name, field_name, true, true);  // 注册监控事件监测index entry
             m_margin -= 28;  // 减去entry 大小
 
-            // 判断是否生成过mate,生成过则跳过
+            // 判断是否计算过meta,生成过则跳过
             if (!field->get_mate_status())
             {
-                // 没生成过
-                m_margin -= (12 + field->m_index_block_meta_key.size());  // 减去meat 大小(目的是预留写入位置)
+                // 没生成过 || 已经刷到磁盘了
+                m_margin -= (12 + field->m_index_block_meta_key.size());  // 减去meta 大小(目的是预留写入位置)
                 field->set_mate_status(true);
+                m_index_map[field_name].m_last_time = high_resolution_clock::now();  // 重置计时器
+            }
+
+            // 判断是否满足刷盘条件
+            if (should_flush_index(field_name))
+            {
+                // 给任务队列添加任务循环到 [模块1]进行series index block 刷盘处理
+                push_task(field_name);
+                field->notify(m_db_name, m_tb_name, field_name, false, true);  // 注销监控事件注册
             }
         }
 
@@ -431,69 +453,65 @@ void Write::queue_flush_disk()
     }
 }
 
-void Write::flush_entry_disk(string & field_name, bool is_remove)
-{
-    auto field = m_field_map[field_name];  // 通过映射拿到对应field
+//void Write::flush_entry_disk(string & field_name, bool is_remove)
+//{
+//    auto field = m_field_map[field_name];  // 通过映射拿到对应field
+//
+//    // 开始meta 和entry 刷盘
+//    std::cout << "开始刷写meta 和entry" << std::endl;
+//
+//    /**
+//     * 生成meta 刷盘
+//     * 然后entry 刷写到磁盘(拿取的时候就清空了)
+//     *
+//     * 此时不会有新的meta 和 entry生成
+//     * 所以可以直接获取entry 数量
+//     */
+//    int entry_size = field->get_index_deque_size();  // 获取entry 数量[还是会小于阈值]
+//    std::shared_ptr<IndexBlockMeta> meta(new IndexBlockMeta());
+//    if (field->m_type == DataBlock::DATA_STRING)
+//    {
+//        meta = m_tsm.create_index_meta(DataBlock::Type::DATA_STRING, m_tb_name);
+//    }
+//    else if (field->m_type == DataBlock::DATA_INTEGER)
+//    {
+//        meta = m_tsm.create_index_meta(DataBlock::Type::DATA_INTEGER, m_tb_name);
+//    }
+//    else if (field->m_type == DataBlock::Type::DATA_FLOAT)
+//    {
+//        meta = m_tsm.create_index_meta(DataBlock::Type::DATA_FLOAT, m_tb_name);
+//    }
+//    meta->set_count(entry_size);  // 设置entry 数量
+//
+//    int index_size = (12 + m_tb_name.length() + field->m_field_name.length()) + entry_size * 28;
+//    m_tail_offset -= index_size;  // 前移到指定位置开始写入
+//
+//    m_tsm.write_index_meta_to_file(meta, "data.tsm", m_tail_offset);  // 写入meta
+//    m_tail_offset += (12 + m_tb_name.length() + field->m_field_name.length());  // 后移指针
+//
+//    // 如果有 entry[数量只会低于_field->get_index_deque_size() > x] x这个阈值
+//    while (!field->get_index_status())
+//    {
+//        auto entry = field->pop_index_from_deque();
+//        m_tsm.write_index_entry_to_file(entry, "data.tsm", m_tail_offset);
+//        m_tail_offset += 28;  // 后移指针
+//    }
+//    m_tail_offset -= index_size;  // 写入后指针发生变化还需要重新移位
+//
+//    // 写了meta 后就需要更新footer 的索引
+//    Footer _footer(m_tail_offset);
+//    m_tsm.write_footer_to_file(_footer, "data.tsm");
+//
+//    if (is_remove)
+//    {
+//        // 写完后将m_index_set 中的字段直接移除，表示目前这个字段没有entry 待刷入了
+//        m_index_set.erase(field_name);
+//    }
+//
+//    // 重置刷入时间
+//    field->m_index_last_time = high_resolution_clock::now();
+//}
 
-    // 开始meta 和entry 刷盘
-    std::cout << "开始刷写meta 和entry" << std::endl;
-
-    /**
-     * 生成meta 刷盘
-     * 然后entry 刷写到磁盘(拿取的时候就清空了)
-     *
-     * 此时不会有新的meta 和 entry生成
-     * 所以可以直接获取entry 数量
-     */
-    int entry_size = field->get_index_deque_size();  // 获取entry 数量[还是会小于阈值]
-    std::shared_ptr<IndexBlockMeta> meta(new IndexBlockMeta());
-    if (field->m_type == DataBlock::DATA_STRING)
-    {
-        meta = m_tsm.create_index_meta(DataBlock::Type::DATA_STRING, m_tb_name);
-    }
-    else if (field->m_type == DataBlock::DATA_INTEGER)
-    {
-        meta = m_tsm.create_index_meta(DataBlock::Type::DATA_INTEGER, m_tb_name);
-    }
-    else if (field->m_type == DataBlock::Type::DATA_FLOAT)
-    {
-        meta = m_tsm.create_index_meta(DataBlock::Type::DATA_FLOAT, m_tb_name);
-    }
-    meta->set_count(entry_size);  // 设置entry 数量
-
-    int index_size = (12 + m_tb_name.length() + field->m_field_name.length()) + entry_size * 28;
-    m_tail_offset -= index_size;  // 前移到指定位置开始写入
-
-    m_tsm.write_index_meta_to_file(meta, "data.tsm", m_tail_offset);  // 写入meta
-    m_tail_offset += (12 + m_tb_name.length() + field->m_field_name.length());  // 后移指针
-
-    // 如果有 entry[数量只会低于_field->get_index_deque_size() > x] x这个阈值
-    while (!field->get_index_status())
-    {
-        auto entry = field->pop_index_from_deque();
-        m_tsm.write_index_entry_to_file(entry, "data.tsm", m_tail_offset);
-        m_tail_offset += 28;  // 后移指针
-    }
-    m_tail_offset -= index_size;  // 写入后指针发生变化还需要重新移位
-
-    // 写了meta 后就需要更新footer 的索引
-    Footer _footer(m_tail_offset);
-    m_tsm.write_footer_to_file(_footer, "data.tsm");
-
-    if (is_remove)
-    {
-        // 写完后将m_index_set 中的字段直接移除，表示目前这个字段没有entry 待刷入了
-        m_index_set.erase(field_name);
-    }
-
-    // 重置刷入时间
-    field->m_index_last_time = high_resolution_clock::now();
-}
-
-void Write::flush_all_sl()
-{
-
-}
 
 std::shared_ptr<Field> Write::get_field(
         string & field_name,
@@ -554,6 +572,23 @@ bool Write::fields_empty()
     return m_field_map.empty();
 }
 
+/**
+ * index entry 是否满足刷盘
+ */
+bool Write::should_flush_index(
+        const string & field_name)
+{
+    auto index_it = m_index_map.find(field_name);
+    if (index_it != m_index_map.end())
+    {
+        auto current_time = system_clock::now();
+        return index_it->second.m_index_deque.size() >= 10 ||
+            (current_time - index_it->second.m_last_time >= seconds(5) &&
+                !index_it->second.m_index_deque.empty());
+    }
+    return false;
+}
+
 void Write::push_back_field_list(const string & field)
 {
     std::lock_guard<std::mutex> lock(m_field_list_mutex);
@@ -611,7 +646,7 @@ void Write::push_index_to_deque(
         const std::shared_ptr<IndexEntry> & index_block)
 {
     std::lock_guard<std::mutex> lock(m_index_lock);
-    m_index_map[field_name].push_back(index_block);
+    m_index_map[field_name].m_index_deque.push_back(index_block);
 }
 
 std::shared_ptr<IndexEntry> Write::pop_index_from_deque(
@@ -621,11 +656,18 @@ std::shared_ptr<IndexEntry> Write::pop_index_from_deque(
     auto index_it = m_index_map.find(field_name);
     if (index_it != m_index_map.end())
     {
-        std::shared_ptr<IndexEntry> index_entry = index_it->second.front();
-        index_it->second.pop_front();
+        std::shared_ptr<IndexEntry> index_entry = index_it->second.m_index_deque.front();
+        index_it->second.m_index_deque.pop_front();
         return index_entry;
     }
     return {};
+}
+
+size_t Write::get_index_deque_size(
+        const string & field_name)
+{
+    std::lock_guard<std::mutex> lock(m_index_lock);
+    return m_index_map[field_name].m_index_deque.size();
 }
 
 bool Write::task_queue_empty()

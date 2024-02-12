@@ -1,8 +1,10 @@
 #ifndef DTIMEDB_TSM_H
 #define DTIMEDB_TSM_H
 
+
 #include <snappy.h>
 #include <engine/tsm/tsm_ingredient.h>
+#include <deque>
 
 namespace dt::tsm
 {
@@ -23,12 +25,15 @@ namespace dt::tsm
         bool read_index_entry_from_file(std::shared_ptr<IndexEntry> & index_entry, const string & file_path, int64_t offset);
 
         // 写入读取index meta
-        bool write_index_meta_to_file(const std::shared_ptr<IndexBlockMeta> & index_meta, const string & file_path, int64_t offset);
+        int64_t write_index_meta_to_file(const std::shared_ptr<IndexBlockMeta> & index_meta, const string & file_path, int64_t offset);
         bool read_index_meta_from_file(std::shared_ptr<IndexBlockMeta> & index_meta, const string & file_path, int64_t offset);
 
         // 写入读取footer
-        bool write_footer_to_file(const Footer & footer, const string & file_path);
+        bool write_footer_to_file(const Footer & footer, const string & file_path, int64_t tail_offset);
         bool read_footer_from_file(Footer & footer, const string & file_file);
+
+        // 写入Series index block
+        bool write_series_index_block_to_file(std::deque<std::shared_ptr<IndexEntry>> & index_entry, std::shared_ptr<IndexBlockMeta> & meta, const string & file_path, int64_t tail_offset);
 
         // 生成IndexEntry
         std::shared_ptr<IndexEntry> create_index_entry(high_resolution_clock::time_point max_time, high_resolution_clock::time_point min_time, int64_t offset, int32_t size);
@@ -53,7 +58,7 @@ namespace dt::tsm
         // snappy压缩 &解压
         string compress_data(const string & serialized_data);
         string decompress_data(const string & compressed_data);
-        // 计算timestamp & val 需要对空间
+        // 计算timestamp &val 需要对空间
         string calculate_timestamp_size(const std::list<high_resolution_clock::time_point> & timestamps);
         string calculate_val_size(const std::list<string> & strings);
 

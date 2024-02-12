@@ -38,10 +38,9 @@ namespace dt::tsm
         void set_file_path_manager(FilePathManager * file_path_manager);
 
         void write(high_resolution_clock::time_point timestamp, string & series_key, string & data, DataBlock::Type type, string & field_name, string & db_name, string & tb_name, FieldState & tb_state, TableState & queue_state);
-        void flush_disk();
         void queue_flush_disk();
-        void flush_all_sl();
 
+        bool should_flush_index(const string & field_name);
         void push_back_field_list(const string & field);
         string pop_front_field_list();
         bool get_data_status();
@@ -49,10 +48,10 @@ namespace dt::tsm
         std::shared_ptr<DataBlock> pop_data_from_deque();
         void push_index_to_deque(const string & field_name, const std::shared_ptr<IndexEntry> & index_block);
         std::shared_ptr<IndexEntry> pop_index_from_deque(const string & field_name);
+        size_t get_index_deque_size(const string & field_name);
         bool task_queue_empty();
         void push_task(const string & field_name);
         string pop_task();
-
 
         bool empty_field_list();
         int size_field_list();
@@ -77,7 +76,7 @@ namespace dt::tsm
         std::mutex                                                      m_write_mutex;
         std::mutex                                                      m_task_deque_mutex;
         std::mutex                                                      m_data_lock;        // 保证m_data_deque 的线程安全
-        std::mutex                                                      m_index_lock;       // 保证m_index_deque 的线程安全
+        std::mutex                                                      m_index_lock;       // 保证m_index_deque 的线程安全, 这个锁大概是无用的后期确定后删除
         std::mutex                                                      m_field_list_mutex;
         mutable std::shared_mutex                                       m_filed_map_mutex;  // 针对m_field_map 安全的读写所
         std::condition_variable                                         m_cv;
@@ -91,7 +90,13 @@ namespace dt::tsm
         std::unordered_map<string, std::shared_ptr<Field>>              m_field_map;
 
         std::deque<std::shared_ptr<DataBlock>>                          m_data_deque;       // 存储所有字段的 data block
-        std::map<string, std::deque<std::shared_ptr<IndexEntry>>>       m_index_map;        // 存储所有字段的 index entry
+
+        struct IndexEntryInfo
+        {
+            high_resolution_clock::time_point                           m_last_time;        // 索引计时器
+            std::deque<std::shared_ptr<IndexEntry>>                     m_index_deque;
+        };
+        std::map<string, IndexEntryInfo>                                m_index_map;        // 存储所有字段的 index entry
         std::unordered_set<string>                                      m_task_set;
         std::list<string>                                               m_index_task_queue; // 使用list 配合set实现去重顺序任务注册
     };

@@ -75,7 +75,7 @@ bool FilePathManager::create_table(
         return false;
     }
     close(fd);
-    
+    sys_clear_file(db_name, tb_name);
     db_it->second[tb_name] = TableInfo{std::list<string>()};
     return true;
 }

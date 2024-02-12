@@ -13,7 +13,7 @@ bool TSM::write_header_to_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm/write.cpp" << std::endl;
         return false;
     }
     file->write(reinterpret_cast<const char*>(&header), sizeof(header));
@@ -33,7 +33,7 @@ bool TSM::read_header_from_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm/write.cpp" << std::endl;
         return false;
     }
     file->seekg(0);  // 移动至开头
@@ -53,7 +53,7 @@ int64_t TSM::write_data_to_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/tsm_.h" << std::endl;
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm/tsm_.h" << std::endl;
         return -1;
     }
     file->seekp(offset);  // 移动到指定位置
@@ -91,7 +91,7 @@ bool TSM::read_data_from_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/tsm_.h" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm/tsm_.h" << std::endl;
         return false;
     }
     file->seekg(offset);
@@ -129,7 +129,7 @@ int64_t TSM::write_index_entry_to_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/tsm_.h" << std::endl;
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm/tsm_.h" << std::endl;
         return false;
     }
 
@@ -158,14 +158,14 @@ bool TSM::read_index_entry_from_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/tsm_.h" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm/tsm_.h" << std::endl;
         return false;
     }
     file->seekg(offset);
     m_file_manager.release_file_stream(file_path);
 }
 
-bool TSM::write_index_meta_to_file(
+int64_t TSM::write_index_meta_to_file(
         const std::shared_ptr<IndexBlockMeta> & index_meta,
         const string & file_path,
         int64_t offset)
@@ -173,12 +173,12 @@ bool TSM::write_index_meta_to_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/tsm_.h" << std::endl;
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm/tsm_.h" << std::endl;
         return false;
     }
     file->seekp(offset);
 
-    size_t size = 12;
+    int64_t size = 12;
     uint16_t length = index_meta->get_key_length();
     file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
     file->write(index_meta->get_key().c_str(), length);  // 写字符串
@@ -200,7 +200,7 @@ bool TSM::read_index_meta_from_file(
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/tsm_.h" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm/tsm_.h" << std::endl;
         return false;
     }
     file->seekg(offset);
@@ -232,17 +232,17 @@ bool TSM::read_index_meta_from_file(
  */
 bool TSM::write_footer_to_file(
         const Footer & footer,
-        const string & file_path)
+        const string & file_path,
+        int64_t tail_offset)
 {
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm/write.cpp" << std::endl;
         return false;
     }
 
-    file->seekp(8 + 4 * 1024 * 1024);  // 跳转到文件末尾
-
+    file->seekp(tail_offset);  // 跳转到文件末尾
     file->write(reinterpret_cast<const char*>(&footer), sizeof(footer));
 
     file->flush();
@@ -258,13 +258,36 @@ bool TSM::read_footer_from_file(Footer & footer, const string & file_path)
     auto file = m_file_manager.get_file_stream(file_path);
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for reading - m_from engine/tsm/write.cpp" << std::endl;
         return false;
     }
     file->seekg(-8, std::ios::end);  // 跳转到Footer 开头
     file->read(reinterpret_cast<char*>(&footer), sizeof(footer));
 
     m_file_manager.release_file_stream(file_path);
+    return true;
+}
+
+bool TSM::write_series_index_block_to_file(
+        std::deque<std::shared_ptr<IndexEntry>> & index_entry,
+        std::shared_ptr<IndexBlockMeta> & meta,
+        const string & file_path,
+        int64_t tail_offset)
+{
+    if (index_entry.empty() || meta == nullptr)
+    {
+        return false;
+    }
+    // 先写入meta
+    auto meta_size = write_index_meta_to_file(meta, file_path, tail_offset);
+    tail_offset += meta_size;
+
+    // 再写入entry
+    for (auto & entry : index_entry)
+    {
+        write_index_entry_to_file(entry, file_path, tail_offset);
+        tail_offset += 28;
+    }
     return true;
 }
 
