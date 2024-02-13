@@ -21,14 +21,14 @@ struct io_event{
 
 };
 //定时器，超时处理或任务调度等
-struct time_event{
-    time_event(time_call_back *_time_cb,void *data,uint64_t arg_ts,uint32_t arg_int = 0)
-    :time_cb(_time_cb),cb_data(data),ts(arg_ts),interval(arg_int)
+struct timer_event{
+    timer_event(time_call_back *_time_cb,void *data,uint64_t arg_ts,uint32_t arg_int = 0)
+    : time_cb(_time_cb), cb_data(data), timestamp(arg_ts), interval(arg_int)
     {}
     time_call_back *time_cb;
     void *cb_data;
-    uint64_t ts;
+    uint64_t timestamp;
     uint32_t interval;
-    int time_fd;
+    int timer_id{};
 };
 #endif //DTIMEDB_EVENT_BASE_H
