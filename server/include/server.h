@@ -4,7 +4,7 @@
 #include "connection_pool/dtimedb.h"
 #include "server/include/event_loop.h"
 class Server{
-    Server(const char * ip,unsigned short port);
+    Server(event_loop* loop,const char * ip,unsigned short port);
     ~Server();
     void keep_alive(){_keepalive= true; }
     void do_accept();

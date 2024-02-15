@@ -29,9 +29,7 @@ private:
     int _time_count;
     // 记录下一个定时器的ID
     int _next_time_id;
-
     int _timer_fd;
-
     uint64_t _pioneer;
 };
 #endif //DTIMEDB_TIMER_QUEUE_H

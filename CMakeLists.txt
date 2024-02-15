@@ -13,11 +13,14 @@ file(GLOB_RECURSE SOURCES "token/*.cpp" "lexer/*.cpp" "json/*.cpp" "ast/*.cpp"
         "parser/*.cpp" "engine/tsm/*.cpp" "engine/circularList/*.cpp" "executor/*.cpp"
         "file_manager/*.cpp" "execution_plan/*.cpp" "evaluator/*.cpp" "thread_manager/*.cpp" "server/*.cpp")
 
-add_executable(ast ${SOURCES} ast.cpp)
+add_executable(ast ${SOURCES} ast.cpp
+        test/event_loop_test.cpp)
 add_executable(eval_repl ${SOURCES} eval_repl.cpp)
 add_executable(token ${SOURCES} token.cpp)
 add_executable(tsm ${SOURCES} tsm.cpp)
-add_executable(test ${SOURCES} test.cpp)
+add_executable(test ${SOURCES} test.cpp
+        test/timer_queue_test.cpp
+        test/event_loop_test.cpp)
 add_executable(server ${SOURCES} server.cpp)
 
 
