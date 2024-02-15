@@ -37,6 +37,9 @@ namespace dt::tsm
                 bool is_registered,
                 bool use_index_entry_map) override
         {
+            // 防止误注册index entry 事件[因为这两个共享一个field/notify 函数]
+            // 但是注册index entry,use_index_entry_map 肯定是true, 固然用这个判断是不是误注册
+            if (use_index_entry_map) return;
             // 更新状态逻辑
             if (is_registered)
             {

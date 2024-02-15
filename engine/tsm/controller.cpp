@@ -31,10 +31,10 @@ bool Controller::create_database(
 /**
  * 当要操作一个表的时候才会调用
  */
-void Controller::load_database(
+bool Controller::load_database(
         string & db_name)
 {
-    m_file.load_database(db_name);
+    return m_file.load_database(db_name);
 }
 
 void Controller::show_table(
@@ -195,6 +195,13 @@ bool Controller::get_range_data(
 
 }
 
+/**
+ * 实现数据的范围查询
+ * 也可以是单条数据
+ * @param tags 纬度值
+ * @param data
+ * @return
+ */
 bool Controller::get_range_data(
         std::vector<string> tags,
         std::vector<string> data)
@@ -279,6 +286,7 @@ void Controller::monitoring_thread()
     while(m_running.load())
     {
         m_field_state.iterate_map(false);
+        m_field_state.iterate_map(true);
         m_table_state.iterate_map();
         // 等待一段时间再次检查
         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -330,7 +338,6 @@ bool Controller::is_ready_disk_write(
             auto writer = tb_it->second.m_writer;
             if (writer)
             {
-                std::cout << "---判断是否需要刷块\n";
                 if (writer->skip_need_flush_data_block(field_name))
                 {
                     std::cout << "---满足刷块\n";
@@ -370,14 +377,19 @@ bool Controller::is_ready_index_write(
             auto writer = tb_it->second.m_writer;
             if (writer)
             {
-                std::cout << "---判断是否需要将index entry刷写到磁盘\n";
+                std::cout << "---判断是否需要将index entry 刷写到磁盘\n";
                 if (writer->should_flush_index(field_name))
                 {
+                    std::cout << "--监控线程触发写入index entry";
                     // 需要刷盘, 注册事件队列然后触发刷盘函数即可
                     writer->push_task(field_name);
                     // 线程池触发index block 刷盘
                     m_consumer_thread_pool.enqueue(&Controller::disk_write_thread, this, db_name, tb_name);
                     return true;
+                }
+                else
+                {
+                    std::cout << "---本轮不满足index entry 刷盘\n";
                 }
             }
         }

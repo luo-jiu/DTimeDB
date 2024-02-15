@@ -2,8 +2,6 @@
 #define DTIMEDB_OPERATOR_H
 
 #include <execution_plan/node.h>
-#include <file_manager/file_path_manager.h>
-using namespace dt::file;
 
 #include <chrono>
 using namespace std::chrono;
@@ -38,26 +36,7 @@ namespace dt::execution
         SysNode() : ExecutionPlanNode(OBJECT_SYSTEM) {}
 
         virtual string str() const { return ""; }
-        void execute(IEngine & engine) override
-        {
-            if (m_current_db.empty())
-            {
-                std::cout << "Database not selected, 'use' command" << std::endl;
-                return;
-            }
-            if (m_option == "show")
-            {
-                engine.sys_show_file(m_current_db, m_table_name);
-            }
-            else if (m_option == "update")
-            {
-                engine.sys_update_file(m_current_db, m_table_name, m_where);
-            }
-            else if (m_option == "clear")
-            {
-                engine.sys_clear_file(m_current_db, m_table_name);
-            }
-        }
+        void execute(IEngine & engine) override;
         std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
         void set_child(std::shared_ptr<ExecutionPlanNode> child) override { m_child = child; }
 
@@ -75,34 +54,8 @@ namespace dt::execution
     {
     public:
         virtual string str() const { return ""; }
-        void execute(IEngine & engine) override
-        {
-            bool res;
-            if (m_type == "database")
-            {
-                res = engine.create_database(m_name);
-            }
-            else if (m_type == "table")
-            {
-                // 表才区分引擎
-                if (m_engine == "clt")
-                {
-//                    engine.create_table();
-                }
-                else  // 默认tsm 引擎
-                {
-                    res = engine.create_table(m_name, m_current_db);
-                }
-            }
-            if (res)
-            {
-                std::cout << "create: " << m_type << ", m_series_key: " << m_name << std::endl;
-            }
-        }
-        std::shared_ptr<ExecutionPlanNode> get_child() const override
-        {
-            return m_child;
-        }
+        void execute(IEngine & engine) override;
+        std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
         void set_child(std::shared_ptr<ExecutionPlanNode> child) override {}
 
     public:
@@ -120,16 +73,9 @@ namespace dt::execution
     {
     public:
         ShowNode(): ExecutionPlanNode(OBJECT_SHOW) {}
+
         virtual string str() const { return ""; }
-        void execute(IEngine & engine) override
-        {
-            if (m_current_db.empty())
-            {
-                std::cout << "Database not selected, 'use' command" << std::endl;
-                return;
-            }
-            engine.show_table(m_current_db);
-        }
+        void execute(IEngine & engine) override;
         std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
         void set_child(std::shared_ptr<ExecutionPlanNode> child) { m_child = child; }
 
@@ -147,16 +93,8 @@ namespace dt::execution
         UseNode() : ExecutionPlanNode(OBJECT_USE) {}
 
         virtual string str() const { return ""; }
-        void execute(IEngine & engine) override
-        {
-            m_current_db = m_database;  // 上下文环境
-            engine.load_database(m_database);  // 加载对应数据库
-            std::cout << "use: " << m_database << "\n";
-        }
-        std::shared_ptr<ExecutionPlanNode> get_child() const override
-        {
-            return m_child;
-        }
+        void execute(IEngine & engine) override;
+        std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
         void set_child(std::shared_ptr<ExecutionPlanNode> child) override {}
 
     public:
@@ -181,18 +119,7 @@ namespace dt::execution
         ~ScanNode() {}
 
         virtual string str() const { return m_table_name; }
-
-        void execute(IEngine & engine) override
-        {
-            if (m_current_db.empty())
-            {
-                std::cout << "Database not selected, 'use' command" << std::endl;
-                return;
-            }
-            std::cout << "scan : " << m_table_name << std::endl;
-            engine.scan_full_table(m_current_db, m_table_name);
-        }
-
+        void execute(IEngine & engine) override;
         std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
         void set_child(std::shared_ptr<ExecutionPlanNode> child) { m_child = child; }
 
@@ -261,38 +188,7 @@ namespace dt::execution
         void add_field(string & fv) { m_fv.push_back(fv); }
 
         virtual string str() const {return ""; }
-        // 执行任务
-        void execute(IEngine & engine) override
-        {
-            // 先给时间戳转类型
-            long long nanoseconds_count = std::stoll(m_timestamp);
-            nanoseconds nanoseconds(nanoseconds_count);
-            high_resolution_clock::time_point timestamp(duration_cast<high_resolution_clock::duration>(nanoseconds));
-
-            // 对tags 进行排序
-            m_tags.sort();
-            string tags_str;
-            for (const auto& tag : m_tags)
-            {
-                tags_str += tag;
-            }
-
-            // 调用存储引擎接口的插入函数
-            for (string fv : m_fv)
-            {
-                size_t pos;
-                string field, value;
-                while ((pos = fv.find('=')) != std::string::npos) {
-                    field = fv.substr(0, pos);
-                    fv.erase(0, pos + 1);
-                }
-                value = fv;
-                engine.insert(timestamp, tags_str, value, IEngine::Type::DATA_STRING, field, m_table, m_current_db);
-            }
-
-            // 制作内存索引
-            engine.create_index(m_table, m_tags);
-        }
+        void execute(IEngine & engine) override;
         std::shared_ptr<ExecutionPlanNode> get_child() const override { return m_child; }
         void set_child(std::shared_ptr<ExecutionPlanNode> child) override { m_child = child; }
 

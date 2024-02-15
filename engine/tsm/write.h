@@ -19,7 +19,7 @@ using std::string;
 #include <chrono>
 using namespace std::chrono;
 
-#define DATA_BLOCK_MARGIN (4 * 1024 * 1024)
+#define DATA_BLOCK_MARGIN (1024)
 
 namespace dt::tsm
 {
@@ -74,6 +74,7 @@ namespace dt::tsm
         string                                                          m_curr_file_path;   // 当前需要刷写的文件
 
         std::mutex                                                      m_write_mutex;
+        std::mutex                                                      m_flush_disk_mutex;
         std::mutex                                                      m_task_deque_mutex;
         std::mutex                                                      m_data_lock;        // 保证m_data_deque 的线程安全
         std::mutex                                                      m_index_lock;       // 保证m_index_deque 的线程安全, 这个锁大概是无用的后期确定后删除

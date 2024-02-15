@@ -1,4 +1,4 @@
-#ifndef DTIMEDB_SHOW_H
+#ifndef DTIMEDB_SHOW_OPERATOR_H
 #define DTIMEDB_SHOW_H
 
 #include <ast/node.h>
@@ -25,4 +25,4 @@ namespace dt::ast
     };
 }
 
-#endif //DTIMEDB_SHOW_H
+#endif //DTIMEDB_SHOW_OPERATOR_H

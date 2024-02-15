@@ -7,7 +7,7 @@ using namespace dt::lexer;
 #include <parser/parser.h>
 using namespace dt::parser;
 
-#include "executor/operator/query_plan.h"
+#include "execution_plan/operator/query_plan.h"
 using namespace dt::evaluator;
 
 #include <file_manager/file_path_manager.h>

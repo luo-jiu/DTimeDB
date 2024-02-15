@@ -4,6 +4,8 @@
 #include <file_manager/file_path_manager.h>
 using namespace dt::file;
 
+#include <engine/impl/itsm.h>
+#include <engine/impl/isystem.h>
 #include <engine/impl/iengine.h>
 using namespace dt::impl;
 
@@ -23,7 +25,7 @@ namespace dt::tsm
      *
      * 管理所有数据库
      */
-    class Controller : public IEngine
+    class Controller : public IEngine, public ISystem, public ITSM
     {
     public:
         Controller(): m_producer_thread_pool(8), m_consumer_thread_pool(6), m_running(true), m_file("tsm")
@@ -58,7 +60,7 @@ namespace dt::tsm
 
         void init();
 
-        void load_database(string & db_name) override;
+        bool load_database(string & db_name) override;
         void show_table(string & db_name) override;
         bool create_database(string & db_name) override;
         bool create_table(string & tb_name, string & db_name) override;

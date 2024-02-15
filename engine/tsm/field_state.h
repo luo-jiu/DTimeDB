@@ -60,7 +60,8 @@ namespace dt::tsm
                 bool use_index_entry_map)
         {
             auto & state_map = use_index_entry_map ? m_index_entry_state_map : m_skip_list_state_map;
-            std::shared_lock<std::shared_mutex> read_lock(m_mutex);
+            std::shared_mutex & map_mutex = use_index_entry_map ? m_index_entry_mutex : m_skip_list_mutex;
+            std::shared_lock<std::shared_mutex> read_lock(map_mutex);
             // 检查数据库和表是否存在
             auto db_it = state_map.find(db_name);
             if (db_it != state_map.end())
@@ -79,7 +80,7 @@ namespace dt::tsm
             }
             // 升级到写锁
             read_lock.unlock();
-            std::unique_lock<std::shared_mutex> write_lock(m_mutex);
+            std::unique_lock<std::shared_mutex> write_lock(map_mutex);
             // 再次检查以避免在释放读锁和获取写锁的间隙中发生的竞态条件
             auto& tb_map = state_map[db_name];
             auto& field_status = tb_map[tb_name].m_field_map[field_name];
@@ -101,7 +102,8 @@ namespace dt::tsm
                 bool use_index_entry_map)
         {
             auto & state_map = use_index_entry_map ? m_index_entry_state_map : m_skip_list_state_map;
-            std::unique_lock<std::shared_mutex> write_lock(m_mutex);
+            std::shared_mutex & map_mutex = use_index_entry_map ? m_index_entry_mutex : m_skip_list_mutex;
+            std::unique_lock<std::shared_mutex> write_lock(map_mutex);
             auto db_it = state_map.find(db_name);
             if (db_it != state_map.end())
             {
@@ -120,11 +122,13 @@ namespace dt::tsm
 
         void iterate_map(bool use_index_entry_map)
         {
+            auto & state_map = use_index_entry_map ? m_index_entry_state_map : m_skip_list_state_map;
+            std::shared_mutex & map_mutex = use_index_entry_map ? m_index_entry_mutex : m_skip_list_mutex;
             std::vector<std::tuple<string, string, string>> items_to_process;
             // 收集待处理的数据库、表和字段
             {
-                std::shared_lock<std::shared_mutex> read_lock(m_mutex);
-                for (const auto& db_pair : m_skip_list_state_map)
+                std::shared_lock<std::shared_mutex> read_lock(map_mutex);
+                for (const auto& db_pair : state_map)
                 {
                     const auto& db_name = db_pair.first;
                     for (const auto& tb_pair : db_pair.second)
@@ -155,24 +159,27 @@ namespace dt::tsm
                 if (!use_index_entry_map)
                 {
                     std::cout << "监控到跳表注册事件(skip_list)：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
+                    // 执行回调函数获取时间
+                    if (m_skip_condition_callback && m_skip_condition_callback(db_name, tb_name, field_name))
+                    {
+                        // 添加到移除列表
+                        remove_status(db_name, tb_name, field_name, use_index_entry_map);
+                        std::cout << "监控到跳表数据符合刷盘条件：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
+                    }
+                    else
+                    {
+                        std::cout << "不满足刷盘条件(skip_list)\n";
+                    }
                 }
                 else
                 {
                     std::cout << "监控到跳表注册事件(index_entry)：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
-                }
-
-                // 执行回调函数获取时间
-                if (m_skip_condition_callback && m_skip_condition_callback(db_name, tb_name, field_name))
-                {
-                    // 添加到移除列表
-                    remove_status(db_name, tb_name, field_name, use_index_entry_map);
-                    std::cout << "监控到跳表数据符合刷盘条件：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
-                }
-                else
-                {
-                    if (!use_index_entry_map)
+                    // 执行回调函数获取时间
+                    if (m_index_condition_callback && m_index_condition_callback(db_name, tb_name, field_name))
                     {
-                        std::cout << "不满足刷盘条件(skip_list)\n";
+                        // 添加到移除列表
+                        remove_status(db_name, tb_name, field_name, use_index_entry_map);
+                        std::cout << "监控到跳表数据符合刷盘条件：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
                     }
                     else
                     {
@@ -199,7 +206,8 @@ namespace dt::tsm
         //       db_name          tb_name
         std::map<string, std::map<string, TableInfo>>      m_skip_list_state_map;
         std::map<string, std::map<string, TableInfo>>      m_index_entry_state_map;
-        mutable std::shared_mutex                          m_mutex;
+        mutable std::shared_mutex                          m_skip_list_mutex;
+        mutable std::shared_mutex                          m_index_entry_mutex;
     };
 }
 

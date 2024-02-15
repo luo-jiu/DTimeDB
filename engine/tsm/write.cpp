@@ -231,11 +231,19 @@ void Write::write(
 //}
 
 /**
- * 保证为单线程的，以下的环境都不会有多线程打扰
- * 除开主动访问共享变量外
+ * 该方法有两个线程会进入使用
+ * [监控线程] 和 [正常刷块线程]
+ *
+ * 监控线程自己进来data block 是没有数据的,是针对series index block 刷盘
+ * 而正常刷块的线程都有可能做
+ * 所以直接让监控线程进来，有data block 就一起刷盘了，没有也无所谓
+ * 如果正常的线程进来data block被刷走了, 没有了数据就退出来了也无所谓
+ *
+ * 所以保证这个函数为单线程的即可，直接采用了互斥锁
  */
 void Write::queue_flush_disk()
 {
+    std::lock_guard<std::mutex> lock(m_flush_disk_mutex);
     while(true)
     {
         /**
@@ -256,10 +264,12 @@ void Write::queue_flush_disk()
                 std::cout << "字段："<< field_name << "field_name为空, 跳过本次刷盘\n";
                 continue;
             }
+            std::cout << ">>>开始刷写index entry, 字段:" << field_name << "\n";
             // 获取series_key + field_key
             string meta_key = m_field_map[field_name]->m_index_block_meta_key;
             // 计算大小(index(28) * index_num + meta(12 + (series_key + field_key).size()))
             auto size = 28 * index_info.m_index_deque.size() + 12 + meta_key.size();
+            std::cout << "meta_key大小: " << meta_key.size() << "\n";
             // 生成meta
             auto meta = m_tsm.create_index_meta(m_field_map[field_name]->m_type, meta_key);
             // 偏移尾指针进行刷盘
@@ -267,6 +277,8 @@ void Write::queue_flush_disk()
             // 给series index block 刷盘
             m_tsm.write_series_index_block_to_file(index_info.m_index_deque, meta, m_curr_file_path, m_tail_offset);
             m_index_map.erase(field_name);
+            // 同步尾指针
+            m_file_path->update_system_file_tail_offset(m_db_name, m_tb_name, m_tail_offset);
         }
 
         /**
@@ -359,6 +371,7 @@ void Write::queue_flush_disk()
             // 创建entry [唯一生成]
             auto entry = m_tsm.create_index_entry(data_block->m_max_timestamp, data_block->m_min_timestamp, m_head_offset, data_block->m_size);
             push_index_to_deque(field_name, entry);  // 存入队列
+            std::cout << "生成index entry,为其注册监控事件\n";
             field->notify(m_db_name, m_tb_name, field_name, true, true);  // 注册监控事件监测index entry
             m_margin -= 28;  // 减去entry 大小
 
@@ -376,13 +389,11 @@ void Write::queue_flush_disk()
             {
                 // 给任务队列添加任务循环到 [模块1]进行series index block 刷盘处理
                 push_task(field_name);
-                field->notify(m_db_name, m_tb_name, field_name, false, true);  // 注销监控事件注册
             }
+            // 同步头指针 和 剩余大小(因为上面已经给series index block 大小计算在内,[模块一不再同步])
+            m_file_path->update_system_file_margin(m_db_name, m_tb_name, m_margin);
+            m_file_path->update_system_file_head_offset(m_db_name, m_tb_name, m_head_offset);
         }
-
-        m_file_path->update_system_file_margin(m_db_name, m_tb_name, m_margin);
-        m_file_path->update_system_file_head_offset(m_db_name, m_tb_name, m_head_offset);
-
 //            if (m_first_write)  // 该文件第一次写入
 //            {
 //                // 去掉meta 大小
@@ -555,6 +566,7 @@ std::shared_ptr<Field> Write::get_field(
 
     // 注册观察者
     field->attach(&queue_state);
+    field->attach(&tb_state);
     field->get_skip_list().attach(&tb_state);
 
     // 设置回调函数

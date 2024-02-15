@@ -8,10 +8,15 @@ insert into school,local='中德',class='软工1班' '温度'=24.1
 insert into school,local='中德',class='软工1班' '温度'=23.1
 insert into school,local='中德',class='软工1班' '出勤'=25
 
-system [show][update][clear] table [table_name] where [parameter]
-system show table school
-system update table school where offset=5
-system clear table school
-
 select * from school
 select * from school where local='中德'
+
+# 系统调试命令不支持复杂sql,只做简单使用
+# system [show][update][clear] table [table_name] where [parameter]
+system show table school
+system update table school where 'offset'='5'
+system clear table school
+
+# system show file [tsm_file_name] where [header][footer][data_block][series_index_block]
+system show file table_name-timestamp.tsm header [暂缓]
+system show file table_name-timestamp.tsm footer [暂缓]

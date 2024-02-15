@@ -1,16 +1,13 @@
 #ifndef DTIMEDB_EXECUTOR_H
 #define DTIMEDB_EXECUTOR_H
 
-#include <lexer/lexer.h>
-using namespace dt::lexer;
-
-#include <parser/parser.h>
-using namespace dt::parser;
-
 #include <evaluator/evaluator.h>
 using namespace dt::evaluator;
 
+#include <engine/impl/iclt.h>
 #include <engine/impl/iengine.h>
+#include <engine/impl/isystem.h>
+#include <engine/impl/itsm.h>
 using namespace dt::impl;
 
 #include <engine/tsm/controller.h>
@@ -36,17 +33,12 @@ namespace dt::executor
             // 为多个引擎的调用提供映射
             m_engine_map["tsm"] = std::make_shared<Controller>();
         }
-
-        std::shared_ptr<Program> generate_ast_tree(string& sql);
-        void generate_execute_plan(string & sql);
         void execute_plan(const std::shared_ptr<ExecutionPlanNode>& node);
-
-        bool insert();
 
     private:
         std::map<string, std::shared_ptr<IEngine>> m_engine_map;
-//        Controller* m_tsm = new Controller();  // 引擎控制器
 
+//        Controller* m_tsm = new Controller();  // 引擎控制器
 //        IEngine* m_engine;  // 引擎接口
     };
 }
