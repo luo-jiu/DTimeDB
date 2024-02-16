@@ -5,6 +5,7 @@
 #include <hash_map>
 #include "event_base.h"
 #include "timer_queue.h"
+#include <sys/epoll.h>
 /**
  * 事件类，包括了定时器事件以及io事件的操作
  */

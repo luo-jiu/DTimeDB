@@ -1,7 +1,8 @@
-//
-// Created by illumwang on 24-2-10.
-//
-
+/**
+ * 我简单的将数据库的事件分为两类，一类是读事件，一类是写事件
+ * 读事件就是对数据的查询
+*  写事件是对数据的增、删、改
+ */
 #ifndef DTIMEDB_EVENT_BASE_H
 #define DTIMEDB_EVENT_BASE_H
 #include <stdint.h>
@@ -18,7 +19,6 @@ struct io_event{
     io_call_back *write_cb;
     void *read_args;
     void *write_args;
-
 };
 //定时器，超时处理或任务调度等
 struct timer_event{
