@@ -1,7 +1,8 @@
-#include <evaluator/evaluator.h>
+#include "evaluator/evaluator.h"
 using namespace dt::evaluator;
+using namespace dt::execution;
 
-std::shared_ptr<ExecutionPlanNode> Evaluator::eval_select(
+std::shared_ptr<ExecutionPlanNode> Evaluator::eval_clt_select(
         const std::shared_ptr<ast::Select> & node,
         const std::shared_ptr<ExecutionPlanNode> & where,
         const std::shared_ptr<ExecutionPlanNode> & root)
@@ -22,18 +23,18 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval_select(
     // 开始制作过滤操作符
     // 处理为 root -> ScanNode -> FilterNode 过滤节点
     std::shared_ptr<FilterNode> filter(new FilterNode);
-    if (!node->fields.empty())  // 配置field
+    if (!node->m_fields.empty())  // 配置field
     {
-        if (node->fields.size() == 1)
+        if (node->m_fields.size() == 1)
         {
-            auto it = node->fields.begin();
+            auto it = node->m_fields.begin();
             std::advance(it, 0);
             filter->m_fields.emplace_back(*it);
         }
         else
         {
             // 遍历字段(主要是做语法检查)
-            for (auto & field : node->fields)
+            for (auto & field : node->m_fields)
             {
                 if (field == "*")
                 {
@@ -50,4 +51,12 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval_select(
     }
     temp->set_child(filter);
     return root;
+}
+
+std::shared_ptr<ExecutionPlanNode> Evaluator::eval_tsm_select(
+        const std::shared_ptr<ast::Select> & node,
+        const std::shared_ptr<ExecutionPlanNode> & where,
+        const std::shared_ptr<ExecutionPlanNode> & root)
+{
+
 }

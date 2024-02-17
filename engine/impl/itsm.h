@@ -1,10 +1,15 @@
 #ifndef DTIMEDB_ITSM_H
 #define DTIMEDB_ITSM_H
 
-#include <engine/impl/iengine.h>
+#include "engine/impl/iengine.h"
 
 namespace dt::impl
 {
+    struct ExprNode
+    {
+
+    };
+
     class ITSM
     {
     public:
@@ -18,21 +23,23 @@ namespace dt::impl
         * @param database_name 数据库
         */
         virtual bool insert(
-                high_resolution_clock::time_point timestamp,
-                string & tags_str,
-                string value,
+                std::chrono::high_resolution_clock::time_point timestamp,
+                std::string & tags_str,
+                std::string value,
                 IEngine::Type type,
-                string & field_name,
-                string & tb_name,
-                string & db_name) = 0;
+                std::string & field_name,
+                std::string & tb_name,
+                std::string & db_name) = 0;
 
 
         /**
          * 构建索引
          */
         virtual bool create_index(
-                string & measurement,
-                std::list<string> & tags) = 0;
+                std::string & measurement,
+                std::list<std::string> & tags) = 0;
+
+
 
 
         /**
@@ -40,10 +47,10 @@ namespace dt::impl
          * 获取范围数据 (通过索引 [标签tag])
          */
         virtual bool get_range_data(
-                const string & measurement,
-                std::list<string> field,
-                std::vector<string> tags,
-                std::vector<string> data) = 0;
+                const std::string & measurement,
+                std::vector<std::string> field,
+                std::vector<std::string> tags,
+                std::shared_ptr<ExprNode> expr_node) = 0;
     };
 }
 

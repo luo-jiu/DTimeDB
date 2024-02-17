@@ -3,7 +3,6 @@
 
 #include <list>
 #include <string>
-using std::string;
 
 namespace dt::impl
 {
@@ -13,8 +12,8 @@ namespace dt::impl
          * 创建表
          */
         virtual bool create_table(
-                std::list<string> field,
-                string tb_name) = 0;
+                std::list<std::string> field,
+                std::string tb_name) = 0;
 
     };
 }

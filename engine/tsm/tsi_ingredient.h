@@ -5,7 +5,6 @@
 #include <map>
 #include <list>
 #include <string>
-using std::string;
 
 namespace dt::tsm
 {
@@ -17,8 +16,8 @@ namespace dt::tsm
 
     class Tag
     {
-        string tag_key;
-        string tag_value;
+        std::string tag_key;
+        std::string tag_value;
     };
 
     class SeriesKey
@@ -30,7 +29,7 @@ namespace dt::tsm
         }
 
     public:
-        string m_series_key;
+        std::string m_series_key;
         std::vector<Tag> m_tags;
     };
 
@@ -57,10 +56,10 @@ namespace dt::tsm
     {
     public:
         uint8_t m_value_length;
-        string m_value;  // tag value
+        std::string m_value;  // tag value
         uint16_t m_series_num;
         uint16_t m_series_data_length;    // series length
-        std::list<string> m_series_data;  // series
+        std::list<std::string> m_series_data;  // series
     };
 
 
@@ -93,7 +92,7 @@ namespace dt::tsm
      */
     class Measurement
     {
-        string          m_name;              // 测量值名
+        std::string          m_name;         // 测量值名
         uint8_t         m_tag_block_offset;  // 记录tag块偏移量
         uint32_t        m_tag_block_size;    // 记录块大小
         uint32_t        m_series_count;      // 与该Measurement相关联的时间序列数据的数量

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ast/node.h>
+#include "ast/node.h"
 
 namespace dt::ast
 {
@@ -16,11 +16,12 @@ namespace dt::ast
             json["type"] = name();
 
             Json clause;
-            for (auto & cla : fields)
+            for (auto & cla : m_fields)
             {
 //                clause.append(cla->json());
                 clause.append(cla);
             }
+            json["engine"] = m_engine;
             json["fields"] = clause;
             json["from"] = m_from->json();
             json["where"] = m_where->json();
@@ -28,8 +29,10 @@ namespace dt::ast
         }
 
     public:
-        std::list<string>                       fields;
+        std::string                             m_engine;
+        std::list<std::string>                  m_fields;
         std::shared_ptr<Expression>             m_from;
         std::shared_ptr<Expression>             m_where;
+
     };
 }

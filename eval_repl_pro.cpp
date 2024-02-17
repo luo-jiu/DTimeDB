@@ -14,7 +14,7 @@ using namespace dt::executor;
 #include <string>
 #include <random>
 
-const string prompt = "<<";
+const std::string prompt = "<<";
 
 #define TEST_COUNT 100
 
@@ -35,7 +35,7 @@ std::string get_random_element(const std::vector<std::string>& strArray) {
 
 int main()
 {
-    std::shared_ptr<RootNode> root;
+    std::shared_ptr<dt::execution::RootNode> root;
     std::shared_ptr<Executor> executor(new Executor());
 
     std::cout << "Welcome to DTimeDB!" << std::endl;
@@ -46,16 +46,16 @@ int main()
 
     // 先模拟输入10次insert 插入数据以便于调试
     size_t count = TEST_COUNT;
-    std::vector<string> sql = {
+    std::vector<std::string> sql = {
             "insert into school,local='中德',class='软工1班' '温度'=23.9",
             "insert into school,local='中德',class='软工1班' '温度'=22.8",
             "insert into school,local='中德',class='软工1班' '温度'=21.7",
             "insert into school,local='中德',class='软工1班' '温度'=20.6"};
     bool run = true;
-    string text;
+    std::string text;
     while (true)
     {
-        root = std::make_shared<RootNode>();
+        root = std::make_shared<dt::execution::RootNode>();
         if (run)
         {
             text = "use db_test";

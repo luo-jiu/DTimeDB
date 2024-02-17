@@ -1,16 +1,14 @@
 #ifndef DTIMEDB_TEST_TOOL_H
 #define DTIMEDB_TEST_TOOL_H
 
+#include <engine/tsm/tsm_ingredient.h>
+#include <engine/tsm/write.h>
+
 #include <random>
 #include <thread>
 #include <iostream>
-using std::string;
-
 #include <chrono>
-using namespace std::chrono;
 
-#include <engine/tsm/tsm_ingredient.h>
-#include <engine/tsm/write.h>
 
 namespace dt::tsm
 {
@@ -20,33 +18,33 @@ namespace dt::tsm
     class Tool
     {
     public:
-        static system_clock::time_point random_time(bool mode);
-        static void test_data(Write & m_write, int num, bool timer, bool pri,string & field_name, string & file_path);
+        static std::chrono::system_clock::time_point random_time(bool mode);
+        static void test_data(Write & m_write, int num, bool timer, bool pri,std::string & field_name, std::string & file_path);
 
         static int rand_int();
 
-        static void write_string_skip_list(SkipList<string> & sl, int num, bool timer);
-        static void write_integer_skip_list(SkipList<string> & sl, int num, bool timer);
-        static void write_float_skip_list(SkipList<string> & sl, int num, bool timer);
+        static void write_string_skip_list(SkipList<std::string> & sl, int num, bool timer);
+        static void write_integer_skip_list(SkipList<std::string> & sl, int num, bool timer);
+        static void write_float_skip_list(SkipList<std::string> & sl, int num, bool timer);
 
-        static void transfer(SkipList<string> & sl, std::shared_ptr<DataBlock> & data_block, bool timer);
+        static void transfer(SkipList<std::string> & sl, std::shared_ptr<DataBlock> & data_block, bool timer);
 
         static void start();
         static void end();
 
     private:
-        static high_resolution_clock::time_point m_start;
-        static high_resolution_clock::time_point m_end;
+        static std::chrono::high_resolution_clock::time_point m_start;
+        static std::chrono::high_resolution_clock::time_point m_end;
     };
 
-    high_resolution_clock::time_point Tool::m_start = system_clock::now();
-    high_resolution_clock::time_point Tool::m_end = system_clock::now();
+    std::chrono::high_resolution_clock::time_point Tool::m_start = std::chrono::system_clock::now();
+    std::chrono::high_resolution_clock::time_point Tool::m_end = std::chrono::system_clock::now();
 
     /**
      * 生成随机时间戳
      * @param mode 是否需要打印
      */
-    system_clock::time_point Tool::random_time(bool mode)
+    std::chrono::system_clock::time_point Tool::random_time(bool mode)
     {
         std::chrono::system_clock::time_point now = std::chrono::system_clock::now();  // 获取当前时间点
         // 创建随机数生成器
@@ -80,8 +78,8 @@ namespace dt::tsm
             int num,
             bool timer,
             bool pri,
-            string & field_name,
-            string & file_path)
+            std::string & field_name,
+            std::string & file_path)
     {
         if (timer) start();
         for (size_t i = 0; i < num; ++i)
@@ -97,7 +95,7 @@ namespace dt::tsm
         if (timer) end();
     }
 
-    void Tool::write_string_skip_list(SkipList<string> & sl, int nums, bool timer)
+    void Tool::write_string_skip_list(SkipList<std::string> & sl, int nums, bool timer)
     {
         if (timer) start();
         for (size_t i = 0; i < nums; ++i)
@@ -109,7 +107,7 @@ namespace dt::tsm
         if (timer) end();
     }
 
-    void Tool::write_integer_skip_list(SkipList<string> & sl, int nums, bool timer)
+    void Tool::write_integer_skip_list(SkipList<std::string> & sl, int nums, bool timer)
     {
         if (timer) start();
         for (size_t i = 0; i < nums; ++i)
@@ -121,7 +119,7 @@ namespace dt::tsm
         if (timer) end();
     }
 
-    void Tool::write_float_skip_list(SkipList<string> & sl, int nums, bool timer)
+    void Tool::write_float_skip_list(SkipList<std::string> & sl, int nums, bool timer)
     {
         if (timer) start();
         for (size_t i = 0; i < nums; ++i)
@@ -138,7 +136,7 @@ namespace dt::tsm
     }
 
     void Tool::transfer(
-            SkipList<string> & sl,
+            SkipList<std::string> & sl,
             std::shared_ptr<DataBlock> & data_block,
             bool timer)
     {
@@ -159,12 +157,12 @@ namespace dt::tsm
      */
     void Tool::start()
     {
-        m_start = system_clock::now();
+        m_start = std::chrono::system_clock::now();
     }
 
     void Tool::end()
     {
-        m_end = system_clock::now();
+        m_end = std::chrono::system_clock::now();
         // 计算时间差
         auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(m_end - m_start);
         double seconds = static_cast<double>(duration_ms.count()) / 1000000.0;

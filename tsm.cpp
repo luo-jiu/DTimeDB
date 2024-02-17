@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <algorithm>
 
 // 数据点结构
 struct DataPoint {

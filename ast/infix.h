@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ast/node.h>
+#include "ast/node.h"
 
 namespace dt::ast
 {
@@ -26,7 +26,7 @@ namespace dt::ast
 
     public:  // 这里不封装set get为的是操作方便
         // 中缀表达式组成: 运算符 左表达式 右表达式
-        string                           m_operator;
+        std::string                      m_operator;
         std::shared_ptr<Expression>      m_left;  // 智能指针
         std::shared_ptr<Expression>      m_right;
     };

@@ -1,10 +1,9 @@
 #pragma once
 
+#include "token/token.h"
+
 #include <list>
 #include <memory>
-
-#include <token/token.h>
-using namespace dt::token;
 
 namespace dt::ast
 {
@@ -43,14 +42,14 @@ namespace dt::ast
         virtual ~Node() {}
 
         Type type() const { return m_type; }
-        string name() const;
+        std::string name() const;
 
         virtual Json json() = 0;
 
     public:
-        Type                                m_type;
-        Token                               m_token;
-        static std::map<Type, string>       m_names;
+        Type                                    m_type;
+        token::Token                            m_token;
+        static std::map<Type, std::string>      m_names;
     };
 
     /**

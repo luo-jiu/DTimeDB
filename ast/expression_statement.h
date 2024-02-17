@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ast/node.h>
+#include "ast/node.h"
 
 namespace dt::ast
 {

@@ -1,8 +1,7 @@
 #ifndef DTIMEDB_USE_H
 #define DTIMEDB_USE_H
 
-#include <ast/node.h>
-using namespace dt::ast;
+#include "ast/node.h"
 
 namespace dt::ast
 {
@@ -10,7 +9,7 @@ namespace dt::ast
     {
     public:
         Use() : Expression(NODE_USE) {}
-        Use(const string & database_name) : Expression(NODE_USE), m_database_name(database_name) {}
+        Use(const std::string & database_name) : Expression(NODE_USE), m_database_name(database_name) {}
         ~Use() {}
 
         virtual Json json()
@@ -22,7 +21,7 @@ namespace dt::ast
         }
 
     public:
-        string m_database_name;
+        std::string m_database_name;
     };
 }
 

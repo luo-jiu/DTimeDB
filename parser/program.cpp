@@ -1,5 +1,7 @@
-#include <parser/parser.h>
+#include "parser/parser.h"
 using namespace dt::parser;
+using namespace dt::ast;
+using namespace dt::token;
 
 std::shared_ptr<Program> Parser::parse_program()
 {

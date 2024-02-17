@@ -1,5 +1,8 @@
-#include <parser/parser.h>
+#include "parser/parser.h"
 using namespace dt::parser;
+using namespace dt::ast;
+using namespace dt::token;
+using std::string;
 
 #include <chrono>
 using namespace std::chrono;

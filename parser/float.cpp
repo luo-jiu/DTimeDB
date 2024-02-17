@@ -1,5 +1,6 @@
-#include <parser/parser.h>
+#include "parser/parser.h"
 using namespace dt::parser;
+using namespace dt::ast;
 
 /**
  * 生成ast 的float 节点

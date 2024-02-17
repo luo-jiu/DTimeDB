@@ -1,5 +1,8 @@
-#include <engine/tsm/field.h>
+#include "engine/tsm/field.h"
 using namespace dt::tsm;
+using namespace dt::impl;
+using namespace std::chrono;
+using std::string;
 
 void Field::write(
         high_resolution_clock::time_point timestamp,

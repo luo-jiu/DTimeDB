@@ -1,5 +1,7 @@
-#include <evaluator/evaluator.h>
+#include "evaluator/evaluator.h"
 using namespace dt::evaluator;
+using namespace dt::execution;
+using std::string;
 
 /**
  * 中缀表达式求值

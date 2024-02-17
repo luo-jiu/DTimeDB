@@ -1,7 +1,7 @@
 #ifndef DTIMEDB_INDEX_H
 #define DTIMEDB_INDEX_H
 
-#include <engine/tsm/tsi_ingredient.h>
+#include "engine/tsm/tsi_ingredient.h"
 
 #include <unordered_map>
 #include <vector>
@@ -9,8 +9,6 @@
 #include <shared_mutex>
 #include <set>
 #include <iostream>
-
-using std::string;
 
 namespace dt::tsm
 {
@@ -26,10 +24,10 @@ namespace dt::tsm
     class Index
     {
     public:
-        void create_index(const string & measurement, std::list<string> & tags);
+        void create_index(const std::string & measurement, std::list<std::string> & tags);
 
-        std::vector<string> search(const string & measurement, std::list<string> & tags);
-        bool series_key_empty(string & series_key);
+        std::vector<std::string> search(const std::string & measurement, std::list<std::string> & tags);
+        bool series_key_empty(std::string & series_key);
 
     private:
         mutable std::shared_mutex m_mutex;  // 读写锁保证线程安全
@@ -54,7 +52,7 @@ namespace dt::tsm
              * map<tag_key, map<tag_value, list<series_key>>
              * 需要排序,目的是可以进行范围查询
              */
-            std::unordered_map<string, std::unordered_map<string, std::set<string>>> m_series_by_tag_key_value;
+            std::unordered_map<std::string, std::unordered_map<std::string, std::set<std::string>>> m_series_by_tag_key_value;
         };
 
         /**
@@ -62,13 +60,13 @@ namespace dt::tsm
          * 作用是查询到对应measurement,可以找到对应的Tag Block
          * 需要排序,目的是可以实现范围查询
          */
-        std::unordered_map<string, TagBlock> m_mea_tag_keys;
+        std::unordered_map<std::string, TagBlock> m_mea_tag_keys;
 
         /**
          * 记录该measurement 中有多少的纬度值
          * map<measurement, list<tag_key>>
          */
-        std::unordered_map<string, std::set<string>> m_mea_tags;
+        std::unordered_map<std::string, std::set<std::string>> m_mea_tags;
         SeriesBlock m_series_block;
     };
 }

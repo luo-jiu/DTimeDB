@@ -1,5 +1,6 @@
-#include <evaluator/evaluator.h>
+#include "evaluator/evaluator.h"
 using namespace dt::evaluator;
+using namespace dt::execution;
 
 std::shared_ptr<ExecutionPlanNode> Evaluator::eval_integer(
         const std::shared_ptr<ast::Integer> & node)

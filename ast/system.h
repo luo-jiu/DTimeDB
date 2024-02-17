@@ -1,7 +1,7 @@
 #ifndef DTIMEDB_SYSTEM_H
 #define DTIMEDB_SYSTEM_H
 
-#include <ast/node.h>
+#include "ast/node.h"
 
 namespace dt::ast
 {
@@ -31,8 +31,8 @@ namespace dt::ast
         }
 
     public:
-        string                                  m_option;
-        string                                  m_from;
+        std::string                             m_option;
+        std::string                             m_from;
         std::shared_ptr<Expression>             m_where;
     };
 }

@@ -1,8 +1,7 @@
 #ifndef DTIMEDB_TABLE_STATE_H
 #define DTIMEDB_TABLE_STATE_H
 
-#include <engine/impl/iobserver_table_state.h>
-using namespace dt::impl;
+#include "engine/impl/iobserver_table_state.h"
 
 #include <functional>
 #include <atomic>
@@ -11,7 +10,6 @@ using namespace dt::impl;
 #include <shared_mutex>
 #include <string>
 #include <utility>
-using std::string;
 
 namespace dt::tsm
 {
@@ -19,10 +17,10 @@ namespace dt::tsm
      * 表级别的状态更新
      * data block刷盘
      */
-    class TableState : public ITableStateObserver
+    class TableState : public impl::ITableStateObserver
     {
     public:
-        using DataBlockCallback = std::function<bool(const string&, const string&)>;
+        using DataBlockCallback = std::function<bool(const std::string&, const std::string&)>;
 
         // 设置回调函数
         void set_condition_callback(DataBlockCallback callback)
@@ -31,9 +29,9 @@ namespace dt::tsm
         }
 
         void update(
-                const string & db_name,
-                const string & tb_name,
-                const string & field_name,
+                const std::string & db_name,
+                const std::string & tb_name,
+                const std::string & field_name,
                 bool is_registered,
                 bool use_index_entry_map) override
         {
@@ -52,7 +50,7 @@ namespace dt::tsm
         }
 
         // 检查并注册表
-        bool check_and_register(const string & db_name, const string & tb_name)
+        bool check_and_register(const std::string & db_name, const std::string & tb_name)
         {
             std::shared_lock<std::shared_mutex> read_lock(m_mutex);
             // 检查数据库和表是否存在
@@ -83,7 +81,7 @@ namespace dt::tsm
         }
 
         // 移除表的注册状态
-        void remove_status(const string & db_name, const string & tb_name)
+        void remove_status(const std::string & db_name, const std::string & tb_name)
         {
             std::unique_lock<std::shared_mutex> write_lock(m_mutex);
             auto db_it = m_state_map.find(db_name);
@@ -98,8 +96,8 @@ namespace dt::tsm
         }
 
         void iterate_map() {
-            std::vector<std::pair<string, string>> items_to_process;
-            std::vector<std::pair<string, string>> items_to_remove;  // 存储需要移除的状态
+            std::vector<std::pair<std::string, std::string>> items_to_process;
+            std::vector<std::pair<std::string, std::string>> items_to_remove;  // 存储需要移除的状态
             // 收集待处理的数据库、表和字段
             {
                 std::shared_lock<std::shared_mutex> read_lock(m_mutex);
@@ -141,8 +139,8 @@ namespace dt::tsm
         DataBlockCallback m_condition_callback;  // 存储回调函数
 
         //       db_name          tb_name
-        std::map<string, std::map<string, std::atomic<bool>>>      m_state_map;
-        mutable std::shared_mutex                                  m_mutex;
+        std::map<std::string, std::map<std::string, std::atomic<bool>>>      m_state_map;
+        mutable std::shared_mutex                                            m_mutex;
     };
 }
 

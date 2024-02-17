@@ -1,5 +1,6 @@
-#include <token/token.h>
+#include "token/token.h"
 using namespace dt::token;
+using std::string;
 
 /**
  * 符号对应字面量表

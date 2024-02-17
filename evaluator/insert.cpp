@@ -1,5 +1,7 @@
-#include <evaluator/evaluator.h>
+#include "evaluator/evaluator.h"
 using namespace dt::evaluator;
+using namespace dt::execution;
+using std::string;
 
 std::shared_ptr<ExecutionPlanNode> Evaluator::eval_insert(
         const std::shared_ptr<ast::Insert> & node)

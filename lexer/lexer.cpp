@@ -1,5 +1,8 @@
-#include <lexer/lexer.h>
+#include "lexer/lexer.h"
 using namespace dt::lexer;
+using namespace dt::token;
+
+using std::string;
 
 Lexer::Lexer()
 {
@@ -309,8 +312,8 @@ string Lexer::read_identifier()
 
 /**
  * 提取单引号中的字符串
- * eg: ... name = 'luo' ...
- * 获取 luo
+ * eg: ... name = 'dt' ...
+ * 获取 dt
  */
 string Lexer::read_single_quote_string()
 {

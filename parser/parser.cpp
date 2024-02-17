@@ -1,5 +1,7 @@
-#include <parser/parser.h>
+#include "parser/parser.h"
 using namespace dt::parser;
+using namespace dt::lexer;
+using namespace dt::token;
 
 /**
  * 运算符的优先级
@@ -144,7 +146,7 @@ int Parser::peek_token_precedence()
     return LOWEST;
 }
 
-std::list<string>& Parser::errors()
+std::list<std::string>& Parser::errors()
 {
     return m_errors;
 }

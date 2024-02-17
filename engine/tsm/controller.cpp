@@ -1,5 +1,8 @@
 #include <engine/tsm/controller.h>
 using namespace dt::tsm;
+using namespace dt::impl;
+using namespace std::chrono;
+using std::string;
 
 /**
  * 初始化函数
@@ -195,16 +198,11 @@ bool Controller::get_range_data(
 
 }
 
-/**
- * 实现数据的范围查询
- * 也可以是单条数据
- * @param tags 纬度值
- * @param data
- * @return
- */
 bool Controller::get_range_data(
+        const string & measurement,
+        std::vector<string> field,
         std::vector<string> tags,
-        std::vector<string> data)
+        std::shared_ptr<ExprNode> expr_node)
 {
 
 }

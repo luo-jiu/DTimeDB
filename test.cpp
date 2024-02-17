@@ -7,9 +7,6 @@ using namespace dt::lexer;
 #include <parser/parser.h>
 using namespace dt::parser;
 
-#include "execution_plan/operator/query_plan.h"
-using namespace dt::evaluator;
-
 #include <file_manager/file_path_manager.h>
 using namespace dt::file;
 
@@ -37,9 +34,9 @@ std::string get_random_element(const std::vector<std::string>& strArray) {
 }
 
 int main() {
-    std::shared_ptr<Environment> env(new Environment());
-    std::shared_ptr<Evaluator> evaluator(new Evaluator());
-    std::shared_ptr<RootNode> root = std::make_shared<RootNode>();
+    std::shared_ptr<dt::evaluator::Environment> env(new dt::evaluator::Environment());
+    std::shared_ptr<dt::evaluator::Evaluator> evaluator(new dt::evaluator::Evaluator());
+    std::shared_ptr<dt::execution::RootNode> root = std::make_shared<dt::execution::RootNode>();
     std::shared_ptr<Executor> executor(new Executor());
     std::vector<string> sqls = {"show databases", "show tables", "use db_test", "use xxx"};
 
@@ -60,7 +57,7 @@ int main() {
         // 递归运行执行计划
         executor->execute_plan(root);
 
-        root = std::make_shared<RootNode>();
+        root = std::make_shared<dt::execution::RootNode>();
 
     }
 

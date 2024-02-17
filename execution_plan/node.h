@@ -1,20 +1,16 @@
 #ifndef DTIMEDB_NODE_H
 #define DTIMEDB_NODE_H
 
-#include <engine/impl/iclt.h>
-#include <engine/impl/iengine.h>
-#include <engine/impl/isystem.h>
-#include <engine/impl/itsm.h>
-using namespace dt::impl;
-
-#include <token/token.h>
-using namespace dt::token;
+#include "engine/impl/iclt.h"
+#include "engine/impl/iengine.h"
+#include "engine/impl/isystem.h"
+#include "engine/impl/itsm.h"
+#include "token/token.h"
 
 #include <memory>
 #include <map>
 #include <iostream>
 #include <utility>
-using std::string;
 
 namespace dt::execution
 {
@@ -43,6 +39,8 @@ namespace dt::execution
             OBJECT_PROJECT,
             OBJECT_INSERT,
             OBJECT_SYSTEM,
+
+            OBJECT_QUERY_TSM,
         };
 
         ExecutionPlanNode() {}
@@ -50,11 +48,11 @@ namespace dt::execution
         virtual ~ExecutionPlanNode() {}
 
         Type type() const { return m_type; }
-        string name() const;
-        virtual string str() const = 0;
+        std::string name() const;
+        virtual std::string str() const = 0;
 
         static std::shared_ptr<ExecutionPlanNode> new_error(const char * format, ...);
-        static std::shared_ptr<ExecutionPlanNode> new_string(string & value);
+        static std::shared_ptr<ExecutionPlanNode> new_string(std::string & value);
         static std::shared_ptr<ExecutionPlanNode> new_integer(int64_t value);
         static std::shared_ptr<ExecutionPlanNode> new_float(float value);
         static std::shared_ptr<ExecutionPlanNode> new_null();
@@ -62,15 +60,15 @@ namespace dt::execution
         void show_database();
 
         // 操作符虚函数
-        virtual void execute(IEngine & engine) = 0;
+        virtual void execute(impl::IEngine & engine) = 0;
         virtual std::shared_ptr<ExecutionPlanNode> get_child() const = 0;
         virtual void set_child(std::shared_ptr<ExecutionPlanNode> child) = 0;
 
     protected:
-        static string                       m_current_db;
+        static std::string                       m_current_db;
 
-        Type                                m_type;
-        static std::map<Type, string>       m_names;  // 类型 对应字符串名称
+        Type                                     m_type;
+        static std::map<Type, std::string>       m_names;  // 类型 对应字符串名称
     };
 }
 

@@ -1,8 +1,8 @@
 #include "file_path_manager.h"
 using namespace dt::file;
+using std::string;
 
 #include <algorithm>
-
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -11,7 +11,7 @@ namespace fs = std::filesystem;
  * @return 文件夹路径
  */
 string FilePathManager::create_database(
-        const string& db_name)
+        const string & db_name)
 {
     // 数据库路径
     string db_path = m_default_base_path + "/" + db_name;
@@ -39,9 +39,9 @@ string FilePathManager::create_database(
  * @return 返回表名
  */
 bool FilePathManager::create_table(
-        const string& tb_name,
-        const string& db_name,
-        const string& engine)
+        const std::string & tb_name,
+        const std::string & db_name,
+        const std::string & engine)
 {
     std::unique_lock<std::shared_mutex> map_lock(m_mutex);  // 先锁整个m_map
 
@@ -119,13 +119,13 @@ bool FilePathManager::exists_table(
  * @return 文件路径
  */
 string FilePathManager::create_file(
-        const string& tb_name,
-        const string& db_name,
-        const string& engine_abbrev)
+        const string & tb_name,
+        const string & db_name,
+        const string & engine_abbrev)
 {
     if (exists_table(db_name, tb_name, false))
     {
-        auto current_time = high_resolution_clock::now();
+        auto current_time = std::chrono::high_resolution_clock::now();
         string file_name = tb_name + "-" + std::to_string(current_time.time_since_epoch().count()) + "." + engine_abbrev;
         string file_path = m_default_base_path + "/" + db_name + "/" + file_name;
 
@@ -150,17 +150,17 @@ string FilePathManager::create_file(
  * 可能的数据
  */
 string FilePathManager::create_sys_tfile(
-        const string& tb_name,
-        const string& db_name,
-        const string& engine_abbrev)
+        const string & tb_name,
+        const string & db_name,
+        const string & engine_abbrev)
 {
 
 }
 
 string FilePathManager::create_sys_dfile(
-        const string& tb_name,
-        const string& db_name,
-        const string& engine_abbrev)
+        const string & tb_name,
+        const string & db_name,
+        const string & engine_abbrev)
 {
 
 }
@@ -169,7 +169,7 @@ string FilePathManager::create_sys_dfile(
  * 删除数据库
  */
 bool FilePathManager::delete_database(
-        const string& db_name)
+        const string & db_name)
 {
     auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())
@@ -204,8 +204,8 @@ bool FilePathManager::delete_database(
  * 删除表
  */
 bool FilePathManager::delete_table(
-        const string& tb_name,
-        const string& db_name)
+        const string & tb_name,
+        const string & db_name)
 {
     if (exists_table(db_name, tb_name, true))
     {
@@ -242,9 +242,9 @@ bool FilePathManager::delete_table(
  * 删除文件
  */
 bool FilePathManager::delete_file(
-        const string& file_name,
-        const string& tb_name,
-        const string& db_name)
+        const string & file_name,
+        const string & tb_name,
+        const string & db_name)
 {
     if (exists_table(db_name, tb_name, true))
     {
@@ -336,41 +336,41 @@ bool FilePathManager::load_database(
      * 开始加载数据库的信息
      * 只用加载系统文件即可(因为和表一一对应)
      */
-    string _db_path = m_default_base_path + "/" + db_name;
-    string _file_name;
-    string _start_part;
-    std::map<string, TableInfo> _table_map;
+    string db_path = m_default_base_path + "/" + db_name;
+    string file_name;
+    string start_part;
+    std::map<string, TableInfo> table_map;
     // 判断路径是否存在
-    if (!fs::exists(_db_path)) {
+    if (!fs::exists(db_path)) {
         // 不存在
         std::cout << "Error: '" << db_name << "' database does not exist" << std::endl;
         return false;
     }
-    for (const auto & entry : fs::directory_iterator(_db_path))
+    for (const auto & entry : fs::directory_iterator(db_path))
     {
         if (entry.is_regular_file())
         {
-            _file_name = entry.path().filename().string();
-            size_t pos = _file_name.find('-');
+            file_name = entry.path().filename().string();
+            size_t pos = file_name.find('-');
             if (pos != std::string::npos)
             {
-                _start_part = _file_name.substr(0, pos);
+                start_part = file_name.substr(0, pos);
             }
-            if (_start_part == "sys" && entry.path().extension() == ("." + m_engine))  // 只加载sys 系统文件
+            if (start_part == "sys" && entry.path().extension() == ("." + m_engine))  // 只加载sys 系统文件
             {
-                string _table_part = _file_name.substr(pos + 1);
-                size_t dot_pos = _table_part.find('.');
-                string _table_name = _table_part.substr(0, dot_pos);
+                string table_part = file_name.substr(pos + 1);
+                size_t dot_pos = table_part.find('.');
+                string table_name = table_part.substr(0, dot_pos);
 
                 // 在此处读取系统文件的信息[暂时没有]
                 // ...
 
-                _table_map[_table_name] = TableInfo{std::list<string>()};  // 创建对象
+                table_map[table_name] = TableInfo{std::list<string>()};  // 创建对象
             }
         }
     }
 
-    m_map[db_name] = _table_map;
+    m_map[db_name] = table_map;
     return true;
 }
 
@@ -404,7 +404,7 @@ bool FilePathManager::show_data(const string & db_name)
  * @param tb_name
  * @return
  */
-SystemInfo FilePathManager::load_system_info(
+dt::tsm::SystemInfo FilePathManager::load_system_info(
         const string & db_name,
         const string & tb_name)
 {
@@ -435,7 +435,7 @@ SystemInfo FilePathManager::load_system_info(
     string read_file_path = "./../dbs/" + db_name + "/" + string(file_name.data());
     std::cout << "head_offset:" << head_offset << ", tail_offset:" << tail_offset << ", margin:" << margin << ", file_name:" << file_name.data() << "\n";
     std::cout << "read_file_path:" << read_file_path + "\n";
-    return SystemInfo{head_offset, tail_offset, margin, read_file_path};
+    return dt::tsm::SystemInfo{head_offset, tail_offset, margin, read_file_path};
 }
 
 /**

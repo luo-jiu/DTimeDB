@@ -1,5 +1,7 @@
-#include <parser/parser.h>
+#include "parser/parser.h"
 using namespace dt::parser;
+using namespace dt::ast;
+using namespace dt::token;
 
 /**
  * 生成ast/null_node 节点

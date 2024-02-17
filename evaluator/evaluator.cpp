@@ -1,7 +1,9 @@
-#include <evaluator/evaluator.h>
-using namespace dt::evaluator;
-
+#include "evaluator/evaluator.h"
 #include <cstdarg>
+using namespace dt::evaluator;
+using namespace dt::execution;
+using namespace dt::ast;
+using std::string;
 
 bool Evaluator::is_error(const std::shared_ptr<ExecutionPlanNode> & obj)
 {
@@ -121,7 +123,7 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval(
                 return right;
             }
             auto where = eval_infix(e->m_operator, left, right);  // 先处理where
-            return eval_select(select, where, root);
+            return eval_clt_select(select, where, root);
         }
         case Node::NODE_INSERT:  // insert 处理
         {

@@ -1,7 +1,8 @@
-#include <engine/tsm/index.h>
+#include "engine/tsm/index.h"
 #include <mutex>
-
 using namespace dt::tsm;
+
+using std::string;
 
 /**
  * 构建内存中索引

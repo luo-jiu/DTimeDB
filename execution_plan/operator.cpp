@@ -1,5 +1,8 @@
 #include <execution_plan/operator.h>
 using namespace dt::execution;
+using namespace dt::impl;
+using namespace std::chrono;
+using std::string;
 
 void SysNode::execute(IEngine & engine)
 {
@@ -129,4 +132,9 @@ void InsertNode::execute(IEngine & engine)
 
     // 制作内存索引
     tsm->create_index(m_table, m_tags);
+}
+
+void QueryTSMNode::execute(IEngine & engine)
+{
+
 }

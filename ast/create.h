@@ -1,8 +1,7 @@
 #ifndef DTIMEDB_CREATE_H
 #define DTIMEDB_CREATE_H
 
-#include <ast/node.h>
-using namespace dt::ast;
+#include "ast/node.h"
 
 namespace dt::ast
 {
@@ -26,10 +25,10 @@ namespace dt::ast
         }
 
     public:
-        Type                    m_type;    // 创建类型
-        string                  m_name;    // 名称
-        std::list<string>       m_fields;  // 字段名
-        string                  m_engine;  // 引擎
+        Type                         m_type;    // 创建类型
+        std::string                  m_name;    // 名称
+        std::list<std::string>       m_fields;  // 字段名
+        std::string                  m_engine;  // 引擎
     };
 }
 

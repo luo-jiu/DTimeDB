@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ast/node.h>
+#include "ast/node.h"
 
 namespace dt::ast
 {
@@ -26,7 +26,7 @@ namespace dt::ast
         }
 
     public:
-        string m_operator;  // 运算符
+        std::string m_operator;  // 运算符
         std::shared_ptr<Expression> m_right;  // 右表达式
     };
 }

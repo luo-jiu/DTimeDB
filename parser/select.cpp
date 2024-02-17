@@ -1,5 +1,7 @@
-#include <parser/parser.h>
+#include "parser/parser.h"
 using namespace dt::parser;
+using namespace dt::ast;
+using namespace dt::token;
 
 /**
  * 生成ast/string_node 节点
@@ -15,7 +17,7 @@ std::shared_ptr<Expression> Parser::parse_select()
         if (m_curr.type() == Token::TOKEN_ASTERISK) {  // 如果是*
 //            std::shared_ptr<String> s(new String());
 //            s->m_value = "*";
-            e->fields.push_back("*");
+            e->m_fields.push_back("*");
             next_token();  // 跳过 '*'
             break;
         }

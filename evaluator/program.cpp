@@ -1,5 +1,7 @@
-#include <evaluator/evaluator.h>
+#include "evaluator/evaluator.h"
 using namespace dt::evaluator;
+using namespace dt::execution;
+using namespace dt::ast;
 
 std::shared_ptr<ExecutionPlanNode> Evaluator::eval_program(
         const std::list<std::shared_ptr<Statement>> & stats,

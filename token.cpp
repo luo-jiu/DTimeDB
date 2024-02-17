@@ -11,7 +11,7 @@ int main() {
         auto token = lexer->next_token();
         token.show();
         tokens.append(token.json());
-        if(token.type() == Token::TOKEN_EOF)
+        if(token.type() == dt::token::Token::TOKEN_EOF)
         {
             break;
         }

@@ -1,8 +1,7 @@
 #ifndef DTIMEDB_SHOW_OPERATOR_H
-#define DTIMEDB_SHOW_H
+#define DTIMEDB_SHOW_OPERATOR_H
 
-#include <ast/node.h>
-using namespace dt::ast;
+#include "ast/node.h"
 
 namespace dt::ast
 {
@@ -21,7 +20,7 @@ namespace dt::ast
         }
 
     public:
-        string m_type;  // database or table
+        std::string m_type;  // database or table
     };
 }
 

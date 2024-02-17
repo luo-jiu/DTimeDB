@@ -1,8 +1,7 @@
 #ifndef DTIMEDB_TABLE_STATUS_H
 #define DTIMEDB_TABLE_STATUS_H
 
-#include <engine/impl/iobserver_table_state.h>
-using namespace dt::impl;
+#include "engine/impl/iobserver_table_state.h"
 
 #include <functional>
 #include <atomic>
@@ -11,7 +10,6 @@ using namespace dt::impl;
 #include <shared_mutex>
 #include <string>
 #include <utility>
-using std::string;
 
 namespace dt::tsm
 {
@@ -19,10 +17,10 @@ namespace dt::tsm
      * 字段级别的状态更新
      * skip_list, index entry
      */
-    class FieldState : public ITableStateObserver
+    class FieldState : public impl::ITableStateObserver
     {
     public:
-        using ConditionCallback = std::function<bool(const string&, const string&, const string&)>;
+        using ConditionCallback = std::function<bool(const std::string&, const std::string&, const std::string&)>;
 
         // 设置回调函数
         void set_skip_condition_callback(ConditionCallback callback)
@@ -35,9 +33,9 @@ namespace dt::tsm
         }
 
         void update(
-                const string & db_name,
-                const string & tb_name,
-                const string & field_name,
+                const std::string & db_name,
+                const std::string & tb_name,
+                const std::string & field_name,
                 bool is_registered,
                 bool use_index_entry_map) override
         {
@@ -54,9 +52,9 @@ namespace dt::tsm
 
         // 检查并注册表
         bool check_and_register(
-                const string & db_name,
-                const string & tb_name,
-                const string & field_name,
+                const std::string & db_name,
+                const std::string & tb_name,
+                const std::string & field_name,
                 bool use_index_entry_map)
         {
             auto & state_map = use_index_entry_map ? m_index_entry_state_map : m_skip_list_state_map;
@@ -96,9 +94,9 @@ namespace dt::tsm
 
         // 移除表的注册状态
         void remove_status(
-                const string & db_name,
-                const string & tb_name,
-                const string & field_name,
+                const std::string & db_name,
+                const std::string & tb_name,
+                const std::string & field_name,
                 bool use_index_entry_map)
         {
             auto & state_map = use_index_entry_map ? m_index_entry_state_map : m_skip_list_state_map;
@@ -124,7 +122,7 @@ namespace dt::tsm
         {
             auto & state_map = use_index_entry_map ? m_index_entry_state_map : m_skip_list_state_map;
             std::shared_mutex & map_mutex = use_index_entry_map ? m_index_entry_mutex : m_skip_list_mutex;
-            std::vector<std::tuple<string, string, string>> items_to_process;
+            std::vector<std::tuple<std::string, std::string, std::string>> items_to_process;
             // 收集待处理的数据库、表和字段
             {
                 std::shared_lock<std::shared_mutex> read_lock(map_mutex);
@@ -200,12 +198,12 @@ namespace dt::tsm
 
         struct TableInfo
         {
-            std::map<string, FieldInfo> m_field_map;  // 映射到对应的跳表
+            std::map<std::string, FieldInfo> m_field_map;  // 映射到对应的跳表
         };
 
         //       db_name          tb_name
-        std::map<string, std::map<string, TableInfo>>      m_skip_list_state_map;
-        std::map<string, std::map<string, TableInfo>>      m_index_entry_state_map;
+        std::map<std::string, std::map<std::string, TableInfo>>      m_skip_list_state_map;
+        std::map<std::string, std::map<std::string, TableInfo>>      m_index_entry_state_map;
         mutable std::shared_mutex                          m_skip_list_mutex;
         mutable std::shared_mutex                          m_index_entry_mutex;
     };

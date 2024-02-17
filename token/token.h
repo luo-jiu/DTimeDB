@@ -1,11 +1,10 @@
 #pragma once
 
+#include "json/json.h"
+using namespace dt::json;
+
 #include <map>
 #include <string>
-using std::string;
-
-#include <json/json.h>
-using namespace luo::json;
 
 namespace dt::token
 {
@@ -70,23 +69,23 @@ namespace dt::token
         };
 
         Token();
-        Token(Type type, const string & literal);
+        Token(Type type, const std::string & literal);
         ~Token() = default;
 
         Type type() const;
-        string name() const;
-        string literal() const;
+        std::string name() const;
+        std::string literal() const;
 
         Token & operator = (const Token & other);
-        static Type look_up(const string & literal);
+        static Type look_up(const std::string & literal);
 
         void show() const;
         Json json() const;
 
     private:
-        Type                                m_type;      // 符号类型
-        string                              m_literal;   // 字面量，也就是完整的串
-        static std::map<Type, string>       m_names;     // 关系表
-        static std::map<string, Type>       m_keywords;  // 关键字反查表
+        Type                                     m_type;      // 符号类型
+        std::string                              m_literal;   // 字面量，也就是完整的串
+        static std::map<Type, std::string>       m_names;     // 关系表
+        static std::map<std::string, Type>       m_keywords;  // 关键字反查表
     };
 }

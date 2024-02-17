@@ -1,11 +1,11 @@
-#include <engine/tsm/tsm_ingredient.h>
+#include "engine/tsm/tsm_ingredient.h"
 using namespace dt::tsm;
 
 bool DataBlock::write(
-        high_resolution_clock::time_point timestamp,
-        const string & value)
+        std::chrono::high_resolution_clock::time_point timestamp,
+        const std::string & value)
 {
-    if (timestamp.time_since_epoch() == high_resolution_clock::duration::zero())
+    if (timestamp.time_since_epoch() == std::chrono::high_resolution_clock::duration::zero())
     {
         return false;
     }
@@ -25,7 +25,7 @@ bool DataBlock::write(
     return true;
 }
 
-string DataBlock::my_to_string(const string & value)
+std::string DataBlock::my_to_string(const std::string & value)
 {
     std::ostringstream oss;
     oss << value;

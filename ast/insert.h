@@ -1,7 +1,7 @@
 #ifndef DTIMEDB_INSERT_H
 #define DTIMEDB_INSERT_H
 
-#include <ast/node.h>
+#include "ast/node.h"
 
 namespace dt::ast
 {
@@ -43,11 +43,11 @@ namespace dt::ast
         }
 
     public:
-        string                                      m_from;
-        std::list<string>                           m_tags;       // 标签集合
-        std::list<string>                           m_fields;     // 字段集合
-        std::list<string>                           m_values;     // 值集合
-        string                                      m_timestamp;  // timestamp
+        std::string                                      m_from;
+        std::list<std::string>                           m_tags;       // 标签集合
+        std::list<std::string>                           m_fields;     // 字段集合
+        std::list<std::string>                           m_values;     // 值集合
+        std::string                                      m_timestamp;  // timestamp
     };
 }
 

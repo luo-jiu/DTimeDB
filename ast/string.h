@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ast/node.h>
+#include "ast/node.h"
 
 namespace dt::ast
 {
@@ -22,6 +22,6 @@ namespace dt::ast
         }
 
     public:
-        string m_value;
+        std::string m_value;
     };
 }

@@ -1,6 +1,6 @@
-#include <evaluator/evaluator.h>
-
+#include "evaluator/evaluator.h"
 using namespace dt::evaluator;
+using namespace dt::execution;
 
 /**
  * 前缀表达式求值
@@ -10,7 +10,7 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval_prefix(
         Environment * env,
         const std::shared_ptr<ExecutionPlanNode> & root)
 {
-    string op = node->m_operator;
+    std::string op = node->m_operator;
     auto right = eval(node->m_right, env, root);
     if (is_error(right))
     {
