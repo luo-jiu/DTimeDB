@@ -122,31 +122,94 @@ void event_loop::add_ioev(int fd, io_call_back *proc, int mask, void *args) {
     //更新事件掩码
     _io_evs[fd].mask = f_mask;
     struct epoll_event event;
+    event.events = f_mask;
+    event.data.fd = fd;
+    int ret = ::epoll_ctl(_epfd, op,fd,&event);
+    //加入到监听集合中
+    listening.insert(fd);
 }
-
+/**
+ * 当使用完客户端并且需要关闭客户端连接时，从事件队列中移除对应事件
+ * @param fd
+ */
+//删除事件，完全删除
 void event_loop::del_ioev(int fd) {
-
+    _io_evs.erase(fd);
+    listening.erase(fd);
+    ::epoll_ctl(_epfd, EPOLL_CTL_DEL,fd,nullptr);
 }
-void event_loop::del_ioev(int fd, int mask) {}
-
+//删除事件，保留对写事件的监听
+void event_loop::del_ioev(int fd, int mask) {
+    io_ev_it it = _io_evs.find(fd);
+    if (it == _io_evs.end()){
+        return;
+    }
+    //获取当前事件掩码
+    int &o_mask = it->second.mask;
+    int ret;
+    //删除掩码
+    o_mask = o_mask & (~mask);
+    //掩码已清空
+    if (o_mask == 0){
+        _io_evs.erase(it);
+        ret =  ::epoll_ctl(_epfd,EPOLL_CTL_DEL,fd, nullptr);
+        //从监听队列移除
+        listening.erase(fd);
+    }
+    //掩码未清空，说明仍有监听，需要实时更新
+    else{
+        //创建 epoll 事件结构体
+        struct epoll_event event;
+        //设置事件类型
+        event.events = o_mask;
+        event.data.fd = fd;
+        ret =  ::epoll_ctl(_epfd,EPOLL_CTL_DEL,fd, &event);
+        //eror_if
+    }
+}
+//添加任务
 void event_loop::add_task(pendingFunc func, void *args) {
-
+    //创建任务对象
+    std::pair<pendingFunc, void*> item(func,args);
+    //添加任务对象到任务队列
+    _pending_func.push_back(item);
 }
 
+//删除定时器事件
 void event_loop::del_timer(int timer_id) {
-
+    _timer_que->del_timer(timer_id);
 }
+
 //延迟运行定时器事件
 int event_loop::run_after(time_call_back *cb, void *args, int sec, int mills) {
-
+    struct timespec tpc;
+    //获取当前时间
+    clock_gettime(CLOCK_REALTIME, &tpc);
+    //转换为毫秒
+    uint64_t  ts = tpc.tv_sec * 1000 + tpc.tv_nsec / 1000000UL;
+    // 计算延迟时间
+    ts += sec * 1000 + mills;
+    // 创建定时器事件对象
+    timer_event te (cb,args,ts);
+    return _timer_que->add_timer(te);
 }
 //指定时间内运行定时器事件
+//定时器队列会不断检查ts并排序，到了时间就会执行
 int event_loop::run_at(time_call_back *cb, void *args, uint64_t timestamp) {
-
+    timer_event te(cb,args,timestamp);
+    return _timer_que->add_timer(te);
 }
 //每隔一段事件运行定时器事件
 int event_loop::run_every(time_call_back *cb, void *args, int sec, int millis) {
-
+    // 计算间隔时间
+    uint32_t interval = sec * 1000 + millis;
+    struct timespec tpc;
+    //获取当前时间
+    clock_gettime(CLOCK_REALTIME,&tpc);
+    //下次运行时间
+    uint64_t timestamp = tpc.tv_sec * 1000 +  tpc.tv_nsec / 1000000UL + interval;
+    timer_event te(cb,args,timestamp,interval);
+    return _timer_que->add_timer(te);
 }
 //运行任务
 void event_loop::run_task() {
