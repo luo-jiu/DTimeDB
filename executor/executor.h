@@ -26,7 +26,10 @@ namespace dt::executor
         Executor()
         {
             // 为多个引擎的调用提供映射
-            m_engine_map["tsm"] = std::make_shared<tsm::Controller>();
+            auto tsm = std::make_shared<tsm::Controller>();
+            // 设置回调函数
+
+            m_engine_map["tsm"] = tsm;
         }
         void execute_plan(const std::shared_ptr<execution::ExecutionPlanNode>& node);
 

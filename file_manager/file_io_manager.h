@@ -15,10 +15,10 @@ namespace dt::file
     class FileIOManager
     {
     public:
-        FileIOManager(size_t max_size) : m_max_size(max_size) {}
+        explicit FileIOManager(size_t max_size) : m_max_size(max_size) {}
+        ~FileIOManager();
 
-        std::shared_ptr<std::fstream> get_file_stream(const std::string & file_path);
-        std::shared_ptr<std::fstream> get_file_stream(const std::string & file_path, std::string mode);
+        std::shared_ptr<std::fstream> get_file_stream(const std::string & file_path, const std::string & mode);
         void release_file_stream(const std::string & file_path);
         void close_file_stream(const std::string & file_path);
         void reset_file_stream(const std::string & file_path);
@@ -38,7 +38,7 @@ namespace dt::file
         size_t m_max_size;  // io 流数量上限
         std::mutex m_mutex;
 
-        std::unordered_map<std::string, FileStreamInfo> m_file_stream;
+        std::unordered_map<std::string, std::pair<FileStreamInfo, std::string>> m_file_stream;
         std::list<std::string> m_usage_order;
     };
 }

@@ -14,12 +14,14 @@ namespace dt::ast
         virtual Json json()
         {
             Json json;
-            json["type"] = name();
             json["type"] = m_type;
             return json;
         }
 
     public:
+        std::string m_curr_db_name;  // 是否提前指定数据库
+        std::string m_show_option;  // 显示选项
+        std::string m_tb_name;
         std::string m_type;  // database or table
     };
 }

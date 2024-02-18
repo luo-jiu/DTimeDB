@@ -17,10 +17,10 @@ string FilePathManager::create_database(
     string db_path = m_default_base_path + "/" + db_name;
 
     // 检查路径是否已经存在
-    if (!fs::exists(db_path))
+    if (fs::exists(db_path))
     {
         // 创建文件夹
-        fs::create_directory(db_path);
+//        fs::create_directory(db_path);
 
         // 初始化数据库条目,如果已经存在,这行代码不会有任何影响
         m_map[db_name] = std::map<string, TableInfo>();
@@ -29,7 +29,7 @@ string FilePathManager::create_database(
     }
     else
     {
-        std::cerr << "Database already exists\n";
+        std::cerr << "Database not exists\n";
         return "";
     }
 }
@@ -409,7 +409,7 @@ dt::tsm::SystemInfo FilePathManager::load_system_info(
         const string & tb_name)
 {
     string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
-    auto file = m_io_file.get_file_stream(file_path);
+    auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
@@ -448,7 +448,7 @@ bool FilePathManager::create_tsm_file_update_sys_info(
         uint64_t margin)
 {
     string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
-    auto file = m_io_file.get_file_stream(file_path);
+    auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
@@ -482,7 +482,7 @@ bool FilePathManager::update_system_file_name(
         const string & file_name)
 {
     string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
-    auto file = m_io_file.get_file_stream(file_path);
+    auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
@@ -509,7 +509,7 @@ bool FilePathManager::update_system_file_margin(
         uint64_t margin)
 {
     string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
-    auto file = m_io_file.get_file_stream(file_path);
+    auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
@@ -532,7 +532,7 @@ bool FilePathManager::update_system_file_head_offset(
         int64_t offset)
 {
     string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
-    auto file = m_io_file.get_file_stream(file_path);
+    auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
@@ -552,7 +552,7 @@ bool FilePathManager::update_system_file_tail_offset(
         int64_t offset)
 {
     string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
-    auto file = m_io_file.get_file_stream(file_path);
+    auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
@@ -571,7 +571,7 @@ bool FilePathManager::sys_show_file(
         const string & tb_name)
 {
     string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
-    auto file = m_io_file.get_file_stream(file_path);
+    auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
@@ -603,7 +603,7 @@ bool FilePathManager::sys_clear_file(
         const string & tb_name)
 {
     string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
-    auto file = m_io_file.get_file_stream(file_path);
+    auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;

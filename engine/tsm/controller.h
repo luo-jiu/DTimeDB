@@ -21,35 +21,8 @@ namespace dt::tsm
     class Controller : public impl::IEngine, public impl::ISystem, public impl::ITSM
     {
     public:
-        Controller(): m_producer_thread_pool(8), m_consumer_thread_pool(6), m_running(true), m_file("tsm")
-        {
-            init();
-            // 设置回调函数
-            m_field_state.set_skip_condition_callback(
-                    [this](const std::string & db_name, const std::string & tb_name, const std::string & field_name) {
-                        // skip_list 数据监控 回调处理函数
-                        return is_ready_disk_write(db_name, tb_name, field_name);
-                    });
-            m_field_state.set_index_condition_callback(
-                    [this](const std::string & db_name, const std::string & tb_name, const std::string & field_name) {
-                        // index queue监控 回调处理函数
-                        return is_ready_index_write(db_name, tb_name, field_name);
-                    });
-            m_table_state.set_condition_callback(
-                    [this](const std::string & db_name, const std::string & tb_name) {
-                        // data block queue监控 回调处理函数
-                        return disk_write(db_name, tb_name);
-                    });
-        }
-
-        ~Controller()
-        {
-            stop_monitoring_thread();
-            if (m_monitor_thread.joinable())
-            {
-                m_monitor_thread.join();
-            }
-        }
+        Controller();
+        ~Controller();
 
         void init();
 
@@ -67,7 +40,10 @@ namespace dt::tsm
         bool get_next_data(std::string & data) override;
         void begin_indexed_scan(const std::chrono::high_resolution_clock::time_point & timestamp, std::string & data) override;
         bool get_range_data(const std::chrono::high_resolution_clock::time_point & start, const std::chrono::high_resolution_clock::time_point & end, std::vector<std::string> & data) override;
-        bool get_range_data(const std::string & measurement, std::vector<std::string> field, std::vector<std::string> tags, std::shared_ptr<impl::ExprNode> expr_node) override;
+        bool get_range_data(const std::string & db_name, const std::string & measurement, std::vector<std::string> field, std::shared_ptr<impl::ExprNode> expr_node) override;
+
+        // 解析表达式树
+        void analytic_expr_tree();
 
         std::list<std::string> scan_full_table(const std::string & db_name, const std::string & tb_name) override;
 
@@ -110,7 +86,7 @@ namespace dt::tsm
         std::thread                          m_monitor_thread;
         mutable std::shared_mutex            m_mutex;                 // 读写锁保证m_map 安全
 
-        Index                                m_index;                 // 索引
+        Index                                m_index;                 // 倒排索引
     };
 }
 

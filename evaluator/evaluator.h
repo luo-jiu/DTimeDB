@@ -1,9 +1,11 @@
 #ifndef DTIMEDB_EVALUATOR_H
 #define DTIMEDB_EVALUATOR_H
 
+#include "engine/impl/itsm.h"
 #include "ast/header.h"
 #include "execution_plan/header.h"
 #include "evaluator/environment.h"
+#include "file_manager/table_engine_map.h"
 
 #include <memory>
 
@@ -36,8 +38,7 @@ namespace dt::evaluator
         std::shared_ptr<execution::ExecutionPlanNode> eval_use(const std::shared_ptr<dt::ast::Use> & node);
         std::shared_ptr<execution::ExecutionPlanNode> eval_create(const std::shared_ptr<ast::Create> & node);
         std::shared_ptr<execution::ExecutionPlanNode> eval_insert(const std::shared_ptr<ast::Insert> & node);
-        std::shared_ptr<execution::ExecutionPlanNode> eval_clt_select(const std::shared_ptr<ast::Select> & node, const std::shared_ptr<execution::ExecutionPlanNode> & where, const std::shared_ptr<execution::ExecutionPlanNode> & root);
-        std::shared_ptr<execution::ExecutionPlanNode> eval_tsm_select(const std::shared_ptr<ast::Select> & node, const std::shared_ptr<execution::ExecutionPlanNode> & where, const std::shared_ptr<execution::ExecutionPlanNode> & root);
+        std::shared_ptr<execution::ExecutionPlanNode> eval_select(const std::shared_ptr<ast::Select> & select, const std::shared_ptr<execution::ExecutionPlanNode> & root);
 
         std::shared_ptr<execution::ExecutionPlanNode> eval_sys(const std::shared_ptr<ast::System> & node, const std::shared_ptr<execution::ExecutionPlanNode> & where);
 
@@ -49,8 +50,13 @@ namespace dt::evaluator
         std::shared_ptr<execution::ExecutionPlanNode> eval_infix(const std::string & op, const std::shared_ptr<execution::ExecutionPlanNode> & left, const std::shared_ptr<execution::ExecutionPlanNode> & right);
         std::shared_ptr<execution::ExecutionPlanNode> eval_string_infix_expression(const std::string & op, const std::shared_ptr<execution::ExecutionPlanNode> & left, const std::shared_ptr<execution::ExecutionPlanNode> & right);
 
-    public:
+        bool use_database(const std::string & db_name);
+        // 转换成表达式树
+        std::shared_ptr<ExprNode> convert_to_new_tree(const std::shared_ptr<ast::Expression> & old_node);
 
+    public:
+        std::string                     m_curr_db_name;
+        file::TableEngineManager        m_tab_eng_manager;
     };
 }
 

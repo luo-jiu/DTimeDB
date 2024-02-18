@@ -11,6 +11,11 @@ insert into school,local='中德',class='软工1班' '出勤'=25
 select * from school
 select * from school where local='中德'
 
+# show命令
+show databases
+show tables
+show [table_name] [option] # eg: show school --engine | show db_name.tb_name --engine 显示表引擎
+
 # 系统调试命令不支持复杂sql,只做简单使用
 # system [show][update][clear] table [table_name] where [parameter]
 system show table school

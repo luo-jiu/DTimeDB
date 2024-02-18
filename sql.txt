@@ -1,1 +1,1 @@
-system show table school where 'local'='xxx' and 'class'='yyy'
+select * from db_test.school where age > '2012-8-10' and age < '2020-9-10'

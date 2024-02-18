@@ -16,6 +16,7 @@ std::map<Token::Type, string> Token::m_names = {
         {TOKEN_ASTERISK,        "*"},
         {TOKEN_SLASH,           "/"},
         {TOKEN_MODULO,          "%"},
+        {TOKEN_DECREASE,        "--"},
         {TOKEN_AND,             "AND"},
         {TOKEN_OR,              "OR"},
         {TOKEN_LT,              "<"},
@@ -26,6 +27,7 @@ std::map<Token::Type, string> Token::m_names = {
         {TOKEN_NE,              "!="},
         {TOKEN_LPAREN,          "("},
         {TOKEN_RPAREN,          ")"},
+        {TOKEN_DOT,             "."},
         {TOKEN_COMMA,           ","},
         {TOKEN_SEMICOLON,       ";"},
         {TOKEN_TIMESTAMP,       "timestamp"},
@@ -48,12 +50,11 @@ std::map<Token::Type, string> Token::m_names = {
         {TOKEN_FROM,            "m_from"},
         {TOKEN_WHERE,           "m_where"},
         {TOKEN_TTL,             "ttl"},
-        {TOKEN_TIME,            "time"},
 
         {TOKEN_TSM,             "tsm"},
         {TOKEN_CLT,             "clt"},
 
-        {TOKEN_SYSTEM,  "system"},
+        {TOKEN_SYSTEM,          "system"},
 };
 
 /**
@@ -78,7 +79,6 @@ std::map<string, Token::Type> Token::m_keywords = {
         {"from",            TOKEN_FROM},
         {"where",           TOKEN_WHERE},
         {"ttl",             TOKEN_TTL},
-        {"time",            TOKEN_TIME},
 
         {"and",             TOKEN_AND},
         {"or",              TOKEN_OR},

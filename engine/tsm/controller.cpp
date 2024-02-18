@@ -4,6 +4,36 @@ using namespace dt::impl;
 using namespace std::chrono;
 using std::string;
 
+Controller::Controller(): m_producer_thread_pool(8), m_consumer_thread_pool(6), m_running(true), m_file("tsm")
+{
+    init();
+    // 设置回调函数
+    m_field_state.set_skip_condition_callback(
+            [this](const std::string & db_name, const std::string & tb_name, const std::string & field_name) {
+                // skip_list 数据监控 回调处理函数
+                return is_ready_disk_write(db_name, tb_name, field_name);
+            });
+    m_field_state.set_index_condition_callback(
+            [this](const std::string & db_name, const std::string & tb_name, const std::string & field_name) {
+                // index queue监控 回调处理函数
+                return is_ready_index_write(db_name, tb_name, field_name);
+            });
+    m_table_state.set_condition_callback(
+            [this](const std::string & db_name, const std::string & tb_name) {
+                // data block queue监控 回调处理函数
+                return disk_write(db_name, tb_name);
+            });
+}
+
+Controller::~Controller()
+{
+    stop_monitoring_thread();
+    if (m_monitor_thread.joinable())
+    {
+        m_monitor_thread.join();
+    }
+}
+
 /**
  * 初始化函数
  *
@@ -198,13 +228,20 @@ bool Controller::get_range_data(
 
 }
 
+/**
+ * 查询数据
+ * @param measurement 测量值
+ * @param field 字段集合
+ * @param tags 纬度值
+ * @param expr_node 表达式树
+ */
 bool Controller::get_range_data(
+        const string & db_name,
         const string & measurement,
         std::vector<string> field,
-        std::vector<string> tags,
         std::shared_ptr<ExprNode> expr_node)
 {
-
+    std::cout << "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- db_name:'" << measurement << std::endl;
 }
 
 /**

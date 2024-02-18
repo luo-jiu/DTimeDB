@@ -7,21 +7,26 @@ using namespace dt::execution;
  * @param node
  */
 void Executor::execute_plan(
-        const std::shared_ptr<ExecutionPlanNode> & node) {
-    if (node == nullptr) {
+        const std::shared_ptr<ExecutionPlanNode> & node)
+{
+    if (node == nullptr)
+    {
         return;  // 结束递归
     }
 
     // 特殊节点特殊处理 show
-    if (node->name() == "show") {
+    if (node->name() == "show")
+    {
         auto show_node = std::dynamic_pointer_cast<ShowNode>(node);
-        if (show_node->m_type == "database") {
+        if (show_node->m_type == "database")
+        {
             node->show_database();
         }
         else  // table
         {
             // 遍历每个引擎，让他们打印出自己数据库对应的表
-            for (auto & engine_it : m_engine_map) {
+            for (auto & engine_it : m_engine_map)
+            {
                 node->execute(*engine_it.second);
             }
         }
@@ -29,7 +34,8 @@ void Executor::execute_plan(
     else if (node->name() == "use")
     {
         // 遍历引擎
-        for (auto & engine_it : m_engine_map) {
+        for (auto & engine_it : m_engine_map)
+        {
             node->execute(*engine_it.second);
         }
     }

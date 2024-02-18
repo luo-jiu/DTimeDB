@@ -13,9 +13,19 @@ std::shared_ptr<Expression> Parser::parse_insert()
     std::shared_ptr<Insert> e = std::make_shared<Insert>();
     e->m_token = m_curr;
     next_token();  // 跳过insert 关键字
-    if (m_curr.type() == Token::TOKEN_INTO && peek_token_is(Token::TOKEN_IDENTIFIER))  // into
+    if (m_curr.type() == Token::TOKEN_INTO && peek_token_is(Token::TOKEN_STRING))  // into
     {
         next_token();
+        if (peek_token_is(Token::TOKEN_DOT))  // 若是'.'
+        {
+            e->m_curr_db_name = m_curr.literal();
+            next_token();
+            if (!peek_token_is(Token::TOKEN_STRING))
+            {
+                return nullptr;
+            }
+            next_token();
+        }
         e->m_from = m_curr.literal();
         next_token();
 

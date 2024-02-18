@@ -136,5 +136,24 @@ void InsertNode::execute(IEngine & engine)
 
 void QueryTSMNode::execute(IEngine & engine)
 {
-
+    auto * tsm = dynamic_cast<ITSM*>(&engine);
+    if (tsm == nullptr)
+    {
+        std::cout << "IEngine -> ITSM 指针转换失败\n";
+        return;
+    }
+    string db_name = m_db_name;
+    if (m_db_name.empty())
+    {
+        if (m_current_db.empty())
+        {
+            std::cout << "Database not selected, 'use' command" << std::endl;
+            return;
+        }
+        else
+        {
+            db_name = m_current_db;
+        }
+    }
+    tsm->get_range_data(db_name, m_measurement, m_fields, m_expr_tree);
 }

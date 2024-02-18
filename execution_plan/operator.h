@@ -144,7 +144,7 @@ namespace dt::execution
     public:
         std::string                                  m_condition;
         std::list<std::string>                       m_fields;
-        std::map<token::Token::Type, std::string>    m_where;
+        std::shared_ptr<impl::ExprNode>              m_where;  // 表达式树
         std::shared_ptr<ExecutionPlanNode>           m_child;
     };
 
@@ -214,8 +214,9 @@ namespace dt::execution
         void set_child(std::shared_ptr<ExecutionPlanNode> child) override { m_child = child; }
 
     public:
+        std::string                                  m_db_name;
+        std::string                                  m_measurement;
         std::vector<std::string>                     m_fields;
-        std::vector<std::string>                     m_tags;
         std::shared_ptr<impl::ExprNode>              m_expr_tree;
         std::shared_ptr<ExecutionPlanNode>           m_child;
     };

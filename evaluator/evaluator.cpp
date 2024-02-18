@@ -111,19 +111,7 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval(
         case Node::NODE_SELECT:  // select 处理
         {
             auto select = std::dynamic_pointer_cast<ast::Select>(node);
-            auto e = std::dynamic_pointer_cast<ast::Infix>(select->m_where);  // 先将类型转换为中缀表达式
-            auto left = eval(e->m_left, env, root);  // 对select 的where 的左子树进行求值
-            if (is_error(left))
-            {
-                return left;
-            }
-            auto right = eval(e->m_right, env, root);  // 对右子树进行求值
-            if (is_error(right))
-            {
-                return right;
-            }
-            auto where = eval_infix(e->m_operator, left, right);  // 先处理where
-            return eval_clt_select(select, where, root);
+            return eval_select(select, root);
         }
         case Node::NODE_INSERT:  // insert 处理
         {
@@ -182,4 +170,61 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval(
             return new_error("Error : node type error");
         }
     }
+}
+
+bool Evaluator::use_database(const std::string & db_name)
+{
+    if (m_tab_eng_manager.database_exist(db_name))
+    {
+        m_curr_db_name = db_name;
+        return true;
+    }
+    return false;
+}
+
+/**
+ * 递归将查询语句的where ast抽象语法树转换为表达式树
+ */
+std::shared_ptr<ExprNode> Evaluator::convert_to_new_tree(
+        const std::shared_ptr<ast::Expression> & old_node)
+{
+    if (!old_node)
+    {
+        // 当前节点为空则返回
+        return nullptr;
+    }
+    // 基于old_node 创建表达式树节点
+    auto new_node = std::make_shared<ExprNode>();
+
+    if (old_node->m_token.type() == token::Token::TOKEN_STRING)
+    {
+        // 说明到叶子节点了, 不会再有子节点了, 程序返回
+        auto new_string = std::dynamic_pointer_cast<ast::String>(old_node);
+        new_node->m_val = new_string->m_value;
+        return new_node;
+    }
+    else
+    {
+        auto new_infix = std::dynamic_pointer_cast<ast::Infix>(old_node);
+        // 继续递归
+        new_node->m_val = new_infix->m_operator;
+        if (new_infix->m_left->m_token.type() == token::Token::TOKEN_STRING)
+        {
+            new_node->m_left = convert_to_new_tree(std::dynamic_pointer_cast<ast::String>(new_infix->m_left));
+        }
+        else
+        {
+            new_node->m_left = convert_to_new_tree(std::dynamic_pointer_cast<ast::Infix>(new_infix->m_left));
+        }
+
+        if (new_infix->m_right->m_token.type() == token::Token::TOKEN_STRING)
+        {
+            new_node->m_right = convert_to_new_tree(std::dynamic_pointer_cast<ast::String>(new_infix->m_right));
+        }
+        else
+        {
+            new_node->m_right = convert_to_new_tree(std::dynamic_pointer_cast<ast::Infix>(new_infix->m_right));
+        }
+    }
+    return new_node;
 }

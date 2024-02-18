@@ -15,7 +15,7 @@ namespace dt::evaluator
         /**
          * 存放变量名和值
          */
-        void set(const std::string & name, const std::shared_ptr<dt::execution::ExecutionPlanNode> & value)
+        void set(const std::string & name, const std::shared_ptr<execution::ExecutionPlanNode> & value)
         {
             m_store[name] = value;
         }
@@ -23,7 +23,7 @@ namespace dt::evaluator
         /**
          * 通过变量名获取变量的值
          */
-        std::shared_ptr<dt::execution::ExecutionPlanNode> get(const std::string & name)
+        std::shared_ptr<execution::ExecutionPlanNode> get(const std::string & name)
         {
             auto it = m_store.find(name);
             if (it != m_store.end())
@@ -76,8 +76,8 @@ namespace dt::evaluator
 
     private:
         //       变量名        变量值
-        std::map<std::string, std::shared_ptr<dt::execution::ExecutionPlanNode>>      m_store;
-        Environment *                                       m_outer;  // 外层环境变量
+        std::map<std::string, std::shared_ptr<execution::ExecutionPlanNode>>      m_store;
+        Environment *                                                             m_outer;  // 外层环境变量
 
     };
 }

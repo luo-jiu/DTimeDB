@@ -7,7 +7,9 @@ namespace dt::impl
 {
     struct ExprNode
     {
-
+        std::string                     m_val;
+        std::shared_ptr<ExprNode>       m_left;
+        std::shared_ptr<ExprNode>       m_right;
     };
 
     class ITSM
@@ -39,17 +41,14 @@ namespace dt::impl
                 std::string & measurement,
                 std::list<std::string> & tags) = 0;
 
-
-
-
         /**
          * [tsm]
          * 获取范围数据 (通过索引 [标签tag])
          */
         virtual bool get_range_data(
+                const std::string & db_name,
                 const std::string & measurement,
                 std::vector<std::string> field,
-                std::vector<std::string> tags,
                 std::shared_ptr<ExprNode> expr_node) = 0;
     };
 }

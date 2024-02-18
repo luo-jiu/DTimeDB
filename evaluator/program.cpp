@@ -19,6 +19,11 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval_program(
 
         res = eval(stat, env, root);  // 开始递归
 
+        if (!res)  // 如果是空
+        {
+            continue;
+        }
+
         // 错误则退出
         if (is_error(res))
         {

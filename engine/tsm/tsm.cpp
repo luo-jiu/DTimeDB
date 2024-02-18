@@ -14,7 +14,7 @@ bool TSM::write_header_to_file(
         const Header & header,
         const string & file_path)
 {
-    auto file = m_file_manager.get_file_stream(file_path);
+    auto file = m_file_manager.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm/write.cpp" << std::endl;
@@ -34,7 +34,7 @@ bool TSM::read_header_from_file(
         Header & header,
         const string & file_path)
 {
-    auto file = m_file_manager.get_file_stream(file_path);
+    auto file = m_file_manager.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for reading - m_from engine/tsm/write.cpp" << std::endl;
@@ -54,7 +54,7 @@ int64_t TSM::write_data_to_file(
         const string & file_path,
         int64_t offset)
 {
-    auto file = m_file_manager.get_file_stream(file_path);
+    auto file = m_file_manager.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm/tsm_.h" << std::endl;
@@ -92,7 +92,7 @@ bool TSM::read_data_from_file(
         const string & file_path,
         int64_t offset)
 {
-    auto file = m_file_manager.get_file_stream(file_path);
+    auto file = m_file_manager.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for reading - m_from engine/tsm/tsm_.h" << std::endl;
@@ -130,7 +130,7 @@ int64_t TSM::write_index_entry_to_file(
         const string & file_path,
         int64_t offset)
 {
-    auto file = m_file_manager.get_file_stream(file_path);
+    auto file = m_file_manager.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm/tsm_.h" << std::endl;
@@ -159,7 +159,7 @@ bool TSM::read_index_entry_from_file(
         const string & file_path,
         int64_t offset)
 {
-    auto file = m_file_manager.get_file_stream(file_path);
+    auto file = m_file_manager.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for reading - m_from engine/tsm/tsm_.h" << std::endl;
@@ -174,7 +174,7 @@ int64_t TSM::write_index_meta_to_file(
         const string & file_path,
         int64_t offset)
 {
-    auto file = m_file_manager.get_file_stream(file_path);
+    auto file = m_file_manager.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing - m_from engine/tsm/tsm_.h" << std::endl;
@@ -201,7 +201,7 @@ bool TSM::read_index_meta_from_file(
         const string & file_path,
         int64_t offset)
 {
-    auto file = m_file_manager.get_file_stream(file_path);
+    auto file = m_file_manager.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for reading - m_from engine/tsm/tsm_.h" << std::endl;
@@ -239,7 +239,7 @@ bool TSM::write_footer_to_file(
         const string & file_path,
         int64_t tail_offset)
 {
-    auto file = m_file_manager.get_file_stream(file_path);
+    auto file = m_file_manager.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for reading - m_from engine/tsm/write.cpp" << std::endl;
@@ -259,7 +259,7 @@ bool TSM::write_footer_to_file(
  */
 bool TSM::read_footer_from_file(Footer & footer, const string & file_path)
 {
-    auto file = m_file_manager.get_file_stream(file_path);
+    auto file = m_file_manager.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for reading - m_from engine/tsm/write.cpp" << std::endl;
@@ -349,7 +349,7 @@ bool TSM::create_tsm(
         const Footer & footer,
         const string & file_path)
 {
-    auto file = m_file_manager.get_file_stream(file_path);
+    auto file = m_file_manager.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for reading - m_from engine/tsm_/write.cpp" << std::endl;

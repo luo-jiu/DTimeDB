@@ -63,6 +63,14 @@ Token Lexer::next_token()
         }
         case '-':
         {
+            if (peek_char() == '-')
+            {
+                string literal;
+                literal += m_ch;
+                read_char();
+                literal += m_ch;
+                return new_token(Token::TOKEN_DECREASE, literal);
+            }
             string literal;
             literal += m_ch;
             return new_token(Token::TOKEN_MINUS, literal);
@@ -84,6 +92,12 @@ Token Lexer::next_token()
             string literal;
             literal += m_ch;
             return new_token(Token::TOKEN_MODULO, literal);
+        }
+        case '.':
+        {
+            string literal;
+            literal += m_ch;
+            return new_token(Token::TOKEN_DOT, literal);
         }
         case ',':
         {
@@ -191,7 +205,8 @@ Token Lexer::next_token()
                 {
                     return new_token(type, literal);
                 }
-                return new_token(type, temp);  // 用户定义的得原封不动
+                // 这里做了调整，抹去了变量，全部都转换成了字符串，原本应该是new_token(type, temp)
+                return new_token(Token::TOKEN_STRING, temp);  // 用户定义的得原封不动
             }
             else  // 啥也不是就报错
             {

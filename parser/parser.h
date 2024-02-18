@@ -71,16 +71,16 @@ namespace dt::parser
         std::shared_ptr<ast::Expression> parse_system();
 
         // 中缀表达式
-        std::shared_ptr<ast::Expression> parse_infix(const std::shared_ptr<ast::Expression> &left);
+        std::shared_ptr<ast::Expression> parse_infix(const std::shared_ptr<ast::Expression> & left);
 
         std::shared_ptr<ast::Expression> parse_expression(int precedence);  // 生成树
         std::list<std::string> & errors();  // 错误信息
 
     private:
         std::shared_ptr<dt::lexer::Lexer>                          m_lexer;
-        token::Token                                               m_curr;  // 当前符号
-        token::Token                                               m_peek;  // 下一个符号
-        std::list<std::string>                                     m_errors;  // 错误信息
+        token::Token                                               m_curr;        // 当前符号
+        token::Token                                               m_peek;        // 下一个符号
+        std::list<std::string>                                     m_errors;      // 错误信息
         static std::map<token::Token::Type, int>                   m_precedence;  // 优先级关系
 
         static std::map<token::Token::Type, prefix_parse_fn>       m_prefix_parse_fns;  // 前缀表达式

@@ -28,6 +28,16 @@ std::shared_ptr<Expression> Parser::parse_select()
         }
     }
     next_token();
+    if (peek_token_is(Token::TOKEN_DOT))  // 下一个符号是'.'
+    {
+        e->m_curr_db_name = m_curr.literal();
+        next_token();
+        if (!peek_token_is(Token::TOKEN_STRING))
+        {
+            return nullptr;
+        }
+        next_token();
+    }
     e->m_from = parse_string();
     if (!peek_token_is(Token::TOKEN_EOF))  // 说明有where
     {

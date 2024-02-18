@@ -26,6 +26,7 @@ namespace dt::token
             TOKEN_ASTERISK,        // *
             TOKEN_SLASH,           // /
             TOKEN_MODULO,          // %
+            TOKEN_DECREASE,        // --
             TOKEN_AND,             // AND
             TOKEN_OR,              // OR
             TOKEN_LT,              // <
@@ -36,6 +37,7 @@ namespace dt::token
             TOKEN_NE,              // !=
             TOKEN_LPAREN,          // (
             TOKEN_RPAREN,          // )
+            TOKEN_DOT,             // .
             TOKEN_COMMA,           // ,
             TOKEN_SEMICOLON,       // ;
             TOKEN_TIMESTAMP,       // timestamp
@@ -60,7 +62,6 @@ namespace dt::token
             TOKEN_TTL,             // ttl
             TOKEN_FROM,            // m_from
             TOKEN_WHERE,           // m_where
-            TOKEN_TIME,            // time
 
             TOKEN_TSM,             // tsm
             TOKEN_CLT,             // clt

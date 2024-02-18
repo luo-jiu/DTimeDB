@@ -43,11 +43,12 @@ namespace dt::ast
         }
 
     public:
+        std::string                                      m_curr_db_name;  // 是否提前指定数据库
         std::string                                      m_from;
-        std::list<std::string>                           m_tags;       // 标签集合
-        std::list<std::string>                           m_fields;     // 字段集合
-        std::list<std::string>                           m_values;     // 值集合
-        std::string                                      m_timestamp;  // timestamp
+        std::list<std::string>                           m_tags;          // 标签集合
+        std::list<std::string>                           m_fields;        // 字段集合
+        std::list<std::string>                           m_values;        // 值集合
+        std::string                                      m_timestamp;     // timestamp
     };
 }
 

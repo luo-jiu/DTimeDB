@@ -8,7 +8,7 @@ using namespace dt::ast;
  * @return ast/infix_node
  */
 std::shared_ptr<Expression> Parser::parse_infix(
-        const std::shared_ptr<Expression> &left)
+        const std::shared_ptr<Expression> & left)
 {
     std::shared_ptr<Infix> e(new Infix);
     e->m_token = m_curr;
