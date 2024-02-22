@@ -281,7 +281,16 @@ void Write::queue_flush_disk()
             m_tsm.write_series_index_block_to_file(index_info.m_index_deque, meta, m_curr_file_path, m_tail_offset);
             m_index_map.erase(field_name);
             // 同步尾指针
-            m_file_path->update_system_file_tail_offset(m_db_name, m_tb_name, m_tail_offset);
+            m_file_path->update_system_file_offset(m_db_name, m_tb_name, "tail", m_tail_offset);
+
+            auto field_it = m_field_map.find(field_name);
+            if (field_it == m_field_map.end())  // 没有这个field,为空
+            {
+                std::cout << "not find field:'" << field_name << "'" << std::endl;
+                break;
+            }
+            auto field = field_it->second;
+            field->set_mate_status(false);  // 重置meta
         }
 
         /**
@@ -371,7 +380,7 @@ void Write::queue_flush_disk()
             m_margin -= use_size;  // 去除大小
             m_head_offset += use_size;  // 指针偏移
 
-            // 创建entry [唯一生成]
+            // 创建index entry [唯一生成]
             auto entry = m_tsm.create_index_entry(data_block->m_max_timestamp, data_block->m_min_timestamp, m_head_offset, data_block->m_size);
             push_index_to_deque(field_name, entry);  // 存入队列
             std::cout << "生成index entry,为其注册监控事件\n";
@@ -395,7 +404,7 @@ void Write::queue_flush_disk()
             }
             // 同步头指针 和 剩余大小(因为上面已经给series index block 大小计算在内,[模块一不再同步])
             m_file_path->update_system_file_margin(m_db_name, m_tb_name, m_margin);
-            m_file_path->update_system_file_head_offset(m_db_name, m_tb_name, m_head_offset);
+            m_file_path->update_system_file_offset(m_db_name, m_tb_name, "head", m_head_offset);
         }
 //            if (m_first_write)  // 该文件第一次写入
 //            {

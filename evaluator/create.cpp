@@ -17,12 +17,16 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval_create(
         else
         {
             std::cout << "the database name is empty\n";
+            return nullptr;
         }
     }
     else
     {
         i->m_type = "table";
-        m_tab_eng_manager.create_table(m_curr_db_name, node->m_name, node->m_engine);
+        if (!m_tab_eng_manager.create_table(m_curr_db_name, node->m_name, node->m_engine))
+        {
+            return nullptr;
+        }
     }
     i->m_name = node->m_name;
 

@@ -5,6 +5,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <vector>
 
 namespace dt::file
 {
@@ -21,8 +22,8 @@ namespace dt::file
         typedef void (TableEngineManager::*show_table_option)(const std::string&, const std::string&);
 
         std::string create_database(const std::string & db_name);
-        void load_database_metadata(const std::string & db_name);
-        void create_table(const std::string & db_name, const std::string & tb_name, std::string & engine);
+        std::unordered_map<std::string, std::vector<std::string>> load_database_metadata(const std::string & db_name);
+        bool create_table(const std::string & db_name, const std::string & tb_name, std::string & engine);
         bool remove_table(const std::string & db_name, const std::string & tb_name);
 
         bool database_exist(const std::string & db_name) const;

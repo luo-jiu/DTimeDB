@@ -22,6 +22,7 @@ std::shared_ptr<Expression> Parser::parse_create()
     else
     {
         std::cerr << "Error : unknown token '" << m_curr.literal() << "'" << std::endl;
+        return nullptr;
     }
 
     // 后面都是建表语句 create table xxx(field_1=varchar, field_2=float, field_3=integer)engine=clt;
@@ -41,7 +42,7 @@ std::shared_ptr<Expression> Parser::parse_create()
         if (m_peek.type() == Token::TOKEN_RPAREN) next_token();
         if (m_curr.type() == Token::TOKEN_EOF)
         {
-            std::cerr << "Error: not fond ')';" << std::endl;
+            std::cerr << "Error: n`ot fond ')';" << std::endl;
             while (m_curr.type() != Token::TOKEN_EOF) next_token();  // 清空语句
             return nullptr;
         }
@@ -70,6 +71,7 @@ std::shared_ptr<Expression> Parser::parse_create()
     else
     {
         std::cerr << "Error : not fond engine;" << std::endl;
+        return nullptr;
     }
     return e;
 }

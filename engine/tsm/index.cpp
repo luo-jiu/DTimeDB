@@ -45,11 +45,27 @@ void Index::create_index(
                 // 直接插入 key 和 value 到嵌套的 unordered_map 和 set 中
                 tag_block.m_series_by_tag_key_value[key][value].insert(series_key);
 
-                // 单map 写入
-                m_mea_tags[measurement].insert(tag);
+                // 单map 写入[tag_key]
+                m_mea_tags[measurement].insert(key);
             }
         }
     }
+}
+
+/**
+ * 判断目标值是不是一个标签
+ */
+bool Index::whether_tag(
+        const std::string & measurement,
+        std::string & target)
+{
+    std::shared_lock<std::shared_mutex> read_lock(m_mutex);
+    auto tags_it = m_mea_tags.find(measurement);
+    if (tags_it != m_mea_tags.end())
+    {
+        return tags_it->second.find(target) != tags_it->second.end();
+    }
+    return false;
 }
 
 /**

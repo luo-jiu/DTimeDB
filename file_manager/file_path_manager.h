@@ -8,7 +8,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <map>
+#include <vector>
 #include <list>
+#include <mutex>
+#include <shared_mutex>
 #include <shared_mutex>
 #include <fstream>
 #include <iostream>
@@ -35,9 +38,7 @@ namespace dt::file
         bool delete_table(const std::string & tb_name, const std::string & db_name);
         bool delete_file(const std::string & file_name, const std::string & tb_name, const std::string & db_name);
 
-        std::string get_engine_type(const std::string & db_name, const std::string & tb_name);
-
-        bool load_database(const std::string & db_name);
+        bool load_database(const std::string & db_name, std::vector<std::string> & tables);
         bool show_data(const std::string & type);
         bool exists_table(const std::string & db_name, const std::string & tb_name, bool print);
 
@@ -45,10 +46,12 @@ namespace dt::file
         bool create_tsm_file_update_sys_info(const std::string & db_name, const std::string & tb_name, const std::string & file_name, uint64_t margin);
         bool update_system_file_name(const std::string & db_name, const std::string & tb_name, const std::string & file_name);
         bool update_system_file_margin(const std::string & db_name, const std::string & tb_name, uint64_t margin);
-        bool update_system_file_head_offset(const std::string & db_name, const std::string & tb_name, int64_t offset);
-        bool update_system_file_tail_offset(const std::string & db_name, const std::string & tb_name, int64_t offset);
+        bool update_system_file_offset(const std::string & db_name, const std::string & tb_name, const std::string & type, int64_t offset);
         bool sys_show_file(const std::string & db_name, const std::string & tb_name);
         bool sys_clear_file(const std::string & db_name, const std::string & tb_name);
+
+        std::vector<std::string> load_mea_fields(const std::string & db_name, const std::string & tb_name);
+        void insert_field_to_file(const std::string & db_name, const std::string & tb_name, const std::string & field);
 
     public:
         mutable std::shared_mutex m_mutex;

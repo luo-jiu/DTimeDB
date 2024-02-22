@@ -65,9 +65,10 @@ bool Controller::create_database(
  * 当要操作一个表的时候才会调用
  */
 bool Controller::load_database(
-        string & db_name)
+        string & db_name,
+        std::vector<std::string> & tables)
 {
-    return m_file.load_database(db_name);
+    return m_file.load_database(db_name, tables);
 }
 
 void Controller::show_table(
@@ -171,9 +172,17 @@ void Controller::insert_thread(
         return;
     }
 
+    // 判断field 是否已经存在
+    if (!mea_field_exist(db_name, tb_name, field_name))
+    {
+        // 不存在
+        std::cout << "字段不存在，写入表元数据,field " << field_name << std::endl;
+        m_file.insert_field_to_file(db_name, tb_name, field_name);
+        add_field(db_name, tb_name, field_name);
+    }
+
     // 拼接seriesKey
     string series_key = field_name + tags_str;
-
     writer->write(timestamp, series_key, value, type_temp, field_name, db_name, tb_name, m_field_state, m_table_state);
 }
 
@@ -241,7 +250,69 @@ bool Controller::get_range_data(
         std::vector<string> field,
         std::shared_ptr<ExprNode> expr_node)
 {
-    std::cout << "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- db_name:'" << measurement << std::endl;
+    m_producer_thread_pool.enqueue(&Controller::analytic_expr_tree, this, db_name, measurement, field, expr_node);
+    return true;
+}
+
+/**
+ * 分离出tag 以及where
+ */
+void Controller::analytic_expr_tree(
+        const std::string & db_name,
+        const std::string & measurement,
+        std::vector<std::string> field,
+        const std::shared_ptr<impl::ExprNode> & expr_node)
+{
+    // 解析表达式树(摘除掉tag 的部分)
+    std::vector<std::pair<std::string, std::string>> tags;
+    auto new_expr_tree = rebuild_tree_without_tags(measurement, expr_node, tags);
+
+    // 根据每一个字段分别构建 字段迭代器
+    m_file.load_mea_fields(db_name, measurement);
+}
+
+/**
+ * 重构表达式树
+ * @param expr_node
+ * @return
+ */
+std::shared_ptr<ExprNode> Controller::rebuild_tree_without_tags(
+        const std::string & measurement,
+        const std::shared_ptr<ExprNode> & expr_node,
+        std::vector<std::pair<std::string, std::string>> & tags)
+{
+    if (!expr_node)
+    {
+        return nullptr;
+    }
+    // 如果当前比较属于纬度比较，返回空，移除该节点
+    if (is_tag_comparison(measurement, expr_node))
+    {
+        tags.emplace_back(expr_node->m_left->m_val, expr_node->m_right->m_val);
+        return nullptr;
+    }
+    auto left = rebuild_tree_without_tags(measurement, expr_node->m_left, tags);
+    auto right = rebuild_tree_without_tags(measurement, expr_node->m_right, tags);
+
+    if ((expr_node->m_val == "and" || expr_node->m_val == "or") && (!left || !right))
+    {
+        return left ? left : right;
+    }
+    auto new_node = std::make_shared<ExprNode>(*expr_node);
+    new_node->m_left = left;
+    new_node->m_right = right;
+    return new_node;
+}
+
+bool Controller::is_tag_comparison(
+        const std::string & measurement,
+        const std::shared_ptr<ExprNode> & node)
+{
+    if (node && node->m_val == "=")
+    {
+        return m_index.whether_tag(measurement, node->m_left->m_val);
+    }
+    return false;
 }
 
 /**
@@ -285,11 +356,11 @@ bool Controller::sys_update_file(
         }
         if (key == "head_offset")
         {
-            return m_file.update_system_file_head_offset(db_name, tb_name, std::stoi(value));
+            return m_file.update_system_file_offset(db_name, tb_name, "head", std::stoi(value));
         }
         if (key == "tail_offset")
         {
-            return m_file.update_system_file_tail_offset(db_name, tb_name, std::stoi(value));
+            return m_file.update_system_file_offset(db_name, tb_name, "tail", std::stoi(value));
         }
         else if (key == "margin")
         {
@@ -353,6 +424,53 @@ bool Controller::exists_table(
         }
     }
     return false;
+}
+
+/**
+ * 从系统文件中加载数据库字段
+ */
+void Controller::sys_load_mea_fields()
+{
+
+}
+
+void Controller::add_field(
+        const std::string & db_name,
+        const std::string & tb_name,
+        const std::string & field)
+{
+    std::unique_lock<std::shared_mutex> write_lock(m_fields_map_mutex);
+    m_db_mea_map[db_name].m_mea_fields[tb_name].insert(field);
+
+}
+
+/**
+ * 该字段是否存在
+ */
+bool Controller::mea_field_exist(
+        const std::string & db_name,
+        const std::string & tb_name,
+        const std::string & field)
+{
+    std::shared_lock<std::shared_mutex> read_lock(m_fields_map_mutex);
+
+    // 首先检查数据库是否存在
+    auto db_it = m_db_mea_map.find(db_name);
+    if (db_it == m_db_mea_map.end()) {
+        // 数据库不存在
+        return false;
+    }
+
+    // 然后检查表是否存在
+    auto &mea_fields = db_it->second.m_mea_fields;
+    auto tb_it = mea_fields.find(tb_name);
+    if (tb_it == mea_fields.end()) {
+        // 表不存在
+        return false;
+    }
+
+    // 最后检查字段是否存在
+    return tb_it->second.find(field) != tb_it->second.end();
 }
 
 /**

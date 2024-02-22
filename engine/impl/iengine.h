@@ -32,7 +32,7 @@ namespace dt::impl
          *
          * 因为将每个数据库的文件管理系统给分开了，所以需要额外提供接口
          */
-        virtual bool load_database(std::string & db_name) = 0;
+        virtual bool load_database(std::string & db_name, std::vector<std::string> & tables) = 0;
         virtual void show_table(std::string & db_name) = 0;
 
 

@@ -95,8 +95,10 @@ namespace dt::execution
         void set_child(std::shared_ptr<ExecutionPlanNode> child) override {}
 
     public:
-        std::string                                 m_database;
-        std::shared_ptr<ExecutionPlanNode>          m_child;
+        std::string                                                     m_database_name;
+        //                 engine_name  tables
+        std::unordered_map<std::string, std::vector<std::string>>       m_tb_engine;  // 引擎对应表
+        std::shared_ptr<ExecutionPlanNode>                              m_child;
     };
 
     /**

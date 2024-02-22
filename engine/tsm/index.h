@@ -25,7 +25,7 @@ namespace dt::tsm
     {
     public:
         void create_index(const std::string & measurement, std::list<std::string> & tags);
-
+        bool whether_tag(const std::string & measurement, std::string & target);
         std::vector<std::string> search(const std::string & measurement, std::list<std::string> & tags);
         bool series_key_empty(std::string & series_key);
 
@@ -60,14 +60,14 @@ namespace dt::tsm
          * 作用是查询到对应measurement,可以找到对应的Tag Block
          * 需要排序,目的是可以实现范围查询
          */
-        std::unordered_map<std::string, TagBlock> m_mea_tag_keys;
+        std::unordered_map<std::string, TagBlock>                   m_mea_tag_keys;
 
         /**
          * 记录该measurement 中有多少的纬度值
          * map<measurement, list<tag_key>>
          */
-        std::unordered_map<std::string, std::set<std::string>> m_mea_tags;
-        SeriesBlock m_series_block;
+        std::unordered_map<std::string, std::set<std::string>>      m_mea_tags;
+        SeriesBlock                                                 m_series_block;
     };
 }
 

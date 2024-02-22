@@ -68,11 +68,18 @@ void ShowNode::execute(IEngine & engine)
 
 void UseNode::execute(IEngine & engine)
 {
-    m_current_db = m_database;  // 上下文环境
-    if (engine.load_database(m_database))  // 加载对应数据库
+    m_current_db = m_database_name;  // 上下文环境
+
+    // 遍历map 加载对应表
+    for (auto & tables : m_tb_engine)
     {
-        std::cout << "use: " << m_database << "\n";
+        if (engine.load_database(m_database_name, tables.second))  // 加载对应数据库
+        {
+            std::cout << "use: " << m_database_name << "\n";
+        }
     }
+
+
 }
 
 void ScanNode::execute(IEngine & engine)

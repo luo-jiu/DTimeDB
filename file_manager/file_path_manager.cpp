@@ -36,14 +36,13 @@ string FilePathManager::create_database(
 
 /**
  * 创建表
- * @return 返回表名
  */
 bool FilePathManager::create_table(
         const std::string & tb_name,
         const std::string & db_name,
         const std::string & engine)
 {
-    std::unique_lock<std::shared_mutex> map_lock(m_mutex);  // 先锁整个m_map
+    std::shared_lock<std::shared_mutex> map_lock(m_mutex);  // 先锁整个m_map[读锁]
 
     // 检查数据库是否存在
     auto db_it = m_map.find(db_name);
@@ -90,6 +89,7 @@ bool FilePathManager::exists_table(
         const string & tb_name,
         bool print)
 {
+    std::shared_lock<std::shared_mutex> read_map_lock(m_mutex);
     auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())
     {
@@ -171,6 +171,8 @@ string FilePathManager::create_sys_dfile(
 bool FilePathManager::delete_database(
         const string & db_name)
 {
+    std::unique_lock<std::shared_mutex> write_lock(m_mutex);
+
     auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())
     {
@@ -207,34 +209,41 @@ bool FilePathManager::delete_table(
         const string & tb_name,
         const string & db_name)
 {
-    if (exists_table(db_name, tb_name, true))
-    {
-        // 拿取list 开始删除所有表对应文件
-        auto & file_list = m_map[db_name][tb_name].m_files;
-        string file_path;
-        for (string & item : file_list)
-        {
-            try
-            {
-                file_path = m_default_base_path + "/" + tb_name + "/" + item;
-                if (fs::exists(file_path) && fs::is_regular_file(file_path))  // 存在且是文件
-                {
-                    fs::remove(file_path);
-                }
-                else
-                {
-                    std::cout << "File does not exist, no action taken." << std::endl;
-                }
+    std::unique_lock<std::shared_mutex> write_lock(m_mutex); // 直接获取写锁
+
+    // 检查数据库和表是否存在
+    auto db_it = m_map.find(db_name);
+    if (db_it == m_map.end()) {
+        std::cout << "cannot find database:'" << db_name << "'" << std::endl;
+        return false; // 数据库不存在
+    }
+
+    auto &db = db_it->second;
+    auto tb_info_it = db.find(tb_name);
+    if (tb_info_it == db.end()) {
+        std::cout << "cannot find table:'" << tb_name << "'" << std::endl;
+        return false; // 表不存在
+    }
+
+    // 删除所有表对应文件
+    auto &file_list = tb_info_it->second.m_files;
+    string file_path;
+    for (string &item : file_list) {
+        try {
+            file_path = m_default_base_path + "/" + db_name + "/" + tb_name + "/" + item; // 注意路径拼接包含数据库名
+            if (fs::exists(file_path) && fs::is_regular_file(file_path)) { // 存在且是文件
+                fs::remove(file_path);
+            } else {
+                std::cout << "File does not exist, no action taken." << std::endl;
             }
-            catch (const std::exception & e)
-            {
-                std::cerr << "Error: " << e.what() << std::endl;
-            }
+        } catch (const std::exception &e) {
+            std::cerr << "Error deleting file: " << e.what() << std::endl;
         }
     }
 
     // 移除表记录
-    return m_map[db_name].erase(tb_name) == 1;
+    bool result = db.erase(tb_name) == 1;
+    return result;
 }
 
 
@@ -246,49 +255,56 @@ bool FilePathManager::delete_file(
         const string & tb_name,
         const string & db_name)
 {
-    if (exists_table(db_name, tb_name, true))
-    {
-        auto & file_list = m_map[db_name][tb_name].m_files;
-        auto file_it = std::find(file_list.begin(), file_list.end(), file_name);
+    std::unique_lock<std::shared_mutex> write_lock(m_mutex); // 获取写锁
 
-        if (file_it != file_list.end())  // 文件存在
+    // 直接检查数据库和表是否存在
+    auto db_it = m_map.find(db_name);
+    if (db_it != m_map.end())
+    {
+        auto &db = db_it->second;
+        auto tb_it = db.find(tb_name);
+        if (tb_it != db.end())
         {
-            try {
-                string file_path = m_default_base_path + "/" + tb_name + "/" + file_name;
-                if (fs::exists(file_path) && fs::is_regular_file(file_path))  // 存在且是文件
+            // 现在我们已经确认表确实存在，可以继续进行文件删除操作
+            auto &file_list = tb_it->second.m_files;
+            auto file_it = std::find(file_list.begin(), file_list.end(), file_name);
+            if (file_it != file_list.end())  // 文件存在于列表中
+            {
+                try {
+                    string file_path = m_default_base_path + "/" + db_name + "/" + tb_name + "/" + file_name; // 确保路径是正确的
+                    if (fs::exists(file_path) && fs::is_regular_file(file_path))  // 存在且是文件
+                    {
+                        fs::remove(file_path);  // 移除文件
+
+                        // 从列表中移除文件名
+                        file_list.erase(file_it);
+
+                        return true;
+                    } else {
+                        std::cout << "File does not exist, no action taken." << std::endl;
+                        return false;
+                    }
+                }
+                catch (const std::exception &e)
                 {
-                    fs::remove(file_path);  // 移除文件
-                    return true;
-                } else {
-                    std::cout << "File does not exist, no action taken." << std::endl;
+                    std::cerr << "Error: " << e.what() << std::endl;
                     return false;
                 }
             }
-            catch (const std::exception &e)
-            {
-                std::cerr << "Error: " << e.what() << std::endl;
-            }
         }
+        else
+        {
+            std::cout << "Table '" << tb_name << "' does not exist in database '" << db_name << "'." << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "Database '" << db_name << "' does not exist." << std::endl;
     }
 
     return false;
 }
 
-/**
- * 查询表对应的引擎
- */
-string FilePathManager::get_engine_type(
-        const string & db_name,
-        const string & tb_name)
-{
-    // 先判断表是否存在
-    if (exists_table(db_name, tb_name, true))
-    {
-        // 存在直接返回引擎类型
-//        return m_map[db_name][tb_name].m_engine;
-    }
-    return "";
-}
 
 /**
  * 以数据库为单位将表信息加载到内存
@@ -298,8 +314,11 @@ string FilePathManager::get_engine_type(
  * @return
  */
 bool FilePathManager::load_database(
-        const string & db_name)
+        const string & db_name,
+        std::vector<std::string> & tables)
 {
+    std::unique_lock<std::shared_mutex> write_lock(m_mutex);
+
     // 读取过
     auto db_it = m_map.find(db_name);
     if (db_it != m_map.end())
@@ -310,17 +329,17 @@ bool FilePathManager::load_database(
 
     // 没读取过
     // 读取基路径下的所有数据库
-    string _db_name;
+    string db_name_temp;
     bool exists = false;
     for (const auto & entry : fs::directory_iterator(m_default_base_path))
     {
         if (entry.is_directory())
         {
-            _db_name = entry.path().filename().string();
+            db_name_temp = entry.path().filename().string();
             // 找到就退出
-            if (db_name == _db_name)
+            if (db_name == db_name_temp)
             {
-                m_map[_db_name] = std::map<string, TableInfo>();
+                m_map[db_name_temp] = std::map<string, TableInfo>();
                 exists = true;
                 break;
             }
@@ -341,33 +360,40 @@ bool FilePathManager::load_database(
     string start_part;
     std::map<string, TableInfo> table_map;
     // 判断路径是否存在
-    if (!fs::exists(db_path)) {
+    if (!fs::exists(db_path))
+    {
         // 不存在
         std::cout << "Error: '" << db_name << "' database does not exist" << std::endl;
         return false;
     }
-    for (const auto & entry : fs::directory_iterator(db_path))
+
+//    for (const auto & entry : fs::directory_iterator(db_path))
+//    {
+//        if (entry.is_regular_file())
+//        {
+//            file_name = entry.path().filename().string();
+//            size_t pos = file_name.find('-');
+//            if (pos != std::string::npos)
+//            {
+//                start_part = file_name.substr(0, pos);
+//            }
+//            if (start_part == "sys" && entry.path().extension() == ("." + m_engine))  // 只加载sys 系统文件
+//            {
+//                string table_part = file_name.substr(pos + 1);
+//                size_t dot_pos = table_part.find('.');
+//                string table_name = table_part.substr(0, dot_pos);
+//
+//                // 在此处读取系统文件的信息[暂时没有]
+//                // ...
+//
+//                table_map[table_name] = TableInfo{std::list<string>()};  // 创建对象
+//            }
+//        }
+//    }
+
+    for (auto & table_name : tables)
     {
-        if (entry.is_regular_file())
-        {
-            file_name = entry.path().filename().string();
-            size_t pos = file_name.find('-');
-            if (pos != std::string::npos)
-            {
-                start_part = file_name.substr(0, pos);
-            }
-            if (start_part == "sys" && entry.path().extension() == ("." + m_engine))  // 只加载sys 系统文件
-            {
-                string table_part = file_name.substr(pos + 1);
-                size_t dot_pos = table_part.find('.');
-                string table_name = table_part.substr(0, dot_pos);
-
-                // 在此处读取系统文件的信息[暂时没有]
-                // ...
-
-                table_map[table_name] = TableInfo{std::list<string>()};  // 创建对象
-            }
-        }
+        table_map[table_name] = TableInfo{std::list<string>()};
     }
 
     m_map[db_name] = table_map;
@@ -376,6 +402,7 @@ bool FilePathManager::load_database(
 
 bool FilePathManager::show_data(const string & db_name)
 {
+    std::shared_lock<std::shared_mutex> read_lock(m_mutex);
     if (db_name.empty())
     {
         for (const auto & entry : fs::directory_iterator(m_default_base_path))
@@ -412,7 +439,7 @@ dt::tsm::SystemInfo FilePathManager::load_system_info(
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for writing" << std::endl;
         return {};
     }
     file->seekg(std::ios::beg);
@@ -451,7 +478,7 @@ bool FilePathManager::create_tsm_file_update_sys_info(
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for writing" << std::endl;
         return false;
     }
     file->seekp(std::ios::beg);
@@ -485,7 +512,7 @@ bool FilePathManager::update_system_file_name(
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for writing" << std::endl;
         return false;
     }
     file->seekp(24);
@@ -512,7 +539,7 @@ bool FilePathManager::update_system_file_margin(
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for writing" << std::endl;
         return false;
     }
     file->seekp(16);
@@ -526,39 +553,37 @@ bool FilePathManager::update_system_file_margin(
 /**
  * 修改系统文件中待写入文件指针偏移量
  */
-bool FilePathManager::update_system_file_head_offset(
-        const string & db_name,
-        const string & tb_name,
+bool FilePathManager::update_system_file_offset(
+        const std::string & db_name,
+        const std::string & tb_name,
+        const std::string & type,
         int64_t offset)
 {
     string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for writing" << std::endl;
         return false;
     }
-    file->seekp(std::ios::beg);
-    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
-    file->flush();
-
-    m_io_file.release_file_stream(file_path);
-    return true;
-}
-
-bool FilePathManager::update_system_file_tail_offset(
-        const string & db_name,
-        const string & tb_name,
-        int64_t offset)
-{
-    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
-    auto file = m_io_file.get_file_stream(file_path, "binary");
-    if (!file->is_open())
+    if (type == "head")
     {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        file->seekp(std::ios::beg);
+    }
+    else if (type == "tail")
+    {
+        file->seekp(8);
+    }
+    else if (type == "field")
+    {
+        file->seekp(200);
+    }
+    else
+    {
+        m_io_file.release_file_stream(file_path);
         return false;
     }
-    file->seekp(8);
+
     file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
     file->flush();
 
@@ -574,7 +599,7 @@ bool FilePathManager::sys_show_file(
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for writing" << std::endl;
         return false;
     }
     file->seekg(std::ios::beg);
@@ -606,7 +631,7 @@ bool FilePathManager::sys_clear_file(
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm_/write.cpp" << std::endl;
+        std::cerr << "Error: Could not open file for writing" << std::endl;
         return false;
     }
     int64_t offset = 0;
@@ -619,8 +644,85 @@ bool FilePathManager::sys_clear_file(
     file->write(reinterpret_cast<const char*>(&margin), sizeof(uint64_t));
     // 写file_name
     file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
+
+    file->seekp(200);
+    offset = 210;  // 偏移量
+    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
+    file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
     file->flush();
 
     m_io_file.release_file_stream(file_path);
     return true;
+}
+
+std::vector<std::string> FilePathManager::load_mea_fields(
+        const std::string & db_name,
+        const std::string & tb_name)
+{
+    std::string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    std::ifstream file(file_path, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open file for reading" << std::endl;
+        return {};
+    }
+
+    // 定位到文件中存储字段数量的位置，即跳过偏移量存储的200字节加上8字节的偏移量
+    file.seekg(200 + sizeof(int64_t));
+    uint16_t num;
+    file.read(reinterpret_cast<char*>(&num), sizeof(num));
+
+    // 读取所有字段
+    std::vector<std::string> fields;
+    for (uint16_t i = 0; i < num; ++i) {
+        uint16_t length;
+        file.read(reinterpret_cast<char*>(&length), sizeof(length)); // 读取字段长度
+
+        std::string field(length, '\0');
+        file.read(&field[0], length); // 根据长度读取字段
+
+        fields.push_back(field); // 添加到字段列表中
+    }
+
+    // 打印读取的字段
+    for (const auto& field : fields) {
+        std::cout << "Field: " << field << std::endl;
+    }
+    return fields;
+}
+
+void FilePathManager::insert_field_to_file(
+        const std::string & db_name,
+        const std::string & tb_name,
+        const std::string & field)
+{
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    auto file = m_io_file.get_file_stream(file_path, "binary");
+    if (!file->is_open())
+    {
+        std::cerr << "Error: Could not open file for writing" << std::endl;
+        return;
+    }
+    file->seekg(200);
+    int64_t offset;
+    uint16_t num;
+    file->read(reinterpret_cast<char*>(&offset), sizeof(offset));
+    file->read(reinterpret_cast<char*>(&num), sizeof(num));
+    std::cout << "offset:" << offset << "num:" << num << std::endl;
+    file->seekp(offset);
+    auto length = static_cast<uint16_t>(field.length());
+
+    // 写file_name
+    file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
+    file->write(field.c_str(), length);  // 写字符串
+
+    // 获取当前末尾位置的偏移量
+    offset = file->tellp();
+    num += 1;
+
+    file->seekp(200);
+    file->write(reinterpret_cast<char*>(&offset), sizeof(offset));
+    file->write(reinterpret_cast<char*>(&num), sizeof(num));
+
+    file->flush();
+    m_io_file.release_file_stream(file_path);
 }
