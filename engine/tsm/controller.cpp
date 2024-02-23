@@ -41,7 +41,7 @@ Controller::~Controller()
  */
 void Controller::init()
 {
-    //  开启监控跳表线程
+    //  开启监控线程
     m_monitor_thread = std::thread([this]{ this->monitoring_thread(); });
 }
 
@@ -391,9 +391,9 @@ void Controller::monitoring_thread()
 {
     while(m_running.load())
     {
-        m_field_state.iterate_map(false);
-        m_field_state.iterate_map(true);
-        m_table_state.iterate_map();
+        m_field_state.iterate_map(false);  // 监控skip list
+        m_field_state.iterate_map(true);   // 监控index entry
+        m_table_state.iterate_map();       // 监控data deque
         // 等待一段时间再次检查
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -441,7 +441,6 @@ void Controller::add_field(
 {
     std::unique_lock<std::shared_mutex> write_lock(m_fields_map_mutex);
     m_db_mea_map[db_name].m_mea_fields[tb_name].insert(field);
-
 }
 
 /**

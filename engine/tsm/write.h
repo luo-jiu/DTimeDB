@@ -1,11 +1,12 @@
 #ifndef DTIMEDB_WRITE_H
 #define DTIMEDB_WRITE_H
 
-#include "engine/tsm/field.h"
-#include "engine/tsm/field_state.h"
-#include "engine/tsm/tsm_ingredient.h"
-#include "engine/tsm/table_state.h"
 #include "file_manager/file_path_manager.h"
+#include "field.h"
+#include "field_state.h"
+#include "tsm_ingredient.h"
+#include "table_state.h"
+#include "shard.h"
 
 #include <unordered_set>
 #include <list>
@@ -96,6 +97,9 @@ namespace dt::tsm
         std::map<std::string, IndexEntryInfo>                                m_index_map;        // 存储所有字段的 index entry
         std::unordered_set<std::string>                                      m_task_set;
         std::list<std::string>                                               m_index_task_queue; // 使用list 配合set实现去重顺序任务注册
+        //                 mea_name
+        std::unordered_map<std::string, Shard>                               m_mea_shard_map;    // 存储测量中所有的 shards
+        dt::wal::WAL                                                         m_wal;
     };
 }
 #endif //DTIMEDB_WRITE_H

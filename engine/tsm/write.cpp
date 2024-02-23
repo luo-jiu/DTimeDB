@@ -58,6 +58,9 @@ void Write::write(
         }
     }
 
+    // 在这里需要判断写入那个shard
+    // 以及把shard中的当前文件传入写入程序中
+
     field->write(timestamp, data, db_name, tb_name);
 }
 

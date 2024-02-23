@@ -6,11 +6,13 @@
 #include "engine/impl/itsm.h"
 #include "engine/impl/isystem.h"
 #include "engine/impl/iengine.h"
-#include "engine/tsm/write.h"
-#include "engine/tsm/index.h"
-#include "engine/tsm/field_state.h"
-#include "engine/tsm/table_state.h"
-#include "engine/tsm/iterator.h"
+#include "wal/shard_wal.h"
+
+#include "write.h"
+#include "index.h"
+#include "field_state.h"
+#include "table_state.h"
+#include "iterator.h"
 
 namespace dt::tsm
 {
@@ -43,7 +45,6 @@ namespace dt::tsm
         bool get_range_data(const std::chrono::high_resolution_clock::time_point & start, const std::chrono::high_resolution_clock::time_point & end, std::vector<std::string> & data) override;
         bool get_range_data(const std::string & db_name, const std::string & measurement, std::vector<std::string> field, std::shared_ptr<impl::ExprNode> expr_node) override;
 
-        // 解析表达式树
         void analytic_expr_tree(const std::string & db_name, const std::string & measurement, std::vector<std::string> field, const std::shared_ptr<impl::ExprNode>& expr_node);
         std::shared_ptr<impl::ExprNode> rebuild_tree_without_tags(const std::string & measurement, const std::shared_ptr<impl::ExprNode> & expr_node, std::vector<std::pair<std::string, std::string>> & tags);
         bool is_tag_comparison(const std::string & measurement, const std::shared_ptr<impl::ExprNode> & node);
@@ -81,6 +82,12 @@ namespace dt::tsm
             std::map<std::string, Table>                            m_table_map;
         };
 
+        struct Measurement
+        {
+            //                mea_name      field/shared
+            std::unordered_map<std::string, std::set<std::string>>  m_mea_fields;
+        };
+        
         //       db_name
         std::map<std::string, Database>                             m_map;
         thread::ThreadPool                                          m_producer_thread_pool;  // 生产者线程池
@@ -92,14 +99,11 @@ namespace dt::tsm
         std::atomic<bool>                                           m_running;               // 用于退出监控线程
         std::thread                                                 m_monitor_thread;
         mutable std::shared_mutex                                   m_mutex;                 // 读写锁保证m_map 安全
-        mutable std::shared_mutex                                   m_fields_map_mutex;      // 保证m_databases_mea
+        mutable std::shared_mutex                                   m_fields_map_mutex;      // 保证m_db_mea_map
 
         Index                                                       m_index;                 // 倒排索引
-        struct Measurement
-        {
-            std::unordered_map<std::string, std::set<std::string>>  m_mea_fields;
-        };
-        std::unordered_map<std::string, Measurement>                m_db_mea_map;
+        //                 db_name
+        std::unordered_map<std::string, Measurement>                m_db_mea_map;            // 存储测量中所有的字段
     };
 }
 

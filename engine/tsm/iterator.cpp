@@ -31,7 +31,7 @@ void SortMergeIterator::load_more_data()
 /**
  * 对每个SortMergeIterator 执行next(),并根据逻辑合并结果
  */
-DataPoint RootIterator::next()
+DataPoint FieldIterator::next()
 {
 
 }
@@ -39,7 +39,7 @@ DataPoint RootIterator::next()
 /**
  * 执行聚合操作
  */
-DataPoint RootIterator::aggregate()
+DataPoint FieldIterator::aggregate()
 {
     // 对 m_merges 中的数据进行聚合操作
 }
@@ -47,7 +47,7 @@ DataPoint RootIterator::aggregate()
 /**
  * 遍历m_root, 调用每个RootIterator 中的next 或aggregate()
  */
-void Iterator::next()
+void RootIterator::next()
 {
 
 }

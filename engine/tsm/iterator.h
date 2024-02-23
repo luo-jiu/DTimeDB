@@ -8,6 +8,12 @@
 
 namespace dt::tsm
 {
+
+    class ShardIterator
+    {
+
+    };
+
     /**
      * 查询迭代器
      */
@@ -26,7 +32,7 @@ namespace dt::tsm
     /**
      * 字段迭代器
      */
-    class RootIterator
+    class FieldIterator
     {
     public:
         DataPoint next();
@@ -38,13 +44,13 @@ namespace dt::tsm
         std::vector<std::shared_ptr<SortMergeIterator>> m_merges;
     };
 
-    class Iterator
+    class RootIterator
     {
     public:
         void next();
 
     public:
-        std::vector<std::shared_ptr<RootIterator>> m_root;
+        std::vector<std::shared_ptr<FieldIterator>> m_root;
     };
 }
 
