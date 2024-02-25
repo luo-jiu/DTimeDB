@@ -9,14 +9,14 @@ Controller::Controller(): m_producer_thread_pool(8), m_consumer_thread_pool(6), 
     init();
     // 设置回调函数
     m_field_state.set_skip_condition_callback(
-            [this](const std::string & db_name, const std::string & tb_name, const std::string & field_name) {
+            [this](const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name) {
                 // skip_list 数据监控 回调处理函数
-                return is_ready_disk_write(db_name, tb_name, field_name);
+                return is_ready_disk_write(db_name, tb_name, shard_id, field_name);
             });
     m_field_state.set_index_condition_callback(
-            [this](const std::string & db_name, const std::string & tb_name, const std::string & field_name) {
+            [this](const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name) {
                 // index queue监控 回调处理函数
-                return is_ready_index_write(db_name, tb_name, field_name);
+                return is_ready_index_write(db_name, tb_name, shard_id, field_name);
             });
     m_table_state.set_condition_callback(
             [this](const std::string & db_name, const std::string & tb_name) {
@@ -478,6 +478,7 @@ bool Controller::mea_field_exist(
 bool Controller::is_ready_disk_write(
         const string & db_name,
         const string & tb_name,
+        const string & shard_id,
         const string & field_name)
 {
     std::shared_lock<std::shared_mutex> read_lock(m_mutex);
@@ -490,7 +491,7 @@ bool Controller::is_ready_disk_write(
             auto writer = tb_it->second.m_writer;
             if (writer)
             {
-                if (writer->skip_need_flush_data_block(field_name))
+                if (writer->skip_need_flush_data_block(shard_id, field_name))
                 {
                     std::cout << "---满足刷块\n";
                     // 刷跳表(传入空数据激活即可) 获取对应字段类型
@@ -498,7 +499,8 @@ bool Controller::is_ready_disk_write(
                     auto tb = tb_name;
                     auto db = db_name;
                     // 利用插入数据语句,进入对应跳表激活判断逻辑引发刷块
-                    m_producer_thread_pool.enqueue(&Controller::insert_thread, this, system_clock::now(), "", "", Type::DATA_STRING, fd, tb, db);
+                    m_producer_thread_pool.enqueue(&Controller::insert_thread,
+                        this, system_clock::from_time_t(Shard::shard_key_to_timestamp(shard_id)), "", "", Type::DATA_STRING, fd, tb, db);
                     return true;
                 }
                 else
@@ -517,6 +519,7 @@ bool Controller::is_ready_disk_write(
 bool Controller::is_ready_index_write(
         const string & db_name,
         const string & tb_name,
+        const string & shard_id,
         const string & field_name)
 {
     std::shared_lock<std::shared_mutex> read_lock(m_mutex);

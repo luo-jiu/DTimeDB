@@ -31,6 +31,7 @@ namespace dt::tsm
         void update(
                 const std::string & db_name,
                 const std::string & tb_name,
+                const std::string & shard_id,
                 const std::string & field_name,
                 bool is_registered,
                 bool use_index_entry_map) override
@@ -137,6 +138,7 @@ namespace dt::tsm
 
     private:
         DataBlockCallback m_condition_callback;  // 存储回调函数
+
 
         //       db_name          tb_name
         std::map<std::string, std::map<std::string, std::atomic<bool>>>      m_state_map;

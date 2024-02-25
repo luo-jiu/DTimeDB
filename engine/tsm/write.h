@@ -43,7 +43,7 @@ namespace dt::tsm
         bool get_data_status();
         void push_data_to_deque(std::shared_ptr<DataBlock> & data_block);
         std::shared_ptr<DataBlock> pop_data_from_deque();
-        void push_index_to_deque(const std::string & field_name, const std::shared_ptr<IndexEntry> & index_block);
+        void push_index_to_deque(const std::string & shard_id, const std::string & field_name, const std::shared_ptr<IndexEntry> & index_block);
         std::shared_ptr<IndexEntry> pop_index_from_deque(const std::string & field_name);
         size_t get_index_deque_size(const std::string & field_name);
         bool task_queue_empty();
@@ -53,7 +53,7 @@ namespace dt::tsm
         bool empty_field_list();
         int size_field_list();
 
-        bool skip_need_flush_data_block(const std::string & field_name);
+        bool skip_need_flush_data_block(const std::string & shard_id, const std::string & field_name);
         bool index_need_flush_data_block(const std::string & field_name);
     private:
         void flush_entry_disk(std::string & field_name, bool is_remove);
@@ -93,6 +93,7 @@ namespace dt::tsm
         {
             std::chrono::high_resolution_clock::time_point                   m_last_time;        // 索引计时器
             std::deque<std::shared_ptr<IndexEntry>>                          m_index_deque;
+            std::string                                                      m_shard_id;
         };
         std::map<std::string, IndexEntryInfo>                                m_index_map;        // 存储所有字段的 index entry
         std::unordered_set<std::string>                                      m_task_set;

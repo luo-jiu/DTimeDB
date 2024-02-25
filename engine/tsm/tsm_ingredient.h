@@ -112,6 +112,7 @@ namespace dt::tsm
         std::string                                                      m_field_name;  // 字段名(不存)
         std::chrono::high_resolution_clock::time_point                   m_max_timestamp;
         std::chrono::high_resolution_clock::time_point                   m_min_timestamp;
+        std::string                                                      m_shard_id;
 
         Type                                                             m_type;
         int32_t                                                          m_num;
@@ -146,8 +147,8 @@ namespace dt::tsm
     private:
         std::chrono::high_resolution_clock::time_point       m_max_time;
         std::chrono::high_resolution_clock::time_point       m_min_time;
-        int64_t                                 m_offset;  // 数据块起始位置
-        int32_t                                 m_size;  // 数据块大小
+        int64_t                                              m_offset;  // 数据块起始位置
+        int32_t                                              m_size;  // 数据块大小
     };
 
     /**

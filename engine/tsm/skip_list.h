@@ -8,6 +8,7 @@
 #include <mutex>
 #include <shared_mutex>
 #include <chrono>
+#include <atomic>
 
 namespace dt::tsm
 {
@@ -55,13 +56,13 @@ namespace dt::tsm
             m_observers.remove(observer);
         }
 
-        void notify(const std::string & db_name, const std::string & tb_name, const std::string & field_name, bool is_registered, bool use_index_entry_map) override
+        void notify(const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name, bool is_registered, bool use_index_entry_map) override
         {
             std::shared_lock<std::shared_mutex> lock(m_mutex);
             // 通知所有观察者发生变化
             for (auto observer : m_observers)
             {
-                observer->update(db_name, tb_name, field_name, is_registered, use_index_entry_map);
+                observer->update(db_name, tb_name, shard_id, field_name, is_registered, use_index_entry_map);
             }
         }
 
@@ -100,15 +101,18 @@ namespace dt::tsm
             Node(std::chrono::high_resolution_clock::time_point key, T value, int level): m_key(key), m_value(value), m_nexts(level, nullptr) {}
         };
 
-        std::chrono::high_resolution_clock::time_point timestamp;  // 刷写时间，要保证线程安全
+        std::chrono::high_resolution_clock::time_point           timestamp;  // 刷写时间，要保证线程安全
+        std::atomic<bool>                                        m_need_reset{true};  // 跳表是否需要重置
+        std::chrono::high_resolution_clock::time_point           m_sl_last_time;  // 跳表刷块计时器
+        std::shared_ptr<DataBlock>                               m_current_data;  // 当前块
 
     private:
-        Node*                                   m_head;  // 头结点
-        size_t                                  m_bottom_level_node_count; // 计数器
-        std::list<impl::ITableStateObserver*>   m_observers;
-        mutable std::shared_mutex               m_mutex;  // 读写锁
-        mutable std::shared_mutex               m_tp_mutex; // 对于时间戳的读写锁, mutable 允许在const成员函数中修改
-        std::mutex                              m_sl_mutex;  // 互斥锁, 性能瓶颈, 未来再说
+        Node*                                                    m_head;  // 头结点
+        size_t                                                   m_bottom_level_node_count; // 计数器
+        std::list<impl::ITableStateObserver*>                    m_observers;
+        mutable std::shared_mutex                                m_mutex;  // 读写锁
+        mutable std::shared_mutex                                m_tp_mutex;  // 对于时间戳的读写锁, mutable 允许在const成员函数中修改
+        std::mutex                                               m_sl_mutex;  // 互斥锁, 性能瓶颈, 未来再说
 
         int random_level()
         {

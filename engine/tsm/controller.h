@@ -6,7 +6,6 @@
 #include "engine/impl/itsm.h"
 #include "engine/impl/isystem.h"
 #include "engine/impl/iengine.h"
-#include "wal/shard_wal.h"
 
 #include "write.h"
 #include "index.h"
@@ -65,8 +64,8 @@ namespace dt::tsm
         bool mea_field_exist(const std::string & db_name, const std::string & tb_name, const std::string & field);
 
         // 回调函数
-        bool is_ready_disk_write(const std::string & db_name, const std::string & tb_name, const std::string & field_name);
-        bool is_ready_index_write(const std::string & db_name, const std::string & tb_name, const std::string & field_name);
+        bool is_ready_disk_write(const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name);
+        bool is_ready_index_write(const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name);
         bool disk_write(const std::string & db_name, const std::string & tb_name);
 
     private:

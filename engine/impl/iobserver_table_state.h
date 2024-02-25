@@ -2,6 +2,7 @@
 #define DTIMEDB_OBSERVER_H
 
 #include <string>
+#include <chrono>
 
 namespace dt::impl
 {
@@ -9,7 +10,7 @@ namespace dt::impl
     {
     public:
         // 更新状态函数, 具体功能由对应观察者实现
-        virtual void update(const std::string & db_name, const std::string & tb_name, const std::string & field_name, bool is_registered, bool use_index_entry_map) = 0;
+        virtual void update(const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name, bool is_registered, bool use_index_entry_map) = 0;
     };
 
     class ITableStateSubject
@@ -22,7 +23,7 @@ namespace dt::impl
         virtual void detach(ITableStateObserver * observer) = 0;
 
         // 通知所有观察者状态发生变化
-        virtual void notify(const std::string & db_name, const std::string & tb_name, const std::string & field_name, bool is_registered, bool use_index_entry_map) = 0;
+        virtual void notify(const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name, bool is_registered, bool use_index_entry_map) = 0;
     };
 }
 

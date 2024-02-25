@@ -13,6 +13,14 @@
 
 namespace dt::tsm
 {
+    struct Info
+    {
+        std::string m_db_name;
+        std::string m_tb_name;
+        std::string m_shard_id;
+        std::string m_field_name;
+    };
+
     /**
      * 字段级别的状态更新
      * skip_list, index entry
@@ -20,7 +28,7 @@ namespace dt::tsm
     class FieldState : public impl::ITableStateObserver
     {
     public:
-        using ConditionCallback = std::function<bool(const std::string&, const std::string&, const std::string&)>;
+        using ConditionCallback = std::function<bool(const std::string&, const std::string&, const std::string&, const std::string&)>;
 
         // 设置回调函数
         void set_skip_condition_callback(ConditionCallback callback)
@@ -35,6 +43,7 @@ namespace dt::tsm
         void update(
                 const std::string & db_name,
                 const std::string & tb_name,
+                const std::string & shard_id,
                 const std::string & field_name,
                 bool is_registered,
                 bool use_index_entry_map) override
@@ -42,7 +51,7 @@ namespace dt::tsm
             // 更新状态逻辑
             if (is_registered)
             {
-                check_and_register(db_name, tb_name, field_name, use_index_entry_map);
+                check_and_register(db_name, tb_name, shard_id, field_name, use_index_entry_map);
             }
             else
             {
@@ -54,6 +63,7 @@ namespace dt::tsm
         bool check_and_register(
                 const std::string & db_name,
                 const std::string & tb_name,
+                const std::string & shard_id,
                 const std::string & field_name,
                 bool use_index_entry_map)
         {
@@ -86,6 +96,7 @@ namespace dt::tsm
             if (!field_status.m_is_registered.load())
             {
                 field_status.m_is_registered.store(true);
+                field_status.m_shard_id = shard_id;
                 return true;
             }
             // 字段已注册
@@ -122,7 +133,7 @@ namespace dt::tsm
         {
             auto & state_map = use_index_entry_map ? m_index_entry_state_map : m_skip_list_state_map;
             std::shared_mutex & map_mutex = use_index_entry_map ? m_index_entry_mutex : m_skip_list_mutex;
-            std::vector<std::tuple<std::string, std::string, std::string>> items_to_process;
+            std::vector<Info> items_to_process;
             // 收集待处理的数据库、表和字段
             {
                 std::shared_lock<std::shared_mutex> read_lock(map_mutex);
@@ -138,7 +149,7 @@ namespace dt::tsm
                             if (field_pair.second.m_is_registered.load())
                             {
                                 // 说明该字段已注册，先存储起来
-                                items_to_process.emplace_back(db_name, tb_name, field_name);
+                                items_to_process.emplace_back(Info{db_name, tb_name, field_pair.second.m_shard_id, field_name});
                             }
                         }
                     }
@@ -148,9 +159,10 @@ namespace dt::tsm
             // 处理这些数据库、表和字段
             for (const auto& item : items_to_process)
             {
-                const auto& db_name = std::get<0>(item);
-                const auto& tb_name = std::get<1>(item);
-                const auto& field_name = std::get<2>(item);
+                const auto& db_name = item.m_db_name;
+                const auto& tb_name = item.m_tb_name;
+                const auto& shard_id = item.m_shard_id;
+                const auto& field_name = item.m_field_name;
 
                 // 执行相关操作，例如更新字段的状态或刷新数据到磁盘
                 // ...
@@ -158,7 +170,7 @@ namespace dt::tsm
                 {
                     std::cout << "监控到跳表注册事件(skip_list)：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
                     // 执行回调函数获取时间
-                    if (m_skip_condition_callback && m_skip_condition_callback(db_name, tb_name, field_name))
+                    if (m_skip_condition_callback && m_skip_condition_callback(db_name, tb_name, shard_id, field_name))
                     {
                         // 添加到移除列表
                         remove_status(db_name, tb_name, field_name, use_index_entry_map);
@@ -173,7 +185,7 @@ namespace dt::tsm
                 {
                     std::cout << "监控到跳表注册事件(index_entry)：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
                     // 执行回调函数获取时间
-                    if (m_index_condition_callback && m_index_condition_callback(db_name, tb_name, field_name))
+                    if (m_index_condition_callback && m_index_condition_callback(db_name, tb_name, shard_id, field_name))
                     {
                         // 添加到移除列表
                         remove_status(db_name, tb_name, field_name, use_index_entry_map);
@@ -193,6 +205,7 @@ namespace dt::tsm
 
         struct FieldInfo
         {
+            std::string m_shard_id;
             std::atomic<bool> m_is_registered;
         };
 
@@ -204,8 +217,8 @@ namespace dt::tsm
         //       db_name          tb_name
         std::map<std::string, std::map<std::string, TableInfo>>      m_skip_list_state_map;
         std::map<std::string, std::map<std::string, TableInfo>>      m_index_entry_state_map;
-        mutable std::shared_mutex                          m_skip_list_mutex;
-        mutable std::shared_mutex                          m_index_entry_mutex;
+        mutable std::shared_mutex                                    m_skip_list_mutex;
+        mutable std::shared_mutex                                    m_index_entry_mutex;
     };
 }
 
