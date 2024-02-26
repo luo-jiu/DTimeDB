@@ -8,33 +8,33 @@
 
 namespace dt::wal
 {
-    class WALRecord
+    /**
+     * 接口
+     */
+    class IWAL
     {
     public:
-        virtual std::string serialize() = 0;
-        virtual void deserialize() = 0;
-
-    public:
-        enum class Type { Create, Update, Delete };
-        Type            m_type;
-        std::string     m_name;
-        std::string     m_data;  // 存储序列化后的数据
+        virtual void flush() = 0;
     };
 
     /**
      * 负责写入日志
      */
-    class WAL
+    class WALRecord : public IWAL
     {
     public:
         bool add_record(WALRecord & record);
-
         void flush();
 
     public:
         std::mutex                  m_wal_mutex;
         std::vector<WALRecord>      m_records;
         size_t                      m_threshold = 100; // 阈值
+
+        enum class Type { Create, Update, Delete };
+        Type            m_type;
+        std::string     m_name;
+        std::string     m_data;  // 存储序列化后的数据
     };
 }
 

@@ -61,11 +61,12 @@ void Field::write(
         int32_t data_size = 0;
         if (m_type == DataBlock::Type::DATA_STRING)  // string
         {
-            for (auto it = m_sl.begin(); it != m_sl.end(); ++it)  // 迭代器
+            for (auto it = sl->begin(); it != sl->end(); ++it)  // 迭代器
             {
-                if (it != m_sl.end())  // 校验
+                if (it != sl->end())  // 校验
                 {
                     auto key_value = *it;
+                    std::cout << "数据写入块" << key_value.second << "" << std::endl;
                     sl->m_current_data->write(key_value.first, key_value.second);
                     data_size += (8 + key_value.second.length());
                 }
@@ -73,9 +74,9 @@ void Field::write(
         }
         else
         {
-            for (auto it = m_sl.begin(); it != m_sl.end(); ++it)
+            for (auto it = sl->begin(); it != sl->end(); ++it)
             {
-                if (it != m_sl.end())
+                if (it != sl->end())
                 {
                     auto key_value = *it;
                     sl->m_current_data->write(key_value.first, key_value.second);
@@ -83,7 +84,7 @@ void Field::write(
             }
             data_size += 12 * m_sl.size();
         }
-        // 设置大小和长度
+        // 设置参数
         sl->m_current_data->m_max_timestamp = sl->max_key();
         sl->m_current_data->m_min_timestamp = sl->min_key();
         sl->m_current_data->m_field_name = m_field_name;

@@ -98,7 +98,6 @@ namespace dt::tsm
 
         void iterate_map() {
             std::vector<std::pair<std::string, std::string>> items_to_process;
-            std::vector<std::pair<std::string, std::string>> items_to_remove;  // 存储需要移除的状态
             // 收集待处理的数据库、表和字段
             {
                 std::shared_lock<std::shared_mutex> read_lock(m_mutex);

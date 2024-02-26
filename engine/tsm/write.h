@@ -2,6 +2,7 @@
 #define DTIMEDB_WRITE_H
 
 #include "file_manager/file_path_manager.h"
+#include "engine/impl/iobserver_shard_state.h"
 #include "field.h"
 #include "field_state.h"
 #include "tsm_ingredient.h"
@@ -16,7 +17,7 @@
 #include <string>
 #include <chrono>
 
-#define DATA_BLOCK_MARGIN (1024)
+#define DATA_BLOCK_MARGIN (256)
 
 namespace dt::tsm
 {
@@ -25,7 +26,7 @@ namespace dt::tsm
      *
      * 一个Write 负责一个表
      */
-    class Write
+class Write : public dt::impl::IShardStateSubject
     {
     public:
         Write() = default;
@@ -55,6 +56,11 @@ namespace dt::tsm
 
         bool skip_need_flush_data_block(const std::string & shard_id, const std::string & field_name);
         bool index_need_flush_data_block(const std::string & field_name);
+
+        void shard_attach(dt::impl::IShardStateObserver * observer) override;
+        void shard_detach(dt::impl::IShardStateObserver * observer) override;
+        void shard_notify(bool is_registered) override;
+
     private:
         void flush_entry_disk(std::string & field_name, bool is_remove);
 
@@ -98,9 +104,14 @@ namespace dt::tsm
         std::map<std::string, IndexEntryInfo>                                m_index_map;        // 存储所有字段的 index entry
         std::unordered_set<std::string>                                      m_task_set;
         std::list<std::string>                                               m_index_task_queue; // 使用list 配合set实现去重顺序任务注册
+
+        mutable std::shared_mutex                                            m_mea_shard_mutex;
         //                 mea_name
-        std::unordered_map<std::string, Shard>                               m_mea_shard_map;    // 存储测量中所有的 shards
-        dt::wal::WAL                                                         m_wal;
+        std::unordered_map<std::string, std::shared_ptr<Shard>>              m_mea_shard_map;    // 存储测量中所有的 shards
+        std::shared_ptr<dt::wal::IWAL> m_wal = std::make_shared<dt::wal::WALRecord>();           // 存储wal工具接口
+
+        mutable std::shared_mutex                                            m_observer_mutex;
+        std::list<dt::impl::IShardStateObserver*>                            m_observers;        // 观察者列表
     };
 }
 #endif //DTIMEDB_WRITE_H

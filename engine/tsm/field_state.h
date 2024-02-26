@@ -168,7 +168,7 @@ namespace dt::tsm
                 // ...
                 if (!use_index_entry_map)
                 {
-                    std::cout << "监控到跳表注册事件(skip_list)：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
+//                    std::cout << "监控到跳表注册事件(skip_list)：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
                     // 执行回调函数获取时间
                     if (m_skip_condition_callback && m_skip_condition_callback(db_name, tb_name, shard_id, field_name))
                     {
@@ -183,7 +183,7 @@ namespace dt::tsm
                 }
                 else
                 {
-                    std::cout << "监控到跳表注册事件(index_entry)：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
+//                    std::cout << "监控到跳表注册事件(index_entry)：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
                     // 执行回调函数获取时间
                     if (m_index_condition_callback && m_index_condition_callback(db_name, tb_name, shard_id, field_name))
                     {
@@ -206,7 +206,7 @@ namespace dt::tsm
         struct FieldInfo
         {
             std::string m_shard_id;
-            std::atomic<bool> m_is_registered;
+            std::atomic<bool> m_is_registered{};
         };
 
         struct TableInfo

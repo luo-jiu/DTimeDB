@@ -60,6 +60,17 @@ void Write::write(
 
     // 在这里需要判断写入那个shard(传入shard ID)
     std::string shard_id = Shard::timestamp_to_shard_key(system_clock::to_time_t(timestamp));
+    // 先判断shard 是否存在
+    {
+        std::unique_lock<std::shared_mutex> write_lock(m_mea_shard_mutex);
+        auto shard_it = m_mea_shard_map.find(shard_id);
+        if (shard_it == m_mea_shard_map.end())
+        {
+            // 不存在则创建
+            m_mea_shard_map[shard_id] = std::make_shared<Shard>(m_db_name, m_tb_name, shard_id);
+        }
+    }
+
     // 以及把shard中的当前文件传入写入程序中
     field->write(shard_id, timestamp, data, db_name, tb_name);
 }
@@ -268,7 +279,7 @@ void Write::queue_flush_disk()
             auto& shard_id = index_info.m_shard_id;
             // 获取分片信息
             auto curr_shard = m_mea_shard_map.find(shard_id);
-            auto tail_offset = curr_shard->second.m_curr_tsm_tail_offset;
+            auto tail_offset = curr_shard->second->m_curr_tsm_tail_offset;
             if (curr_shard == m_mea_shard_map.end())
             {
                 std::cout << "分片信息为空\n";
@@ -288,13 +299,13 @@ void Write::queue_flush_disk()
             // 生成meta
             auto meta = m_tsm.create_index_meta(m_field_map[field_name]->m_type, meta_key);
             // 偏移尾指针进行刷盘
-            m_tail_offset -= size;
+            tail_offset -= size;
             // 给series index block 刷盘
-            m_tsm.write_series_index_block_to_file(index_info.m_index_deque, meta, curr_shard->second.m_curr_tsm_file_path, tail_offset);
+            m_tsm.write_series_index_block_to_file(index_info.m_index_deque, meta, curr_shard->second->m_curr_tsm_file_path, tail_offset);
             m_index_map.erase(field_name);
             // 同步尾指针
 //            m_file_path->update_system_file_offset(m_db_name, m_tb_name, "tail", tail_offset);
-            curr_shard->second.update_file_point_offset("tail", tail_offset);
+            curr_shard->second->update_file_point_offset("tail", tail_offset);
 
             auto field_it = m_field_map.find(field_name);
             if (field_it == m_field_map.end())  // 没有这个field,为空
@@ -330,10 +341,10 @@ void Write::queue_flush_disk()
                 std::cout << "分片信息为空-\n";
                 return;
             }
-            auto margin = curr_shard->second.m_curr_tsm_margin;
-            auto head_offset = curr_shard->second.m_curr_tsm_head_offset;
-            auto tail_offset = curr_shard->second.m_curr_tsm_tail_offset;
-            auto curr_file_path = curr_shard->second.m_curr_tsm_file_path;
+            auto margin = curr_shard->second->m_curr_tsm_margin;
+            auto head_offset = curr_shard->second->m_curr_tsm_head_offset;
+            auto tail_offset = curr_shard->second->m_curr_tsm_tail_offset;
+            auto curr_file_path = curr_shard->second->m_curr_tsm_file_path;
 
             auto field_it = m_field_map.find(field_name);
             if (field_it == m_field_map.end())  // 没有这个field,为空
@@ -362,7 +373,23 @@ void Write::queue_flush_disk()
                 {
                     need_create_file = true;  // 需要创建新文件
                     // 开始刷写所有的series index block 和更新footer
-
+                    // 遍历map刷取
+                    for (auto& indexs : m_index_map)
+                    {
+                        if (indexs.second.m_index_deque.empty())
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            string meta_key = m_field_map[field_name]->m_index_block_meta_key;
+                            auto size = 28 * indexs.second.m_index_deque.size() + 12 + meta_key.size();
+                            auto meta = m_tsm.create_index_meta(m_field_map[field_name]->m_type, meta_key);
+                            m_tsm.write_series_index_block_to_file(indexs.second.m_index_deque, meta, curr_file_path, tail_offset);
+                            tail_offset -= size;
+                        }
+                    }
+                    m_index_map.clear();  // 清空map
                 }
             }
 
@@ -371,7 +398,7 @@ void Write::queue_flush_disk()
             if (need_create_file || curr_file_path.empty())
             {
                 curr_file_path = m_file_path->create_file(m_tb_name, m_db_name, "tsm");
-                curr_shard->second.create_tsm_file(curr_file_path, DATA_BLOCK_MARGIN);
+                curr_shard->second->create_tsm_file(curr_file_path, DATA_BLOCK_MARGIN);
                 std::cout << "创建文件:m_curr_file_path:" << curr_file_path << "\n";
 
                 // 第一次创建需要写入头部信息 和尾部信息
@@ -434,8 +461,8 @@ void Write::queue_flush_disk()
             // 同步头指针 和 剩余大小(因为上面已经给series index block 大小计算在内,[模块一不再同步])
 //            m_file_path->update_system_file_margin(m_db_name, m_tb_name, margin);
 //            m_file_path->update_system_file_offset(m_db_name, m_tb_name, "head", head_offset);
-            curr_shard->second.update_file_margin(margin);
-            curr_shard->second.update_file_point_offset("head", head_offset);
+            curr_shard->second->update_file_margin(margin);
+            curr_shard->second->update_file_point_offset("head", head_offset);
         }
 //            if (m_first_write)  // 该文件第一次写入
 //            {
@@ -796,4 +823,26 @@ bool Write::index_need_flush_data_block(
         const string & field_name)
 {
 
+}
+
+void Write::shard_attach(dt::impl::IShardStateObserver * observer)
+{
+    std::unique_lock<std::shared_mutex> lock(m_observer_mutex);
+    m_observers.push_back(observer);
+}
+
+void Write::shard_detach(dt::impl::IShardStateObserver * observer)
+{
+    std::shared_lock<std::shared_mutex> lock(m_observer_mutex);
+    m_observers.remove(observer);
+}
+
+void Write::shard_notify(bool is_registered)
+{
+    std::shared_lock<std::shared_mutex> lock(m_observer_mutex);
+    // 通知所有观察者发生变化
+    for (auto observer : m_observers)
+    {
+        observer->shard_update(is_registered);
+    }
 }

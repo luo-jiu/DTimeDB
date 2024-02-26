@@ -23,6 +23,10 @@ Controller::Controller(): m_producer_thread_pool(8), m_consumer_thread_pool(6), 
                 // data block queue监控 回调处理函数
                 return disk_write(db_name, tb_name);
             });
+    m_shard_state.set_condition_callback(
+            [this](){
+                return flush_shard_meta();
+            });
 }
 
 Controller::~Controller()
@@ -138,7 +142,8 @@ void Controller::insert_thread(
             std::map<string, Table> table;
             auto write = std::make_shared<Write>(db_name, tb_name);
             write->set_file_path_manager(&m_file);  // 依赖注入
-            write->init();  // 初始化
+//            write->init();  // 初始化
+            write->shard_attach(&m_shard_state);  // 注册观察者
             table[tb_name] = Table{write};
             m_map[db_name] = Database{"", table};
         }
@@ -394,6 +399,7 @@ void Controller::monitoring_thread()
         m_field_state.iterate_map(false);  // 监控skip list
         m_field_state.iterate_map(true);   // 监控index entry
         m_table_state.iterate_map();       // 监控data deque
+        m_shard_state.iterate_map();       // 监控shard
         // 等待一段时间再次检查
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -577,4 +583,9 @@ void Controller::disk_write_thread(
         // 调用其刷盘函数
         writer->queue_flush_disk();
     }
+}
+
+bool Controller::flush_shard_meta()
+{
+    return false;
 }

@@ -5,11 +5,11 @@ using namespace dt::tsm;
 Shard::Shard(
         const std::string & databases,
         const std::string & measurement,
-        std::time_t timestamp)
+        const std::string & shard_id)
 {
     m_db_name = databases;
     m_mea_name = measurement;
-    m_time_range = get_day_range(timestamp);
+    m_shard_id = shard_id;
 }
 
 std::pair<std::time_t, std::time_t> Shard::get_day_range(

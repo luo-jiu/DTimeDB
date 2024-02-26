@@ -51,34 +51,36 @@ namespace dt::tsm
         void notify(const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name, bool is_registered, bool use_index_entry_map) override;  // 通知所有观察者状态发生变化
 
     public:
-        std::string                                              m_field_name;           // 字段名
-        std::string                                              m_index_block_meta_key; // series_key + field
-        DataBlock::Type                                          m_type;                 // 类型
+        std::string                                                                     m_field_name;           // 字段名
+        std::string                                                                     m_index_block_meta_key; // series_key + field
+        DataBlock::Type                                                                 m_type;                 // 类型
 
     private:
-        DataBlockCallback                                        m_data_block_callback;  // 存储回调函数
+        DataBlockCallback                                                               m_data_block_callback;  // 存储回调函数
 
-        SkipList<std::string>                                    m_sl;                   // 跳表
+        SkipList<std::string>                                                           m_sl;                   // 跳表
 //        std::atomic<bool>                                        m_need_reset{true};     // 跳表是否需要重置
 
-        bool                                                     m_status;               // 状态
-        std::chrono::high_resolution_clock::time_point           m_sl_last_time;         // 跳表刷块计时器
+        bool                                                                            m_status;               // 状态
+        std::chrono::high_resolution_clock::time_point                                  m_sl_last_time;         // 跳表刷块计时器
 
-        std::mutex                                               m_sl_mutex;             // 有关跳表逻辑的锁
-        std::mutex                                               m_data_lock;
-        std::mutex                                               m_index_lock;
-        mutable std::shared_mutex                                m_mutex;                // 有关观测者模式的读写锁
-        mutable std::shared_mutex                                m_time_mutex;           // 有关时间戳的读写锁
+        std::mutex                                                                      m_sl_mutex;             // 有关跳表逻辑的锁
+        std::mutex                                                                      m_data_lock;
+        std::mutex                                                                      m_index_lock;
+        mutable std::shared_mutex                                                       m_mutex;                // 有关观测者模式的读写锁
+        mutable std::shared_mutex                                                       m_time_mutex;           // 有关时间戳的读写锁
 
 //        std::shared_ptr<DataBlock>                               m_current_data;         // 当前块
 
 //        std::deque<std::shared_ptr<DataBlock>>                   m_data_deque;           // data 队列
-        std::deque<std::shared_ptr<IndexEntry>>                  m_index_deque;          // index 队列
-        std::atomic<bool>                                        m_create_meta{false};   // 是否生成mate
-        std::list<dt::impl::ITableStateObserver*>                m_observers;            // 观察者列表
+        std::deque<std::shared_ptr<IndexEntry>>                                         m_index_deque;          // index 队列
+        std::atomic<bool>                                                               m_create_meta{false};   // 是否生成mate
+        std::list<dt::impl::ITableStateObserver*>                                       m_observers;            // 观察者列表
 
-        std::unordered_map<std::string, std::unique_ptr<SkipList<std::string>>>   m_shard_skip_map;       // shard ID 和乱序窗口的映射
-        std::unordered_map<std::string, std::shared_mutex>       m_shard_skip_locks;     // 细粒度锁
+        std::unordered_map<std::string, std::unique_ptr<SkipList<std::string>>>         m_shard_skip_map;       // shard ID 和乱序窗口的映射
+        std::unordered_map<std::string, std::shared_mutex>                              m_shard_skip_locks;     // 细粒度锁
+
+
     };
 }
 

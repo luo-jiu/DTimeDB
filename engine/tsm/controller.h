@@ -11,6 +11,7 @@
 #include "index.h"
 #include "field_state.h"
 #include "table_state.h"
+#include "shard_state.h"
 #include "iterator.h"
 
 namespace dt::tsm
@@ -67,6 +68,7 @@ namespace dt::tsm
         bool is_ready_disk_write(const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name);
         bool is_ready_index_write(const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name);
         bool disk_write(const std::string & db_name, const std::string & tb_name);
+        bool flush_shard_meta();
 
     private:
         struct Table
@@ -95,6 +97,8 @@ namespace dt::tsm
 
         FieldState                                                  m_field_state;
         TableState                                                  m_table_state;
+        ShardState                                                  m_shard_state;
+
         std::atomic<bool>                                           m_running;               // 用于退出监控线程
         std::thread                                                 m_monitor_thread;
         mutable std::shared_mutex                                   m_mutex;                 // 读写锁保证m_map 安全
