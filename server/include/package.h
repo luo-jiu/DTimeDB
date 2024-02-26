@@ -13,13 +13,6 @@ enum dtimedb_status{
     DB_STATUS_USE_RESULT,                            /**使用服务端返回的结果集**/
     DB_STATUS_STATEMENT_RESULT,              /**正在获取结果**/
 };
-//服务器状态
-enum Server_Status{
-
-};
-enum Client_Status{
-    
-};
 //命令列表
 enum Command{
     COM_CONN,
@@ -67,9 +60,6 @@ typedef struct dtimedb_nio{
     size_t (*nio_read)(dtimedb_nio*,unsigned char *,size_t);
     size_t (*nio_write)(dtimedb_nio*,const unsigned char*,size_t);
 }Nio;
-typedef struct db_net{
 
-
-}Net;
 
 #endif //DTIMEDB_PACKAGE_H

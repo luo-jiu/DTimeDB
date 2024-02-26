@@ -4,8 +4,10 @@
 #include "connection_pool/dtimedb.h"
 #include "server/include/event_loop.h"
 class Server{
+    //创建客户端
     Server(event_loop* loop,const char * ip,unsigned short port);
     ~Server();
+    //服务器保持连接
     void keep_alive(){_keepalive= true; }
     void do_accept();
 
@@ -20,5 +22,5 @@ private:
     static int _curr_conns;
     static pthread_mutex_t _mutex;
 public:
-
+//    static void onConnBuild(conn_callback cb)
 };

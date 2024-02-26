@@ -38,7 +38,7 @@ private:
     __gnu_cxx::hash_map<int ,io_event> _io_evs;
     //迭代器，遍历io_evs哈希映射中的键值对
     typedef __gnu_cxx::hash_map<int ,io_event>::iterator io_ev_it;
-    timer_queue* _timer_que;
+//    timer_queue* _timer_que;
     //待执行任务
     std::vector<std::pair<pendingFunc ,void*>> _pending_func;
     __gnu_cxx::hash_set<int> listening;

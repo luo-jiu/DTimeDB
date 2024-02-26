@@ -4,19 +4,19 @@
 #include <sys/epoll.h>
 #include <cassert>
 //定时器事件回调函数，处理定时器超时事件
-void timer_queue_cb(event_loop* loop,int fd,void *args){
-    //存储触发的定时器事件
-    std::vector<timer_event> fired_evs;
-    //获取超时的定时器事件
-    //流程是：
-    //对应的事件对象loop
-    loop->_timer_que->get_timo(fired_evs);
-    //遍历回调函数，依次触发
-    for (std::vector<timer_event>::iterator it = fired_evs.begin();
-            it != fired_evs.end(); ++it) {
-        it->time_cb(loop,it->cb_data);
-    }
-}
+//void timer_queue_cb(event_loop* loop,int fd,void *args){
+//    //存储触发的定时器事件
+//    std::vector<timer_event> fired_evs;
+//    //获取超时的定时器事件
+//    //流程是：
+//    //对应的事件对象loop
+//    loop->_timer_que->get_timo(fired_evs);
+//    //遍历回调函数，依次触发
+//    for (std::vector<timer_event>::iterator it = fired_evs.begin();
+//            it != fired_evs.end(); ++it) {
+//        it->time_cb(loop,it->cb_data);
+//    }
+//}
 //构造函数的初始化，创建一个事件
 event_loop::event_loop() {
     //epoll实例
@@ -24,11 +24,11 @@ event_loop::event_loop() {
     //epoll创建错误处理
     exit_if(_epfd==-1,"error happened when epoll_create1()");
     //创建定时器队列
-    _timer_que=new timer_queue();
-    exit_if(_timer_que== nullptr,"error happened when timer create");
+//    _timer_que=new timer_queue();
+//    exit_if(_timer_que== nullptr,"error happened when timer create");
    //将定时器事件注册到事件循环中，是这些事件在特定时间下触发，从而执行相应的任务
    //参数意义：获取定时器队列相关的fd、回调函数、文件描述符可读触发事件的标志、定时器队列指针（对定时器队列的操作）
-    add_ioev(_timer_que->notifier(),timer_queue_cb,EPOLLIN,_timer_que);
+//    add_ioev(_timer_que->notifier(),timer_queue_cb,EPOLLIN,_timer_que);
 }
 
 /**

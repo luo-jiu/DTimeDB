@@ -4,17 +4,6 @@
 
 #ifndef DTIMEDB_NET_COMMU_H
 #define DTIMEDB_NET_COMMU_H
-typedef int db_socket;
-typedef struct db_vio{
-    bool _is_localhost;
-
-}Vio;
-typedef struct db_net{
-    Vio *vio;
-    char  *buff,*buff_end,*write_pos,*read_pos;
-    db_socket fd;
-
-}Net;
 class net_commu{
 public:
     net_commu():_parameter(nullptr){}

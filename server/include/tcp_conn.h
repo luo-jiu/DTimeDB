@@ -4,5 +4,7 @@
 
 #ifndef DTIMEDB_TCP_CONN_H
 #define DTIMEDB_TCP_CONN_H
+class tcp_conn{
 
+};
 #endif //DTIMEDB_TCP_CONN_H

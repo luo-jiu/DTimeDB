@@ -5,10 +5,15 @@
 #ifndef DTIMEDB_CLIENT_H
 #define DTIMEDB_CLIENT_H
 
+#include "server/include/server_header.h"
+class client: public net_commu{
+public:
+    void query_database(const char* query);
+private:
+    int _sockfd;
+    event_loop* _loop;
+    socklen_t _adderlen;
 
-class client {
-    bool create_endpoint();
-    bool connect_to_server();
 };
 
 
