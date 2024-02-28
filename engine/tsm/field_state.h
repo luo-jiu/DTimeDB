@@ -176,10 +176,6 @@ namespace dt::tsm
                         remove_status(db_name, tb_name, field_name, use_index_entry_map);
                         std::cout << "监控到跳表数据符合刷盘条件：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
                     }
-                    else
-                    {
-                        std::cout << "不满足刷盘条件(skip_list)\n";
-                    }
                 }
                 else
                 {
@@ -190,10 +186,6 @@ namespace dt::tsm
                         // 添加到移除列表
                         remove_status(db_name, tb_name, field_name, use_index_entry_map);
                         std::cout << "监控到跳表数据符合刷盘条件：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
-                    }
-                    else
-                    {
-                        std::cout << "不满足刷盘条件(index_entry)\n";
                     }
                 }
             }

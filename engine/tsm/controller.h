@@ -6,6 +6,7 @@
 #include "engine/impl/itsm.h"
 #include "engine/impl/isystem.h"
 #include "engine/impl/iengine.h"
+#include "proto/Shard.pb.h"
 
 #include "write.h"
 #include "index.h"
@@ -60,7 +61,8 @@ namespace dt::tsm
         void disk_write_thread(const std::string & db_name, const std::string & tb_name);
         bool exists_table(std::string & db_name, std::string & tb_name);
 
-        void sys_load_mea_fields();
+        void load_meta_file();
+        bool flush_shard_meta_thread();
         void add_field(const std::string & db_name, const std::string & tb_name, const std::string & field);
         bool mea_field_exist(const std::string & db_name, const std::string & tb_name, const std::string & field);
 

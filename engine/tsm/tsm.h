@@ -3,6 +3,7 @@
 
 #include "engine/tsm/tsm_ingredient.h"
 #include "file_manager/file_io_manager.h"
+#include "proto/Shard.pb.h"
 
 #include <snappy.h>
 #include <deque>
@@ -45,8 +46,6 @@ namespace dt::tsm
         // 生成完整的TSM File
         bool create_tsm(const Header & header, const Footer & footer, const std::string & file_path);
 
-        void set_size(uint64_t size) { m_tsm_size = size; }
-
         // 差值计算 &恢复差值
         std::vector<std::chrono::nanoseconds> calculate_differences(const std::list<std::chrono::high_resolution_clock::time_point> & timestamps);
         std::list<std::chrono::high_resolution_clock::time_point> restore_timestamps(const std::vector<std::chrono::nanoseconds> & differences);
@@ -63,9 +62,11 @@ namespace dt::tsm
         std::string calculate_timestamp_size(const std::list<std::chrono::high_resolution_clock::time_point> & timestamps);
         std::string calculate_val_size(const std::list<std::string> & strings);
 
+        // 将shard 序列化并数刷盘
+        int64_t flush_shard_in_meta_file(const std::shared_ptr<std::fstream> & stream, std::shared_ptr<Shard> & shard, int64_t offset);
+
     private:
         dt::file::FileIOManager m_file_manager;
-        uint64_t m_tsm_size;  // TSM size
     };
 }
 

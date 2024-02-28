@@ -59,6 +59,7 @@ namespace dt::tsm
             std::unique_lock<std::shared_mutex> write_lock(m_mutex);
             if (m_is_registered.load())  // 有事件注册
             {
+                std::cout << "监控到shard刷盘事件注册\n";
                 // 时间超过5 秒或者shard 变化次数达到10 次
                 if (curr_time - m_last_time >= std::chrono::seconds(5) || m_change_total_count >= 10)
                 {

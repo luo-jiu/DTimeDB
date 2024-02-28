@@ -47,6 +47,7 @@ void Controller::init()
 {
     //  开启监控线程
     m_monitor_thread = std::thread([this]{ this->monitoring_thread(); });
+    load_meta_file();
 }
 
 /**
@@ -433,11 +434,46 @@ bool Controller::exists_table(
 }
 
 /**
- * 从系统文件中加载数据库字段
+ * 加载meta.tsm
  */
-void Controller::sys_load_mea_fields()
+void Controller::load_meta_file()
 {
+    // 锁住整个表开始加载元数据
+    std::unique_lock<std::shared_mutex> write_lock(m_mutex);
+    std::ifstream file("./../metadata/meta.tsm", std::ios::binary);
+    if (!file.is_open())
+    {
+        std::cerr << "Error: Could not open file for reading." << std::endl;
+        return;
+    }
+    Shard shard;
+    while (!file.eof())
+    {
+        uint16_t length;
+        file.read(reinterpret_cast<char*>(&length), sizeof(uint16_t));
+        if (file.eof()) break; // 避免处理文件末尾的额外读取
 
+        std::vector<char> buffer(length);
+        file.read(buffer.data(), length);
+
+        // 反序列化
+        string data(buffer.begin(), buffer.end());
+        shard.ParseFromString(data);
+        std::cout << "读取shard:" << shard.measurement() << std::endl;
+        std::cout << "读取shard:" << shard.shard_id() << std::endl;
+        std::cout << "读取shard:" << shard.database_name() << std::endl;
+        std::cout << "读取shard:" << shard.curr_file_head_offset() << std::endl;
+        std::cout << "读取shard:" << shard.curr_file_tail_offset() << std::endl;
+        std::cout << "读取shard:" << shard.curr_file_margin() << std::endl;
+
+        for (int i = 0; i < shard.tsm_file_size(); ++i)
+        {
+            const auto& file = shard.tsm_file(i); // 获取第i个tsm文件的名称
+            // 可以在这里处理每个tsm文件的名称
+            std::cout << file << std::endl;
+        }
+//        std::cout << "读取shard:" << shard.DebugString() << std::endl;
+    }
 }
 
 void Controller::add_field(
@@ -506,7 +542,7 @@ bool Controller::is_ready_disk_write(
                     auto db = db_name;
                     // 利用插入数据语句,进入对应跳表激活判断逻辑引发刷块
                     m_producer_thread_pool.enqueue(&Controller::insert_thread,
-                        this, system_clock::from_time_t(Shard::shard_key_to_timestamp(shard_id)), "", "", Type::DATA_STRING, fd, tb, db);
+                                                   this, system_clock::from_time_t(Write::shard_key_to_timestamp(shard_id)), "", "", Type::DATA_STRING, fd, tb, db);
                     return true;
                 }
                 else
@@ -538,7 +574,7 @@ bool Controller::is_ready_index_write(
             auto writer = tb_it->second.m_writer;
             if (writer)
             {
-                std::cout << "---判断是否需要将index entry 刷写到磁盘\n";
+//                std::cout << "---判断是否需要将index entry 刷写到磁盘\n";
                 if (writer->should_flush_index(field_name))
                 {
                     std::cout << "--监控线程触发写入index entry";
@@ -587,5 +623,39 @@ void Controller::disk_write_thread(
 
 bool Controller::flush_shard_meta()
 {
-    return false;
+    m_consumer_thread_pool.enqueue(&Controller::flush_shard_meta_thread, this);
+    return true;
+}
+
+/**
+ * 达到目标将给所有的shard 刷盘
+ */
+bool Controller::flush_shard_meta_thread()
+{
+    // 锁住整个表开始刷写元数据
+    std::unique_lock<std::shared_mutex> write_lock(m_mutex);
+    auto stream = std::make_shared<std::fstream>("./../metadata/meta.tsm", std::ios::in | std::ios::out | std::ios::trunc | std::ios::binary);
+    if (!stream->is_open())
+    {
+        std::cerr << "Error: Could not open file for writing." << std::endl;
+        return false; // 确保文件打开成功
+    }
+
+    int64_t offset = 0;
+    std::cout << "开始刷写shard\n";
+    for (auto& write : m_map)
+    {
+        for(auto& table : write.second.m_table_map)
+        {
+            offset = table.second.m_writer->flush_shard_in_meta(stream, offset);
+            if (offset == -1)
+            {
+                return false;
+            }
+        }
+    }
+
+    stream->flush();
+    stream->close();
+    return true;
 }

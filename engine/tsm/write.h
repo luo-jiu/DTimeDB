@@ -7,7 +7,8 @@
 #include "field_state.h"
 #include "tsm_ingredient.h"
 #include "table_state.h"
-#include "shard.h"
+#include "wal/wal.h"
+#include "proto/Shard.pb.h"
 
 #include <unordered_set>
 #include <list>
@@ -17,7 +18,7 @@
 #include <string>
 #include <chrono>
 
-#define DATA_BLOCK_MARGIN (256)
+#define DATA_BLOCK_MARGIN (512)
 
 namespace dt::tsm
 {
@@ -61,9 +62,12 @@ class Write : public dt::impl::IShardStateSubject
         void shard_detach(dt::impl::IShardStateObserver * observer) override;
         void shard_notify(bool is_registered) override;
 
-    private:
-        void flush_entry_disk(std::string & field_name, bool is_remove);
+        static std::string timestamp_to_shard_key(std::time_t timestamp);
+        static std::time_t shard_key_to_timestamp(const std::string & shard_id);
 
+        int64_t flush_shard_in_meta(const std::shared_ptr<std::fstream> & stream, int64_t offset);
+
+    private:
         std::shared_ptr<Field> get_field(std::string & field_name, std::string & series_key, const std::string & type, FieldState & tb_state, TableState & queue_state);
         bool fields_empty();
 
@@ -106,7 +110,7 @@ class Write : public dt::impl::IShardStateSubject
         std::list<std::string>                                               m_index_task_queue; // 使用list 配合set实现去重顺序任务注册
 
         mutable std::shared_mutex                                            m_mea_shard_mutex;
-        //                 mea_name
+        //                 shard id
         std::unordered_map<std::string, std::shared_ptr<Shard>>              m_mea_shard_map;    // 存储测量中所有的 shards
         std::shared_ptr<dt::wal::IWAL> m_wal = std::make_shared<dt::wal::WALRecord>();           // 存储wal工具接口
 

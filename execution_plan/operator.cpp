@@ -69,7 +69,6 @@ void ShowNode::execute(IEngine & engine)
 void UseNode::execute(IEngine & engine)
 {
     m_current_db = m_database_name;  // 上下文环境
-
     // 遍历map 加载对应表
     for (auto & tables : m_tb_engine)
     {
@@ -78,8 +77,6 @@ void UseNode::execute(IEngine & engine)
             std::cout << "use: " << m_database_name << "\n";
         }
     }
-
-
 }
 
 void ScanNode::execute(IEngine & engine)

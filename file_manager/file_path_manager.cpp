@@ -329,23 +329,12 @@ bool FilePathManager::load_database(
 
     // 没读取过
     // 读取基路径下的所有数据库
-    string db_name_temp;
-    bool exists = false;
-    for (const auto & entry : fs::directory_iterator(m_default_base_path))
+    string db_path = m_default_base_path + "/" + db_name;
+    if (fs::exists(db_path) && fs::is_directory(db_path))
     {
-        if (entry.is_directory())
-        {
-            db_name_temp = entry.path().filename().string();
-            // 找到就退出
-            if (db_name == db_name_temp)
-            {
-                m_map[db_name_temp] = std::map<string, TableInfo>();
-                exists = true;
-                break;
-            }
-        }
+        m_map[db_name] = std::map<string, TableInfo>();
     }
-    if (!exists)
+    else
     {
         std::cout << "Error: The database does not exist." << "\n";
         return false;
@@ -355,42 +344,9 @@ bool FilePathManager::load_database(
      * 开始加载数据库的信息
      * 只用加载系统文件即可(因为和表一一对应)
      */
-    string db_path = m_default_base_path + "/" + db_name;
     string file_name;
     string start_part;
     std::map<string, TableInfo> table_map;
-    // 判断路径是否存在
-    if (!fs::exists(db_path))
-    {
-        // 不存在
-        std::cout << "Error: '" << db_name << "' database does not exist" << std::endl;
-        return false;
-    }
-
-//    for (const auto & entry : fs::directory_iterator(db_path))
-//    {
-//        if (entry.is_regular_file())
-//        {
-//            file_name = entry.path().filename().string();
-//            size_t pos = file_name.find('-');
-//            if (pos != std::string::npos)
-//            {
-//                start_part = file_name.substr(0, pos);
-//            }
-//            if (start_part == "sys" && entry.path().extension() == ("." + m_engine))  // 只加载sys 系统文件
-//            {
-//                string table_part = file_name.substr(pos + 1);
-//                size_t dot_pos = table_part.find('.');
-//                string table_name = table_part.substr(0, dot_pos);
-//
-//                // 在此处读取系统文件的信息[暂时没有]
-//                // ...
-//
-//                table_map[table_name] = TableInfo{std::list<string>()};  // 创建对象
-//            }
-//        }
-//    }
-
     for (auto & table_name : tables)
     {
         table_map[table_name] = TableInfo{std::list<string>()};
