@@ -551,35 +551,3 @@ string TSM::calculate_val_size(
     auto val_serialize = serialize_strings(values);
     return compress_data(val_serialize);
 }
-
-int64_t TSM::flush_shard_in_meta_file(
-        const std::shared_ptr<std::fstream> & stream,
-        std::shared_ptr<Shard> & shard,
-        int64_t offset)
-{
-    std::cout << "flush_shard_in_meta_file\n";
-    if (!stream->is_open())
-    {
-        std::cerr << "Error: Could not open file for writing - m_from engine/tsm/tsm_.h" << std::endl;
-        return -1;
-    }
-    stream->seekp(offset);  // 移动到指定位置
-
-    // 序列化
-    string val_serialize;
-    shard->SerializeToString(&val_serialize);
-
-    uint16_t length = val_serialize.size();
-    stream->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
-    stream->write(val_serialize.c_str(), length);  // 写字符串
-
-    m_file_manager.release_file_stream("./../metadata/meta.tsm");
-
-    // 当即反序列化尝试
-    Shard test;
-    test.ParseFromString(val_serialize);
-    std::cout << "尝试反序列化";
-    std::cout<< test.DebugString() << std::endl;
-
-    return offset + static_cast<int64_t>(sizeof(length)) + length;
-}

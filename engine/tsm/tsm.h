@@ -62,9 +62,6 @@ namespace dt::tsm
         std::string calculate_timestamp_size(const std::list<std::chrono::high_resolution_clock::time_point> & timestamps);
         std::string calculate_val_size(const std::list<std::string> & strings);
 
-        // 将shard 序列化并数刷盘
-        int64_t flush_shard_in_meta_file(const std::shared_ptr<std::fstream> & stream, std::shared_ptr<Shard> & shard, int64_t offset);
-
     private:
         dt::file::FileIOManager m_file_manager;
     };

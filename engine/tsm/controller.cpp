@@ -46,8 +46,8 @@ Controller::~Controller()
 void Controller::init()
 {
     //  开启监控线程
-    m_monitor_thread = std::thread([this]{ this->monitoring_thread(); });
     load_meta_file();
+    m_monitor_thread = std::thread([this]{ this->monitoring_thread(); });
 }
 
 /**
@@ -143,7 +143,6 @@ void Controller::insert_thread(
             std::map<string, Table> table;
             auto write = std::make_shared<Write>(db_name, tb_name);
             write->set_file_path_manager(&m_file);  // 依赖注入
-//            write->init();  // 初始化
             write->shard_attach(&m_shard_state);  // 注册观察者
             table[tb_name] = Table{write};
             m_map[db_name] = Database{"", table};
@@ -446,9 +445,9 @@ void Controller::load_meta_file()
         std::cerr << "Error: Could not open file for reading." << std::endl;
         return;
     }
-    Shard shard;
     while (!file.eof())
     {
+        auto shard = std::make_unique<Shard>();
         uint16_t length;
         file.read(reinterpret_cast<char*>(&length), sizeof(uint16_t));
         if (file.eof()) break; // 避免处理文件末尾的额外读取
@@ -458,22 +457,44 @@ void Controller::load_meta_file()
 
         // 反序列化
         string data(buffer.begin(), buffer.end());
-        shard.ParseFromString(data);
-        std::cout << "读取shard:" << shard.measurement() << std::endl;
-        std::cout << "读取shard:" << shard.shard_id() << std::endl;
-        std::cout << "读取shard:" << shard.database_name() << std::endl;
-        std::cout << "读取shard:" << shard.curr_file_head_offset() << std::endl;
-        std::cout << "读取shard:" << shard.curr_file_tail_offset() << std::endl;
-        std::cout << "读取shard:" << shard.curr_file_margin() << std::endl;
+        shard->ParseFromString(data);
+        std::cout << "读取shard:" << shard->DebugString() << std::endl;
 
-        for (int i = 0; i < shard.tsm_file_size(); ++i)
+        auto db_name = shard->database_name();
+        auto tb_name = shard->measurement();
+        auto shard_id = shard->shard_id();
+
+        // 判断write 是否存在
+        bool write_exist = false;
+        auto db_it = m_map.find(db_name);
+        if (db_it != m_map.end())
         {
-            const auto& file = shard.tsm_file(i); // 获取第i个tsm文件的名称
-            // 可以在这里处理每个tsm文件的名称
-            std::cout << file << std::endl;
+            auto tb_it = db_it->second.m_table_map.find(tb_name);
+            if (tb_it != db_it->second.m_table_map.end())
+            {
+                // 说明write 存在
+                tb_it->second.m_writer->add_shard(shard_id, (std::unique_ptr<Shard> &) std::move(shard));
+                write_exist = true;
+            }
         }
-//        std::cout << "读取shard:" << shard.DebugString() << std::endl;
+
+        // 不存在则创建
+        if (!write_exist)
+        {
+            // 为其创建write 并添加到其中
+            auto write = std::make_shared<Write>(db_name, tb_name);
+
+            // 不存在需要初始化
+            std::map<string, Table> table;
+            write->set_file_path_manager(&m_file);  // 依赖注入
+            write->shard_attach(&m_shard_state);  // 注册观察者
+            table[tb_name] = Table{write};
+            m_map[db_name] = Database{"", table};
+
+            write->add_shard(shard_id, (std::unique_ptr<Shard> &) std::move(shard));
+        }
     }
+    file.close();
 }
 
 void Controller::add_field(
@@ -641,20 +662,22 @@ bool Controller::flush_shard_meta_thread()
         return false; // 确保文件打开成功
     }
 
-    int64_t offset = 0;
     std::cout << "开始刷写shard\n";
     for (auto& write : m_map)
     {
         for(auto& table : write.second.m_table_map)
         {
-            offset = table.second.m_writer->flush_shard_in_meta(stream, offset);
-            if (offset == -1)
+            auto shard_list = table.second.m_writer->get_shard_in_meta();
+            for (const auto& shard_serialize : shard_list)
             {
-                return false;
+                uint16_t length = shard_serialize.size();
+                stream->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
+                stream->write(shard_serialize.c_str(), length);  // 写字符串
             }
+            std::cout << "刷写了一个measurement 全部shard";
         }
     }
-
+    std::cout << "shard刷写完毕\n";
     stream->flush();
     stream->close();
     return true;

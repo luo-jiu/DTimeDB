@@ -5,6 +5,8 @@ using namespace dt::token;
 using std::string;
 
 #include <chrono>
+#include <iomanip>
+
 using namespace std::chrono;
 
 std::shared_ptr<Expression> Parser::parse_insert()
@@ -92,9 +94,27 @@ std::shared_ptr<Expression> Parser::parse_insert()
             }
         }
 
-        if (!peek_token_is(Token::TOKEN_EOF))
+        if (!curr_token_is(Token::TOKEN_EOF))
         {
-            e->m_timestamp = m_curr.literal();
+            // 判断时间戳格式
+            std::tm tm{};
+            std::istringstream ss(m_curr.literal());
+
+            ss >> std::get_time(&tm, "%Y-%m-%d");
+            if (ss.fail())  // 转换失败
+            {
+                if (m_curr.literal().size() != 19)
+                {
+                    return nullptr;
+                }
+                e->m_timestamp = m_curr.literal();
+                return e;
+            }
+            // 转换成时间戳
+            auto time_c = system_clock::from_time_t(std::mktime(&tm));
+            // 东八区到UTC的转换：加上8小时的秒数
+            auto utc_time_c = time_c + std::chrono::hours(8);
+            e->m_timestamp = std::to_string(duration_cast<nanoseconds>(utc_time_c.time_since_epoch()).count());
         }
         else
         {
@@ -105,7 +125,6 @@ std::shared_ptr<Expression> Parser::parse_insert()
             string timestamp_str = std::to_string(nanoseconds.count());
             e->m_timestamp = timestamp_str;
         }
-
         return e;
     }
     else

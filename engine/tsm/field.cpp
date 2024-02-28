@@ -17,7 +17,7 @@ void Field::write(
     if (shard_it == m_shard_skip_map.end())
     {
         // 分片不存在, 创建分片
-        std::cout << "分片不存在，创建分片\n";
+        std::cout << "跳表分片不存在，创建分片\n";
         m_shard_skip_map[shard_id] = std::make_unique<SkipList<std::string>>();
     }
     // 释放全局锁,细化锁到对应分片的锁

@@ -65,7 +65,10 @@ class Write : public dt::impl::IShardStateSubject
         static std::string timestamp_to_shard_key(std::time_t timestamp);
         static std::time_t shard_key_to_timestamp(const std::string & shard_id);
 
-        int64_t flush_shard_in_meta(const std::shared_ptr<std::fstream> & stream, int64_t offset);
+        std::list<std::string> get_shard_in_meta();
+
+        bool add_shard(const std::string & shard_id, std::unique_ptr<Shard> & shard);
+        std::unique_ptr<Shard> & get_shard(const std::string & shard_id);
 
     private:
         std::shared_ptr<Field> get_field(std::string & field_name, std::string & series_key, const std::string & type, FieldState & tb_state, TableState & queue_state);
@@ -111,7 +114,7 @@ class Write : public dt::impl::IShardStateSubject
 
         mutable std::shared_mutex                                            m_mea_shard_mutex;
         //                 shard id
-        std::unordered_map<std::string, std::shared_ptr<Shard>>              m_mea_shard_map;    // 存储测量中所有的 shards
+        std::unordered_map<std::string, std::unique_ptr<Shard>>              m_mea_shard_map;    // 存储测量中所有的 shards
         std::shared_ptr<dt::wal::IWAL> m_wal = std::make_shared<dt::wal::WALRecord>();           // 存储wal工具接口
 
         mutable std::shared_mutex                                            m_observer_mutex;

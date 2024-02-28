@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+message Person
+{
+  bytes retention_policy = 1;
+  bytes shard_id = 2;
+  bytes database_name = 3;
+  bytes measurement = 4;
+  repeated bytes tsm_file = 5;
+
+  bytes curr_file_path = 6;
+  int64 curr_file_margin = 7;
+  int64 curr_file_head_offset = 8;
+  int64 curr_file_tail_offset = 9;
+}
