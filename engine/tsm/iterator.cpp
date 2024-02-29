@@ -1,31 +1,28 @@
 #include "iterator.h"
+
+#include <utility>
 using namespace dt::tsm;
 
 /**
  * 检查是否还有更多数据点
  * 如果内部缓冲区为空，尝试从数据源加载更多数据
  */
-bool SortMergeIterator::has_next()
-{
 
-}
 
 /**
  * 返回当干数据点，并移动到下一个数据点
  * 如果内部缓冲区用尽，从数据源加载更多数据
  * @return
  */
-DataPoint SortMergeIterator::next()
-{
-
-}
 
 /**
  * 从数据源加载数据到内部缓冲区
  */
-void SortMergeIterator::load_more_data()
+
+
+FieldIterator::FieldIterator(const std::string & field)
 {
-    
+    m_field = field;
 }
 
 /**
@@ -50,4 +47,12 @@ DataPoint FieldIterator::aggregate()
 void RootIterator::next()
 {
 
+}
+
+/**
+ * 添加字段迭代器
+ */
+void RootIterator::add_field_iterator(const std::string & field)
+{
+    m_field_iterators.push_back(std::make_unique<FieldIterator>(field));
 }

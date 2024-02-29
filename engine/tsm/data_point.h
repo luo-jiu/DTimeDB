@@ -29,6 +29,14 @@ namespace dt::tsm
         ValueMap m_value_map;
         std::unordered_map<std::string, std::string> m_tags;
     };
+
+    /**
+    * 一个字段下的单条数据
+    */
+    class FieldDataPoint
+    {
+
+    };
 }
 
 #endif //DTIMEDB_DATA_POINT_H

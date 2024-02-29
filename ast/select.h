@@ -29,11 +29,11 @@ namespace dt::ast
         }
 
     public:
-        std::string                             m_curr_db_name;  // 是否提前指定数据库
-        std::string                             m_engine;
-        std::list<std::string>                  m_fields;
-        std::shared_ptr<Expression>             m_from;
-        std::shared_ptr<Expression>             m_where;
-
+        std::string                                             m_curr_db_name;  // 是否提前指定数据库
+        std::string                                             m_engine;
+        std::list<std::string>                                  m_fields;
+        std::vector<std::pair<std::string, std::string>>        m_reduced_fields;  // 聚合函数以及要被聚合的字段
+        std::shared_ptr<Expression>                             m_from;
+        std::shared_ptr<Expression>                             m_where;
     };
 }

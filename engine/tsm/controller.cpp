@@ -1,4 +1,5 @@
-#include <engine/tsm/controller.h>
+#include "engine/tsm/controller.h"
+#include <algorithm>
 using namespace dt::tsm;
 using namespace dt::impl;
 using namespace std::chrono;
@@ -252,10 +253,10 @@ bool Controller::get_range_data(
 bool Controller::get_range_data(
         const string & db_name,
         const string & measurement,
-        std::vector<string> field,
+        std::vector<std::pair<std::string, std::string>> reduce_fields,
         std::shared_ptr<ExprNode> expr_node)
 {
-    m_producer_thread_pool.enqueue(&Controller::analytic_expr_tree, this, db_name, measurement, field, expr_node);
+    m_producer_thread_pool.enqueue(&Controller::analytic_expr_tree, this, db_name, measurement, reduce_fields, expr_node);
     return true;
 }
 
@@ -263,23 +264,156 @@ bool Controller::get_range_data(
  * 分离出tag 以及where
  */
 void Controller::analytic_expr_tree(
-        const std::string & db_name,
-        const std::string & measurement,
-        std::vector<std::string> field,
+        const string & db_name,
+        const string & measurement,
+        const std::vector<std::pair<string, string>> & reduce_fields,
         const std::shared_ptr<impl::ExprNode> & expr_node)
 {
     // 解析表达式树(摘除掉tag 的部分)
     std::vector<std::pair<std::string, std::string>> tags;
     auto new_expr_tree = rebuild_tree_without_tags(measurement, expr_node, tags);
 
-    // 根据每一个字段分别构建 字段迭代器
-    m_file.load_mea_fields(db_name, measurement);
+    // 获取该measurement 下所有的分片ID(shard id),需要结合where 条件过滤额掉不需要的分片(new_expr_tree)
+    auto shard_ids = filter_shards(db_name, measurement, new_expr_tree);
+    std::sort(shard_ids.begin(), shard_ids.end());  // 排序
+
+    // 获取所有的字段
+    std::vector<string> fields;
+    if (reduce_fields.size() == 1 && reduce_fields[0].first == "*")
+    {
+        fields = m_file.load_mea_fields(db_name, measurement);
+    }
+    else
+    {
+        for (const auto& field : reduce_fields)
+        {
+            fields.push_back(field.first);
+        }
+    }
+
+    // 构建迭代器树
+    auto root_iterator = create_iterator_tree(measurement, fields, shard_ids, tags);
+
+}
+
+/**
+ * 构建迭代器树
+ */
+RootIterator Controller::create_iterator_tree(
+        const string & measurement,
+        std::vector<std::string> & fields,
+        std::vector<std::string> & shard_ids,
+        std::vector<std::pair<std::string, std::string>> & tags)
+{
+    // 利用倒排索引查询series key,并求所有tag 对应series key 的交集
+    std::set<string> accumulated_intersection;
+    bool first = true;
+    for (const auto& tag : tags)
+    {
+        auto current_set = m_index.get_series_key_by_tag(measurement, tag);
+        if (first)
+        {
+            accumulated_intersection = current_set;
+            first = false;
+            continue;
+        }
+
+        std::set<string> temp_intersection;
+        std::set_intersection(accumulated_intersection.begin(), accumulated_intersection.end(),
+                              current_set.begin(), current_set.end(),
+                              std::inserter(temp_intersection, temp_intersection.begin()));
+        accumulated_intersection = std::move(temp_intersection);
+    }
+
+    RootIterator root_iterator;
+    // 遍历字段构建字段迭代器
+    for (const auto& field : fields)  // 构建第一层
+    {
+        auto field_iterator = std::make_unique<FieldIterator>(field);
+        field_iterator->m_field = field;
+        for (const auto& shard_id : shard_ids)  // 构建第二层
+        {
+            auto shard_iterator = std::make_unique<ShardIterator>();
+            shard_iterator->m_shard_id = shard_id;
+            // std::set本就是有序的直接遍历
+            for (const auto& series_key : accumulated_intersection)  // 构建第三层
+            {
+                auto tag_set_iterator = std::make_unique<TagSetIterator>();
+                tag_set_iterator->m_series_key = series_key;
+                shard_iterator->m_tag_set_iterators.push_back(std::move(tag_set_iterator));
+            }
+            field_iterator->m_shard_iterators.push_back(std::move(shard_iterator));
+        }
+        root_iterator.m_field_iterators.push_back(std::move(field_iterator));
+    }
+    std::cout << "你叉叉\n";
+}
+
+/**
+ * 用于遍历表达式树来判断哪个shard 符合条件
+ */
+bool Controller::evaluate_condition(
+        const std::string & shard_id,
+        std::shared_ptr<impl::ExprNode> & expr_node)
+{
+    if (!expr_node) return true;
+    if (expr_node->is_comparison())  // 如果是比较操作符
+    {
+        return expr_node->evaluate_shard(shard_id);
+    }
+    else if (expr_node->is_logical())  // 如果是逻辑操作符
+    {
+        // 处理逻辑操作符
+        bool left_result = evaluate_condition(shard_id, expr_node->m_left);
+        bool right_result = evaluate_condition(shard_id, expr_node->m_right);
+
+        if (expr_node->m_val == "and")
+        {
+            return left_result && right_result;
+        }
+        else if (expr_node->m_val == "or")
+        {
+            return left_result || right_result;
+        }
+    }
+    return false;
+}
+
+/**
+ * 过滤筛选出符合的shard_id
+ */
+std::vector<string> Controller::filter_shards(
+        const string & db_name,
+        const string & measurement,
+        std::shared_ptr<impl::ExprNode> & expr_node)
+{
+    std::vector<string> result_shard_id;
+    std::vector<string> filter_shards;
+    // 获取该字段下所有的shard id
+    std::unique_lock<std::shared_mutex> write_lock(m_mutex);
+    auto database_it = m_map.find(db_name);
+    if (database_it != m_map.end())
+    {
+        auto table_it = database_it->second.m_table_map.find(measurement);
+        if (table_it != database_it->second.m_table_map.end())
+        {
+            result_shard_id = table_it->second.m_writer->get_shard_ids();
+        }
+    }
+    for(const auto& shard_id : result_shard_id)
+    {
+        if (evaluate_condition(shard_id, expr_node))
+        {
+            filter_shards.push_back(shard_id);
+            std::cout << "符合的shard id: " << shard_id << "\n";
+        }
+    }
+    // 记得排序shard
+    return filter_shards;
 }
 
 /**
  * 重构表达式树
- * @param expr_node
- * @return
  */
 std::shared_ptr<ExprNode> Controller::rebuild_tree_without_tags(
         const std::string & measurement,

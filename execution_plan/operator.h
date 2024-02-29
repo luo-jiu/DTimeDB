@@ -216,11 +216,12 @@ namespace dt::execution
         void set_child(std::shared_ptr<ExecutionPlanNode> child) override { m_child = child; }
 
     public:
-        std::string                                  m_db_name;
-        std::string                                  m_measurement;
-        std::vector<std::string>                     m_fields;
-        std::shared_ptr<impl::ExprNode>              m_expr_tree;
-        std::shared_ptr<ExecutionPlanNode>           m_child;
+        std::string                                             m_db_name;
+        std::string                                             m_measurement;
+        std::vector<std::string>                                m_fields;
+        std::vector<std::pair<std::string, std::string>>        m_reduced_fields;
+        std::shared_ptr<impl::ExprNode>                         m_expr_tree;
+        std::shared_ptr<ExecutionPlanNode>                      m_child;
     };
 }
 

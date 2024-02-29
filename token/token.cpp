@@ -54,6 +54,7 @@ std::map<Token::Type, string> Token::m_names = {
         {TOKEN_TSM,             "tsm"},
         {TOKEN_CLT,             "clt"},
 
+        {TOKEN_REDUCE,          "reduce"},
         {TOKEN_SYSTEM,          "system"},
 };
 
@@ -86,6 +87,17 @@ std::map<string, Token::Type> Token::m_keywords = {
         {"tsm",             TOKEN_TSM},
         {"clt",             TOKEN_CLT},
 
+        {"sum",             TOKEN_REDUCE},
+        {"count",           TOKEN_REDUCE},
+        {"mean",            TOKEN_REDUCE},
+        {"median",          TOKEN_REDUCE},
+        {"min",             TOKEN_REDUCE},
+        {"max",             TOKEN_REDUCE},
+        {"mode",            TOKEN_REDUCE},
+        {"stddev",          TOKEN_REDUCE},
+        {"percentile",      TOKEN_REDUCE},
+        {"first",           TOKEN_REDUCE},
+        {"last",            TOKEN_REDUCE},
         {"system",          TOKEN_SYSTEM},
 };
 

@@ -66,6 +66,7 @@ class Write : public dt::impl::IShardStateSubject
         static std::time_t shard_key_to_timestamp(const std::string & shard_id);
 
         std::list<std::string> get_shard_in_meta();
+        std::vector<std::string> get_shard_ids();
 
         bool add_shard(const std::string & shard_id, std::unique_ptr<Shard> & shard);
         std::unique_ptr<Shard> & get_shard(const std::string & shard_id);

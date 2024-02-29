@@ -57,10 +57,11 @@ std::shared_ptr<ExecutionPlanNode> eval_tsm_select(
 {
     std::shared_ptr<QueryTSMNode> tsm_node(new QueryTSMNode);
     tsm_node->m_expr_tree = where;
-    for (const auto & field : node->m_fields)
-    {
-        tsm_node->m_fields.push_back(field);
-    }
+//    for (const auto & field : node->m_fields)
+//    {
+//        tsm_node->m_fields.push_back(field);
+//    }
+    tsm_node->m_reduced_fields = node->m_reduced_fields;
     tsm_node->m_measurement = std::dynamic_pointer_cast<dt::ast::String>(node->m_from)->m_value;
     tsm_node->m_db_name = node->m_curr_db_name;
     return tsm_node;

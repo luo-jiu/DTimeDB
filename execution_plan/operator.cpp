@@ -159,5 +159,5 @@ void QueryTSMNode::execute(IEngine & engine)
             db_name = m_current_db;
         }
     }
-    tsm->get_range_data(db_name, m_measurement, m_fields, m_expr_tree);
+    tsm->get_range_data(db_name, m_measurement, m_reduced_fields, m_expr_tree);
 }

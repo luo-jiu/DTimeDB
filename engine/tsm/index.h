@@ -29,6 +29,7 @@ namespace dt::tsm
         std::vector<std::string> search(const std::string & measurement, std::list<std::string> & tags);
         bool series_key_empty(std::string & series_key);
 
+        std::set<std::string> get_series_key_by_tag(const std::string & measurement, const std::pair<std::string, std::string>& tag);
     private:
         mutable std::shared_mutex m_mutex;  // 读写锁保证线程安全
 

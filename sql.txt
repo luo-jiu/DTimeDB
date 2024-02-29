@@ -1,1 +1,1 @@
-select * from db_test.school where local = '中德' and time > '2012-8-10' and time < '2020-9-10'
+select mean('温度') from school where local = '学校'

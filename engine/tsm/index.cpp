@@ -22,7 +22,7 @@ void Index::create_index(
 
     if (series_key_empty(series_key))
     {
-        std::unique_lock<std::shared_mutex> write_lock(m_mutex);  // 加上写锁
+        std::unique_lock<std::shared_mutex> write_lock(m_mutex);
 
         std::cout << "series_key不存在,准备添加到倒排索引\n";
         SeriesKey temp_key{series_key};
@@ -36,7 +36,7 @@ void Index::create_index(
             mea_it = m_mea_tag_keys.insert({measurement, new_tag_block}).first;
         }
 
-        auto& tag_block = mea_it->second; // 使用引用避免不必要的复制
+        auto& tag_block = mea_it->second;
         for (auto& tag : tags) {
             size_t pos = tag.find('=');
             if (pos != std::string::npos) {
@@ -75,8 +75,14 @@ bool Index::series_key_empty(
         string & series_key)
 {
     std::shared_lock<std::shared_mutex> read_lock(m_mutex);
-
     SeriesKey temp_key;
     temp_key.m_series_key = series_key;
     return m_series_block.m_series_key_chunks.find(temp_key) == m_series_block.m_series_key_chunks.end();
+}
+
+std::set<std::string> Index::get_series_key_by_tag(
+        const std::string & measurement,
+        const std::pair<std::string, std::string>& tag)
+{
+    return m_mea_tag_keys[measurement].m_series_by_tag_key_value[tag.first][tag.second];
 }

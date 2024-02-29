@@ -926,12 +926,12 @@ std::list<std::string> Write::get_shard_in_meta()
 {
     std::unique_lock<std::shared_mutex> write_lock(m_mea_shard_mutex);
     std::list<std::string> shard_serializes;
-    std::cout << "get_shard_in_meta, shard_size:" << m_mea_shard_map.size() << "\n";
+//    std::cout << "get_shard_in_meta, shard_size:" << m_mea_shard_map.size() << "\n";
     for (auto& shard : m_mea_shard_map)
     {
-        std::cout << "刷写shard id:" << shard.first << ", measurement:" << m_tb_name << "\n";
+//        std::cout << "刷写shard id:" << shard.first << ", measurement:" << m_tb_name << "\n";
         string val_serialize;
-        std::cout << "curr_shard_id:" << shard.second->shard_id() << "\n";
+//        std::cout << "curr_shard_id:" << shard.second->shard_id() << "\n";
         std::cout << shard.second->DebugString() << "\n";
         shard.second->SerializeToString(&val_serialize);
         shard_serializes.push_back(val_serialize);
@@ -939,14 +939,26 @@ std::list<std::string> Write::get_shard_in_meta()
     return shard_serializes;
 }
 
+std::vector<std::string> Write::get_shard_ids()
+{
+    std::unique_lock<std::shared_mutex> write_lock(m_mea_shard_mutex);
+    std::vector<std::string> shard_ids;
+    shard_ids.reserve(m_mea_shard_map.size());
+    for (auto& shard : m_mea_shard_map)
+    {
+        shard_ids.push_back(shard.second->shard_id());
+    }
+    return shard_ids;
+}
+
 bool Write::add_shard(const std::string & shard_id, std::unique_ptr<Shard> & shard)
 {
     std::unique_lock<std::shared_mutex> write_lock(m_mea_shard_mutex);
     if (!shard_id.empty() && shard != nullptr)
     {
-        std::cout << "add_shard被调用过，shard_id:" << shard_id << ", shard_id_object:" << shard->shard_id() << ", curr_shard_id:" << shard->shard_id()  << "\n";
+//        std::cout << "add_shard被调用过，shard_id:" << shard_id << ", shard_id_object:" << shard->shard_id() << ", curr_shard_id:" << shard->shard_id()  << "\n";
         m_mea_shard_map[shard_id] = std::move(shard);
-        std::cout << "add_shard:" << shard_id << ", shard_size:" << m_mea_shard_map.size() << "\n";
+//        std::cout << "add_shard:" << shard_id << ", shard_size:" << m_mea_shard_map.size() << "\n";
         return true;
     }
     return false;
