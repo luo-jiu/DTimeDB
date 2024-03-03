@@ -7,6 +7,7 @@
 
 #include <snappy.h>
 #include <deque>
+#include <shared_mutex>
 
 namespace dt::tsm
 {

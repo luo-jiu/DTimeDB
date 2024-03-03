@@ -1,4 +1,5 @@
 insert into school,local='学校',class='软工1班' '温度'=24.1,'出勤'=25
+insert into school,local='学校',class='软工1班' '温度'=24.1
 insert into school,local='学校',class='软工1班' '温度'=24.1,'出勤'=25 '2018-3-19'
 select * from school where local='中德'
 

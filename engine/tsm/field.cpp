@@ -82,7 +82,7 @@ void Field::write(
                     sl->m_current_data->write(key_value.first, key_value.second);
                 }
             }
-            data_size += 12 * m_sl.size();
+            data_size += 12 * sl->size();
         }
         // 设置参数
         sl->m_current_data->m_max_timestamp = sl->max_key();

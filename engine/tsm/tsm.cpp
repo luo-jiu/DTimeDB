@@ -1,6 +1,5 @@
 #include "engine/tsm/tsm.h"
 
-#include <cstring>
 
 using namespace dt::tsm;
 using namespace std::chrono;
@@ -149,6 +148,9 @@ int64_t TSM::write_index_entry_to_file(
     int64_t size = index_entry->get_size();
     file->write(reinterpret_cast<const char*>(&size), sizeof(int32_t));
 
+//    file->seekp(-8, std::ios::end);
+//    file->write(reinterpret_cast<const char*>(&offset), sizeof(offset));
+
     file->flush();
     m_file_manager.release_file_stream(file_path);
     return true;
@@ -246,11 +248,21 @@ bool TSM::write_footer_to_file(
         return false;
     }
 
-    file->seekp(tail_offset);  // 跳转到文件末尾
-    file->write(reinterpret_cast<const char*>(&footer), sizeof(footer));
+    file->seekp(tail_offset - 8);  // 跳转到文件末尾
+    file->write(reinterpret_cast<const char*>(&footer.m_offset), sizeof(footer.m_offset));
 
     file->flush();
+
+    file->seekg(tail_offset - 8);
+
     m_file_manager.release_file_stream(file_path);
+
+    auto file_t = m_file_manager.get_file_stream(file_path, "binary");
+    int64_t temp;
+    file_t->seekg(-8, std::ios::end);
+    file_t->read(reinterpret_cast<char*>(&temp), sizeof(temp));
+    std::cout<< "即使读取:" << temp <<std::endl;
+
     return true;
 }
 
@@ -278,6 +290,7 @@ bool TSM::write_series_index_block_to_file(
         const string & file_path,
         int64_t tail_offset)
 {
+    auto footer = tail_offset;
     if (index_entry.empty() || meta == nullptr)
     {
         return false;
@@ -292,6 +305,17 @@ bool TSM::write_series_index_block_to_file(
         write_index_entry_to_file(entry, file_path, tail_offset);
         tail_offset += 28;
     }
+
+    auto file = m_file_manager.get_file_stream(file_path, "binary");
+    if (!file->is_open())
+    {
+        std::cerr << "Error: Could not open file for writing - m_from engine/tsm/tsm_.h" << std::endl;
+        return false;
+    }
+    file->seekp(-8, std::ios::end);
+    file->write(reinterpret_cast<const char*>(&footer), sizeof(footer));
+    file->flush();
+    std::cout << "刷入footer: " << footer << "\n";
     return true;
 }
 

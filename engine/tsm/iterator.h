@@ -2,12 +2,36 @@
 #define DTIMEDB_ITERATOR_H
 
 #include "data_point.h"
+#include "tsm_ingredient.h"
+#include "file_manager/file_io_manager.h"
 
 #include <vector>
 #include <memory>
+#include <set>
+#include <shared_mutex>
 
 namespace dt::tsm
 {
+    /**
+     * 需要依赖注入到TagSetIterator
+     */
+    class TsmIOManagerCenter
+    {
+    public:
+        TsmIOManagerCenter() : m_io_manager(8){}
+
+        // 加载tsm文件中的索引
+        void load_tsm_index_entry(const std::string & tsm_path);
+
+    public:
+        mutable std::shared_mutex                                   m_mutex;                 // 读写锁保证m_index_entry 安全
+        dt::file::FileIOManager                                     m_io_manager;
+        // tsm文件索引
+        //                 field                           shard_id
+        std::unordered_map<std::string, std::unordered_map<std::string, std::vector<dt::tsm::IndexEntry>>> m_index_entry;
+    };
+
+
     /**
      * 查询迭代器
      *
@@ -25,8 +49,10 @@ namespace dt::tsm
     public:
 
 
+
     public:
         std::string m_series_key;
+        std::shared_ptr<TsmIOManagerCenter> m_tsm_io_manager;
     };
 
     /**
@@ -43,7 +69,7 @@ namespace dt::tsm
 
     public:
         std::string m_shard_id;
-        std::vector<std::unique_ptr<TagSetIterator>> m_tag_set_iterators;
+        std::vector<std::shared_ptr<TagSetIterator>> m_tag_set_iterators;
     };
 
     /**
@@ -64,12 +90,11 @@ namespace dt::tsm
         DataPoint next();
         DataPoint aggregate();
 
-
-
     public:
         std::string m_field;  // 字段名
-        std::vector<std::unique_ptr<ShardIterator>> m_shard_iterators;
+        std::vector<std::shared_ptr<ShardIterator>> m_shard_iterators;
     };
+
 
     /**
      * Root 迭代器
@@ -80,14 +105,18 @@ namespace dt::tsm
     class RootIterator
     {
     public:
+        RootIterator();
+
         void next();
-
-
+        void load_tsm_index_entry(const std::string & tsm_path);
         void add_field_iterator(const std::string & field);
 
     public:
-        std::vector<std::unique_ptr<FieldIterator>> m_field_iterators;
-        std::vector<DataPoint> m_data_points;  // 数据集合
+        std::vector<std::shared_ptr<FieldIterator>> m_field_iterators;
+        std::vector<DataPoint> m_data_points;  // 数据 集合
+        std::set<std::string> m_load_tsm_finished;
+
+        std::shared_ptr<TsmIOManagerCenter> m_tsm_io_manager;  // 文件管理器
     };
 }
 

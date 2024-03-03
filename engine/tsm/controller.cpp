@@ -74,6 +74,28 @@ bool Controller::load_database(
         string & db_name,
         std::vector<std::string> & tables)
 {
+    std::unique_lock<std::shared_mutex> lock(m_fields_map_mutex);
+    for (auto& tb_name : tables)
+    {
+        bool exist = false;
+        auto db_it = m_db_mea_map.find(db_name);
+        if (db_it != m_db_mea_map.end())
+        {
+            auto tb_it = db_it->second.m_mea_fields.find(tb_name);
+            if (tb_it != db_it->second.m_mea_fields.end())
+            {
+                exist = true;
+            }
+        }
+
+        if (!exist)
+        {
+            // 不存在,为这个表加载字段信息
+            m_db_mea_map[db_name].m_mea_fields[tb_name] = m_file.load_mea_fields(db_name, tb_name);
+        }
+    }
+    lock.unlock();
+
     return m_file.load_database(db_name, tables);
 }
 
@@ -147,6 +169,9 @@ void Controller::insert_thread(
             write->shard_attach(&m_shard_state);  // 注册观察者
             table[tb_name] = Table{write};
             m_map[db_name] = Database{"", table};
+
+            // 为这个表加载字段信息
+            m_db_mea_map[db_name].m_mea_fields[tb_name] = m_file.load_mea_fields(db_name, tb_name);
         }
     }
     else
@@ -281,7 +306,8 @@ void Controller::analytic_expr_tree(
     std::vector<string> fields;
     if (reduce_fields.size() == 1 && reduce_fields[0].first == "*")
     {
-        fields = m_file.load_mea_fields(db_name, measurement);
+        auto fields_set = m_file.load_mea_fields(db_name, measurement);
+        std::copy(fields_set.begin(), fields_set.end(), std::back_inserter(fields));
     }
     else
     {
@@ -293,6 +319,8 @@ void Controller::analytic_expr_tree(
 
     // 构建迭代器树
     auto root_iterator = create_iterator_tree(measurement, fields, shard_ids, tags);
+
+    // 开始运行迭代树
 
 }
 
@@ -326,27 +354,30 @@ RootIterator Controller::create_iterator_tree(
     }
 
     RootIterator root_iterator;
+    root_iterator.m_tsm_io_manager ;
     // 遍历字段构建字段迭代器
     for (const auto& field : fields)  // 构建第一层
     {
-        auto field_iterator = std::make_unique<FieldIterator>(field);
+        auto field_iterator = std::make_shared<FieldIterator>(field);
+
         field_iterator->m_field = field;
         for (const auto& shard_id : shard_ids)  // 构建第二层
         {
-            auto shard_iterator = std::make_unique<ShardIterator>();
+            auto shard_iterator = std::make_shared<ShardIterator>();
             shard_iterator->m_shard_id = shard_id;
             // std::set本就是有序的直接遍历
             for (const auto& series_key : accumulated_intersection)  // 构建第三层
             {
-                auto tag_set_iterator = std::make_unique<TagSetIterator>();
+                auto tag_set_iterator = std::make_shared<TagSetIterator>();
                 tag_set_iterator->m_series_key = series_key;
-                shard_iterator->m_tag_set_iterators.push_back(std::move(tag_set_iterator));
+                tag_set_iterator->m_tsm_io_manager = root_iterator.m_tsm_io_manager;  // 依赖注入
+                shard_iterator->m_tag_set_iterators.push_back(tag_set_iterator);
             }
-            field_iterator->m_shard_iterators.push_back(std::move(shard_iterator));
+            field_iterator->m_shard_iterators.push_back(shard_iterator);
         }
-        root_iterator.m_field_iterators.push_back(std::move(field_iterator));
+        root_iterator.m_field_iterators.push_back(field_iterator);
     }
-    std::cout << "你叉叉\n";
+    return root_iterator;
 }
 
 /**

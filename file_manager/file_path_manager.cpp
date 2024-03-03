@@ -4,6 +4,7 @@ using std::string;
 
 #include <algorithm>
 #include <filesystem>
+
 namespace fs = std::filesystem;
 
 /**
@@ -591,18 +592,18 @@ bool FilePathManager::sys_clear_file(
         return false;
     }
     int64_t offset = 0;
-    uint64_t margin = 0;
+//    uint64_t margin = 0;
     uint16_t length = 0;
     file->seekp(std::ios::beg);
-    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
-    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
-    // 写margin
-    file->write(reinterpret_cast<const char*>(&margin), sizeof(uint64_t));
-    // 写file_name
-    file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
+//    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
+//    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
+//    // 写margin
+//    file->write(reinterpret_cast<const char*>(&margin), sizeof(uint64_t));
+//    // 写file_name
+//    file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
 
-    file->seekp(200);
-    offset = 210;  // 偏移量
+//    file->seekp(200);
+    offset = 10;  // 偏移量
     file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
     file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
     file->flush();
@@ -611,38 +612,42 @@ bool FilePathManager::sys_clear_file(
     return true;
 }
 
-std::vector<std::string> FilePathManager::load_mea_fields(
+std::set<std::string> FilePathManager::load_mea_fields(
         const std::string & db_name,
         const std::string & tb_name)
 {
+    std::lock_guard<std::mutex> lock(m_table_meta_mutex);
     std::string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
     std::ifstream file(file_path, std::ios::binary);
-    if (!file.is_open()) {
+    if (!file.is_open())
+    {
         std::cerr << "Error: Could not open file for reading" << std::endl;
         return {};
     }
 
     // 定位到文件中存储字段数量的位置，即跳过偏移量存储的200字节加上8字节的偏移量
-    file.seekg(200 + sizeof(int64_t));
+    file.seekg(sizeof(int64_t));
     uint16_t num;
     file.read(reinterpret_cast<char*>(&num), sizeof(num));
 
     // 读取所有字段
-    std::vector<std::string> fields;
-    for (uint16_t i = 0; i < num; ++i) {
+    std::set<std::string> fields;
+    for (uint16_t i = 0; i < num; ++i)
+    {
         uint16_t length;
         file.read(reinterpret_cast<char*>(&length), sizeof(length)); // 读取字段长度
 
         std::string field(length, '\0');
         file.read(&field[0], length); // 根据长度读取字段
 
-        fields.push_back(field); // 添加到字段列表中
+        fields.insert(field); // 添加到字段列表中
     }
 
     // 打印读取的字段
-    for (const auto& field : fields) {
-        std::cout << "Field: " << field << std::endl;
-    }
+//    for (const auto& field : fields)
+//    {
+//        std::cout << "Field: " << field << std::endl;
+//    }
     return fields;
 }
 
@@ -651,6 +656,7 @@ void FilePathManager::insert_field_to_file(
         const std::string & tb_name,
         const std::string & field)
 {
+    std::lock_guard<std::mutex> lock(m_table_meta_mutex);
     string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
@@ -658,7 +664,7 @@ void FilePathManager::insert_field_to_file(
         std::cerr << "Error: Could not open file for writing" << std::endl;
         return;
     }
-    file->seekg(200);
+    file->seekg(std::ios::beg);
     int64_t offset;
     uint16_t num;
     file->read(reinterpret_cast<char*>(&offset), sizeof(offset));
@@ -675,7 +681,7 @@ void FilePathManager::insert_field_to_file(
     offset = file->tellp();
     num += 1;
 
-    file->seekp(200);
+    file->seekp(std::ios::beg);
     file->write(reinterpret_cast<char*>(&offset), sizeof(offset));
     file->write(reinterpret_cast<char*>(&num), sizeof(num));
 

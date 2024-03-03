@@ -17,6 +17,7 @@
 #include <iostream>
 #include <chrono>
 #include <utility>
+#include <set>
 
 namespace dt::file
 {
@@ -50,16 +51,17 @@ namespace dt::file
         bool sys_show_file(const std::string & db_name, const std::string & tb_name);
         bool sys_clear_file(const std::string & db_name, const std::string & tb_name);
 
-        std::vector<std::string> load_mea_fields(const std::string & db_name, const std::string & tb_name);
+        std::set<std::string> load_mea_fields(const std::string & db_name, const std::string & tb_name);
         void insert_field_to_file(const std::string & db_name, const std::string & tb_name, const std::string & field);
 
     public:
-        mutable std::shared_mutex m_mutex;
+        mutable std::shared_mutex                                   m_mutex;
+        std::mutex                                                  m_table_meta_mutex;
 
     private:
         struct TableInfo
         {
-            std::list<std::string> m_files;
+            std::list<std::string>                                  m_files;
         };
 
         std::string                                                 m_engine;             // 属于哪个引擎

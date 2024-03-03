@@ -307,7 +307,6 @@ void Write::queue_flush_disk()
             auto& shard_id = index_info.m_shard_id;
             // 获取分片信息
             auto& curr_shard = get_shard(shard_id);
-//            auto tail_offset = curr_shard->second->m_curr_tsm_tail_offset;
             if (curr_shard == nullptr)
             {
                 std::cout << "分片信息为空\n";
@@ -329,14 +328,14 @@ void Write::queue_flush_disk()
             auto meta = m_tsm.create_index_meta(m_field_map[field_name]->m_type, meta_key);
             // 偏移尾指针进行刷盘
             tail_offset -= size;
+            std::cout << "tail_offset:" << tail_offset << " ,size:" << size << std::endl;
             // 给series index block 刷盘
-//            m_tsm.write_series_index_block_to_file(index_info.m_index_deque, meta, curr_shard->second->m_curr_tsm_file_path, tail_offset);
+            // 同步footer
             m_tsm.write_series_index_block_to_file(index_info.m_index_deque, meta, curr_shard->curr_file_path(), tail_offset);
             m_index_map.erase(field_name);
             // 同步尾指针
-//            m_file_path->update_system_file_offset(m_db_name, m_tb_name, "tail", tail_offset);
-//            curr_shard->second->update_file_point_offset("tail", tail_offset);
             curr_shard->set_curr_file_tail_offset(tail_offset);
+
             shard_notify(true);
 
             auto field_it = m_field_map.find(field_name);
@@ -396,11 +395,9 @@ void Write::queue_flush_disk()
             // 获取待写入的文件以及偏移量,还有容量是否足够(放在了sys-tb_name.tsm里面)
             bool need_create_file = false;
             // 先判断有没有能刷写的文件
-//            if (!m_curr_file_path.empty())
             if (!curr_file_path.empty())
             {
                 // 文件大小不够[至少要预留series index block 和data block 大小的空间]
-//                if (m_margin < (predict_size + 40 + field->m_index_block_meta_key.size()))
                 if (margin < (predict_size + 40 + field->m_index_block_meta_key.size()))
                 {
                     need_create_file = true;  // 需要创建新文件
@@ -426,11 +423,9 @@ void Write::queue_flush_disk()
             }
 
             // 需要创建文件
-//            if (need_create_file || m_curr_file_path.empty())
             if (need_create_file || curr_file_path.empty())
             {
                 curr_file_path = m_file_path->create_file(m_tb_name, m_db_name, "tsm");
-//                curr_shard->second->create_tsm_file(curr_file_path, DATA_BLOCK_MARGIN);
                 create_tsm_file_init(curr_shard, curr_file_path);
                 shard_notify(true);
 
@@ -442,21 +437,7 @@ void Write::queue_flush_disk()
                 Footer footer(0);
                 m_tsm.write_footer_to_file(footer, curr_file_path, DATA_BLOCK_MARGIN);
 
-//                // 拿到新创建的文件名
-//                string file_path = curr_file_path;
-//                size_t last_slash_pos = file_path.find_last_of('/');
-//                string file_name;
-//                if (last_slash_pos != std::string::npos)
-//                {
-//                    file_name = file_path.substr(last_slash_pos + 1);
-//                }
-//                else
-//                {
-//                    file_name = file_path;
-//                }
-//
                 // 初始化各项信息
-//                m_file_path->create_tsm_file_update_sys_info(m_db_name, m_tb_name, file_name, DATA_BLOCK_MARGIN);
                 margin = DATA_BLOCK_MARGIN;
                 head_offset = 5;  // 跳过header
                 tail_offset = DATA_BLOCK_MARGIN - 8;  // 跳过footer
@@ -494,8 +475,6 @@ void Write::queue_flush_disk()
                 push_task(field_name);
             }
             // 同步头指针 和 剩余大小(因为上面已经给series index block 大小计算在内,[模块一不再同步])
-//            m_file_path->update_system_file_margin(m_db_name, m_tb_name, margin);
-//            m_file_path->update_system_file_offset(m_db_name, m_tb_name, "head", head_offset);
             curr_shard->set_curr_file_margin(margin);
             curr_shard->set_curr_file_head_offset(head_offset);
             shard_notify(true);
@@ -926,12 +905,9 @@ std::list<std::string> Write::get_shard_in_meta()
 {
     std::unique_lock<std::shared_mutex> write_lock(m_mea_shard_mutex);
     std::list<std::string> shard_serializes;
-//    std::cout << "get_shard_in_meta, shard_size:" << m_mea_shard_map.size() << "\n";
     for (auto& shard : m_mea_shard_map)
     {
-//        std::cout << "刷写shard id:" << shard.first << ", measurement:" << m_tb_name << "\n";
         string val_serialize;
-//        std::cout << "curr_shard_id:" << shard.second->shard_id() << "\n";
         std::cout << shard.second->DebugString() << "\n";
         shard.second->SerializeToString(&val_serialize);
         shard_serializes.push_back(val_serialize);
@@ -956,9 +932,7 @@ bool Write::add_shard(const std::string & shard_id, std::unique_ptr<Shard> & sha
     std::unique_lock<std::shared_mutex> write_lock(m_mea_shard_mutex);
     if (!shard_id.empty() && shard != nullptr)
     {
-//        std::cout << "add_shard被调用过，shard_id:" << shard_id << ", shard_id_object:" << shard->shard_id() << ", curr_shard_id:" << shard->shard_id()  << "\n";
         m_mea_shard_map[shard_id] = std::move(shard);
-//        std::cout << "add_shard:" << shard_id << ", shard_size:" << m_mea_shard_map.size() << "\n";
         return true;
     }
     return false;

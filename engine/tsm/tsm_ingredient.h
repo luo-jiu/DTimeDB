@@ -45,7 +45,7 @@ namespace dt::tsm
     {
     public:
         Footer() {}
-        Footer(int32_t offset): m_offset(offset) {}
+        Footer(int64_t offset): m_offset(offset) {}
         ~Footer() = default;
 
         dt::json::Json json()
@@ -58,7 +58,7 @@ namespace dt::tsm
         int64_t getOffset() { return m_offset; }
         void setOffset(int64_t offset) { m_offset = offset; }
 
-    private:
+    public:
         int64_t m_offset;
     };
 
@@ -173,7 +173,7 @@ namespace dt::tsm
         uint16_t get_count() const { return m_count; }
         void set_count(uint16_t count) { m_count = count; }
 
-    private:
+    public:
         uint16_t                    m_key_size;
         std::string                 m_key;  // seriesKey + fieldKey
         DataBlock::Type             m_type;

@@ -13,5 +13,11 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval_use(
         // 成功切换了数据库才会去加载对应数据库的元数据
         i->m_tb_engine = m_tab_eng_manager.load_database_metadata(node->m_database_name);
     }
+    else
+    {
+        // 说明数据库不存在
+        std::cout << "The '"<< node->m_database_name <<"' Databases does not exist.\n";
+        return nullptr;
+    }
     return i;
 }
