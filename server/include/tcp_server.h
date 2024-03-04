@@ -3,10 +3,10 @@
  */
 #include "connection_pool/dtimedb.h"
 #include "server/include/event_loop.h"
-class Server{
+class tcp_server{
     //创建客户端
-    Server(event_loop* loop,const char * ip,unsigned short port);
-    ~Server();
+    tcp_server(event_loop* loop,const char * ip,unsigned short port);
+    ~tcp_server();
     //服务器保持连接
     void keep_alive(){_keepalive= true; }
     void do_accept();

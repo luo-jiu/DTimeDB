@@ -174,43 +174,43 @@ void event_loop::add_task(pendingFunc func, void *args) {
     //添加任务对象到任务队列
     _pending_func.push_back(item);
 }
-
-//删除定时器事件
-void event_loop::del_timer(int timer_id) {
-    _timer_que->del_timer(timer_id);
-}
-
-//延迟运行定时器事件
-int event_loop::run_after(time_call_back *cb, void *args, int sec, int mills) {
-    struct timespec tpc;
-    //获取当前时间
-    clock_gettime(CLOCK_REALTIME, &tpc);
-    //转换为毫秒
-    uint64_t  ts = tpc.tv_sec * 1000 + tpc.tv_nsec / 1000000UL;
-    // 计算延迟时间
-    ts += sec * 1000 + mills;
-    // 创建定时器事件对象
-    timer_event te (cb,args,ts);
-    return _timer_que->add_timer(te);
-}
-//指定时间内运行定时器事件
-//定时器队列会不断检查ts并排序，到了时间就会执行
-int event_loop::run_at(time_call_back *cb, void *args, uint64_t timestamp) {
-    timer_event te(cb,args,timestamp);
-    return _timer_que->add_timer(te);
-}
-//每隔一段事件运行定时器事件
-int event_loop::run_every(time_call_back *cb, void *args, int sec, int millis) {
-    // 计算间隔时间
-    uint32_t interval = sec * 1000 + millis;
-    struct timespec tpc;
-    //获取当前时间
-    clock_gettime(CLOCK_REALTIME,&tpc);
-    //下次运行时间
-    uint64_t timestamp = tpc.tv_sec * 1000 +  tpc.tv_nsec / 1000000UL + interval;
-    timer_event te(cb,args,timestamp,interval);
-    return _timer_que->add_timer(te);
-}
+//
+////删除定时器事件
+//void event_loop::del_timer(int timer_id) {
+//    _timer_que->del_timer(timer_id);
+//}
+//
+////延迟运行定时器事件
+//int event_loop::run_after(time_call_back *cb, void *args, int sec, int mills) {
+//    struct timespec tpc;
+//    //获取当前时间
+//    clock_gettime(CLOCK_REALTIME, &tpc);
+//    //转换为毫秒
+//    uint64_t  ts = tpc.tv_sec * 1000 + tpc.tv_nsec / 1000000UL;
+//    // 计算延迟时间
+//    ts += sec * 1000 + mills;
+//    // 创建定时器事件对象
+//    timer_event te (cb,args,ts);
+//    return _timer_que->add_timer(te);
+//}
+////指定时间内运行定时器事件
+////定时器队列会不断检查ts并排序，到了时间就会执行
+//int event_loop::run_at(time_call_back *cb, void *args, uint64_t timestamp) {
+//    timer_event te(cb,args,timestamp);
+//    return _timer_que->add_timer(te);
+//}
+////每隔一段事件运行定时器事件
+//int event_loop::run_every(time_call_back *cb, void *args, int sec, int millis) {
+//    // 计算间隔时间
+//    uint32_t interval = sec * 1000 + millis;
+//    struct timespec tpc;
+//    //获取当前时间
+//    clock_gettime(CLOCK_REALTIME,&tpc);
+//    //下次运行时间
+//    uint64_t timestamp = tpc.tv_sec * 1000 +  tpc.tv_nsec / 1000000UL + interval;
+//    timer_event te(cb,args,timestamp,interval);
+//    return _timer_que->add_timer(te);
+//}
 //运行任务
 void event_loop::run_task() {
     //创建迭代器

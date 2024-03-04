@@ -27,7 +27,6 @@ struct queue_msg{
         NEW_TASK
     };
     MSG_TYPE cmd_type;
-    DB_OPERATION op_type;
     union{
         int connfd;
         struct {
@@ -36,4 +35,7 @@ struct queue_msg{
         };
     };
 };
+
+#define COMMU_HEAD_LENGTH 8
+#define MSG_LENGTH_LIMIT (65536 - COMMU_HEAD_LENGTH)
 #endif //DTIMEDB_MSG_HEAD_H
