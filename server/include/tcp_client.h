@@ -7,7 +7,7 @@
 class tcp_client{
 public:
 private:
-    int  _fd;
-
+    int  _sockfd;
+    event_loop* eventLoop;
 };
 #endif //DTIMEDB_TCP_CLIENT_H

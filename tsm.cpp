@@ -3,8 +3,6 @@
 
 #include <engine/tsm/header.h>
 using namespace dt::tsm;
-#include "connection_pool/connection.h"
-#include "connection_pool/connection_pool.h"
 string file_path  = "data.tsm";
 string measurement = "school";
 string file_name = "temperature";

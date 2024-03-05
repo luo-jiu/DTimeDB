@@ -1,8 +1,9 @@
 /**
  *设定整体的服务端链接端口和客户端与服务端之间的网络信息封包过程
  */
-#include "connection_pool/dtimedb.h"
-#include "server/include/event_loop.h"
+#include "../include/server_header.h"
+
+
 class tcp_server{
     //创建客户端
     tcp_server(event_loop* loop,const char * ip,unsigned short port);
@@ -14,13 +15,14 @@ class tcp_server{
 private:
     int _sock_fd;
     int _reserve_fd;
-    struct sockaddr_in _conn_addr;
-    socklen_t _add_len;
+    event_loop* _loop;
+
     bool _keepalive;
     static int _conn_size;
     static int _max_conns;
     static int _curr_conns;
     static pthread_mutex_t _mutex;
 public:
-//    static void onConnBuild(conn_callback cb)
+    // 消息调度器
+    static msg_dispatcher dispatcher;
 };

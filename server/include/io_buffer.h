@@ -118,6 +118,7 @@ protected:
 };
 // 输出缓冲区类
 class output_buffer : public tcp_buffer{
+public:
     // 向缓冲区写入数据
     //暂时用char代替，完整版需要使用数据包
     int send_data(const char *data,int datlen);
@@ -126,6 +127,7 @@ class output_buffer : public tcp_buffer{
 };
 //输入缓冲区类
 class input_buffer : public tcp_buffer{
+public:
     int read_data(int fd);
     const char* data() const {return _buf? _buf->data + _buf->head: nullptr;}
     void adjust() { if (_buf) _buf->adjust();}
