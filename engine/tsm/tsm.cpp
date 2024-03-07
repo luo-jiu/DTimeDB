@@ -69,11 +69,16 @@ int64_t TSM::write_data_to_file(
     file->write(reinterpret_cast<const char*>(&data_num), sizeof(int32_t));
     file->write(reinterpret_cast<const char*>(&timestamps_size), sizeof(int32_t));
     file->write(reinterpret_cast<const char*>(&values_size), sizeof(int32_t));
+    std::cout << "timestamps_size: " << timestamps_size << std::endl;
+    std::cout << "values_size: " << values_size << std::endl;
 
+    std::cout << "curr_offset:" << file->tellp() << std::endl;
     // 将压缩后的timestamp 写入文件
     file->write(compress_timestamp.data(), timestamps_size);
+    std::cout << "curr_offset:" << file->tellp() << std::endl;
     // 将压缩后的val 写入文件
     file->write(compress_val.data(), values_size);
+    std::cout << "curr_offset:" << file->tellp() << std::endl;
 
     file->flush();
     m_file_manager.release_file_stream(file_path);
@@ -105,6 +110,7 @@ bool TSM::read_data_from_file(
     file->read(reinterpret_cast<char*>(&data_block->m_tp_snappy_size), sizeof(data_block->m_tp_snappy_size));
     file->read(reinterpret_cast<char*>(&data_block->m_val_snappy_size), sizeof(data_block->m_val_snappy_size));
 
+    std::cout << "curr_offset:" << file->tellg() << std::endl;
     // 读取并解压时间戳数据
     string compressed_timestamp(data_block->m_tp_snappy_size, '\0');
     file->read(&compressed_timestamp[0], data_block->m_tp_snappy_size);
@@ -113,6 +119,7 @@ bool TSM::read_data_from_file(
     auto timestamps =  deserialize_differences(timestamp_serialize);
     data_block->m_timestamps = restore_timestamps(timestamps);
 
+    std::cout << "curr_offset:" << file->tellg() << std::endl;
     // 读取并解压值数据
     string compressed_val(data_block->m_val_snappy_size, '\0');
     file->read(&compressed_val[0], data_block->m_val_snappy_size);
@@ -120,6 +127,7 @@ bool TSM::read_data_from_file(
     snappy::Uncompress(compressed_val.data(), data_block->m_val_snappy_size, &val_serialize);
     data_block->m_values = deserialize_strings(val_serialize);
 
+    std::cout << "curr_offset:" << file->tellg() << std::endl;
     m_file_manager.release_file_stream(file_path);
     return true;
 }
@@ -137,19 +145,18 @@ int64_t TSM::write_index_entry_to_file(
     }
 
     file->seekp(offset);
-
+    std::cout << "curr_offset:" << file->tellp() << std::endl;
     long timestamp_size = sizeof(high_resolution_clock::time_point);
     file->write(reinterpret_cast<const char*>(&index_entry->get_max_time()), timestamp_size);
     file->write(reinterpret_cast<const char*>(&index_entry->get_min_time()), timestamp_size);
 
     int64_t get_offset = index_entry->get_offset();
-    file->write(reinterpret_cast<const char*>(&get_offset), sizeof(int64_t));
+    std::cout << "get_offset:" << get_offset << std::endl;
+    file->write(reinterpret_cast<const char*>(&get_offset), sizeof(get_offset));
 
-    int64_t size = index_entry->get_size();
-    file->write(reinterpret_cast<const char*>(&size), sizeof(int32_t));
-
-//    file->seekp(-8, std::ios::end);
-//    file->write(reinterpret_cast<const char*>(&offset), sizeof(offset));
+    int32_t size = index_entry->get_size();
+    std::cout << "size:" << size << std::endl;
+    file->write(reinterpret_cast<const char*>(&size), sizeof(size));
 
     file->flush();
     m_file_manager.release_file_stream(file_path);
@@ -184,7 +191,7 @@ int64_t TSM::write_index_meta_to_file(
     }
     file->seekp(offset);
 
-    int64_t size = 12;
+    int64_t size = 8;
     uint16_t length = index_meta->get_key_length();
     file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
     file->write(index_meta->get_key().c_str(), length);  // 写字符串
@@ -252,17 +259,7 @@ bool TSM::write_footer_to_file(
     file->write(reinterpret_cast<const char*>(&footer.m_offset), sizeof(footer.m_offset));
 
     file->flush();
-
-    file->seekg(tail_offset - 8);
-
     m_file_manager.release_file_stream(file_path);
-
-    auto file_t = m_file_manager.get_file_stream(file_path, "binary");
-    int64_t temp;
-    file_t->seekg(-8, std::ios::end);
-    file_t->read(reinterpret_cast<char*>(&temp), sizeof(temp));
-    std::cout<< "即使读取:" << temp <<std::endl;
-
     return true;
 }
 
@@ -296,6 +293,7 @@ bool TSM::write_series_index_block_to_file(
         return false;
     }
     // 先写入meta
+    meta->m_count = index_entry.size();
     auto meta_size = write_index_meta_to_file(meta, file_path, tail_offset);
     tail_offset += meta_size;
 
@@ -306,6 +304,7 @@ bool TSM::write_series_index_block_to_file(
         tail_offset += 28;
     }
 
+    // 更新footer
     auto file = m_file_manager.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {

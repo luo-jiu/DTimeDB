@@ -22,7 +22,7 @@ namespace dt::tsm
         DataPoint() {}
 
         Timestamp get_timestamp() const;
-        Value get_value() const;
+        Value get_value(const std::string & field_name) const;
 
     public:
         Timestamp m_timestamp;

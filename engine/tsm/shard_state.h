@@ -61,15 +61,6 @@ namespace dt::tsm
             std::unique_lock<std::shared_mutex> write_lock(m_mutex);
             if (m_is_registered.load())  // 有事件注册
             {
-//                std::cout << "监控到shard刷盘事件注册\n";
-                // 将时间点转换为自纪元以来的纳秒数
-//                auto nanoseconds_since_epoch = std::chrono::duration_cast<std::chrono::seconds>(
-//                        m_last_time.time_since_epoch()).count();
-                // 打印纳秒级别的时间戳
-//                std::cout << "last_time: " << nanoseconds_since_epoch << "\n";
-//                std::cout << "curr_time: " << std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() << "\n";
-//                std::cout << "count:" << m_change_total_count << "\n";
-                // 时间超过5 秒或者shard 变化次数达到10 次
                 if (curr_time - m_last_time >= std::chrono::seconds(10) || m_change_total_count >= 10)
                 {
                     if (curr_time - m_last_time >= std::chrono::seconds(10))

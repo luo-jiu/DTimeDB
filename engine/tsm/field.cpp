@@ -9,22 +9,30 @@ void Field::write(
         high_resolution_clock::time_point timestamp,
         string & data,
         string & db_name,
-        string & tb_name)
+        string & tb_name,
+        const std::string & series_key_and_field_name)
 {
     m_sl_mutex.lock();  // 先锁整个m_map[读锁]
+
+    string combination_key = shard_id;
+    if (!series_key_and_field_name.empty())
+    {
+        // 先简单拼一起，也能保证唯一性
+        combination_key = shard_id + series_key_and_field_name;
+    }
     // 检查分片是否存在
-    auto shard_it = m_shard_skip_map.find(shard_id);
+    auto shard_it = m_shard_skip_map.find(combination_key);
     if (shard_it == m_shard_skip_map.end())
     {
         // 分片不存在, 创建分片
-        std::cout << "跳表分片不存在，创建分片\n";
-        m_shard_skip_map[shard_id] = std::make_unique<SkipList<std::string>>();
+        std::cout << "跳表该[分片]对应的[series key + field_name]不存在，创建分片\n";
+        m_shard_skip_map[combination_key] = std::make_unique<SkipList<std::string>>();
     }
     // 释放全局锁,细化锁到对应分片的锁
     m_sl_mutex.unlock();
-    std::unique_lock<std::shared_mutex> shard_sl_lock(m_shard_skip_locks[shard_id]);
+    std::unique_lock<std::shared_mutex> shard_sl_lock(m_shard_skip_locks[combination_key]);
 
-    auto& sl = m_shard_skip_map[shard_id];
+    auto& sl = m_shard_skip_map[combination_key];
     if (!sl) return;
 
     /**

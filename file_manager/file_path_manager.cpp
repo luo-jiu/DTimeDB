@@ -139,7 +139,6 @@ string FilePathManager::create_file(
         }
 
         // 把文件名存入对应表目录下
-//        m_map[db_name][tb_name].m_files.push_back(file_name);
         return file_path;
     }
 

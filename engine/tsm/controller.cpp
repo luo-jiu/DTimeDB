@@ -213,7 +213,7 @@ void Controller::insert_thread(
     }
 
     // 拼接seriesKey
-    string series_key = field_name + tags_str;
+    string series_key = db_name + tags_str;  // measurement + tags
     writer->write(timestamp, series_key, value, type_temp, field_name, db_name, tb_name, m_field_state, m_table_state);
 }
 
@@ -303,6 +303,10 @@ void Controller::analytic_expr_tree(
     std::sort(shard_ids.begin(), shard_ids.end());  // 排序
 
     // 获取所有的字段
+
+    // 在此需要判断哪个字段需要聚合
+    // ...
+
     std::vector<string> fields;
     if (reduce_fields.size() == 1 && reduce_fields[0].first == "*")
     {
@@ -318,7 +322,7 @@ void Controller::analytic_expr_tree(
     }
 
     // 构建迭代器树
-    auto root_iterator = create_iterator_tree(measurement, fields, shard_ids, tags);
+    auto root_iterator = create_iterator_tree(db_name, measurement, fields, shard_ids, tags, expr_node);
 
     // 开始运行迭代树
 
@@ -328,10 +332,12 @@ void Controller::analytic_expr_tree(
  * 构建迭代器树
  */
 RootIterator Controller::create_iterator_tree(
+        const string & db_name,
         const string & measurement,
         std::vector<std::string> & fields,
         std::vector<std::string> & shard_ids,
-        std::vector<std::pair<std::string, std::string>> & tags)
+        std::vector<std::pair<std::string, std::string>> & tags,
+        const std::shared_ptr<impl::ExprNode> & expr_node)
 {
     // 利用倒排索引查询series key,并求所有tag 对应series key 的交集
     std::set<string> accumulated_intersection;
@@ -353,27 +359,47 @@ RootIterator Controller::create_iterator_tree(
         accumulated_intersection = std::move(temp_intersection);
     }
 
+    // 在此需要判断哪个字段是需要聚合的
+
+    std::unique_lock<std::shared_mutex> write_lock(m_mutex);  // 加锁
     RootIterator root_iterator;
-    root_iterator.m_tsm_io_manager ;
+    root_iterator.m_tsm_io_manager = std::make_shared<TsmIOManagerCenter>();
+
     // 遍历字段构建字段迭代器
     for (const auto& field : fields)  // 构建第一层
     {
         auto field_iterator = std::make_shared<FieldIterator>(field);
-
         field_iterator->m_field = field;
+
+        // 二三层合并为一层构建
         for (const auto& shard_id : shard_ids)  // 构建第二层
         {
-            auto shard_iterator = std::make_shared<ShardIterator>();
-            shard_iterator->m_shard_id = shard_id;
+            // 加载shard [该时间段内全部的data block索引]，按照series key + field_name 区分
+            auto shard = *(m_map[db_name].m_table_map[measurement].m_writer->get_shard(shard_id));
+
             // std::set本就是有序的直接遍历
             for (const auto& series_key : accumulated_intersection)  // 构建第三层
             {
                 auto tag_set_iterator = std::make_shared<TagSetIterator>();
                 tag_set_iterator->m_series_key = series_key;
-                tag_set_iterator->m_tsm_io_manager = root_iterator.m_tsm_io_manager;  // 依赖注入
-                shard_iterator->m_tag_set_iterators.push_back(tag_set_iterator);
+                // 传入表达式树
+                tag_set_iterator->m_expr_node = expr_node;
+
+                // 依赖注入
+                tag_set_iterator->m_tsm_io_manager = root_iterator.m_tsm_io_manager;
+
+                // 针对对应的TagSetIterator 加载对应的索引 [通过 series key + field_name]
+                tag_set_iterator->m_series_blocks = root_iterator.m_tsm_io_manager->m_tsm_index[shard_id][series_key + field];
+
+//                //  拷贝shard 并且把shard 对应的tsm 索引加载到内存
+//                tag_set_iterator->m_shard = *(m_map[db_name].m_table_map[measurement].m_writer->get_shard(shard_id));
+//                std::vector<std::string> items(tag_set_iterator->m_shard.tsm_file().begin(), tag_set_iterator->m_shard.tsm_file().end());
+//                std::sort(items.begin(), items.end());
+//                tag_set_iterator->m_curr_shard_tsm_files = std::move(items);
+
+                root_iterator.m_tsm_io_manager->load_tsm_index_entry(tag_set_iterator->m_shard);
+                field_iterator->m_tag_iterators.push_back(tag_set_iterator);
             }
-            field_iterator->m_shard_iterators.push_back(shard_iterator);
         }
         root_iterator.m_field_iterators.push_back(field_iterator);
     }

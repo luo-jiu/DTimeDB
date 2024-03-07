@@ -152,7 +152,7 @@ namespace dt::tsm
     };
 
     /**
-     * size: 12 + string
+     * size: 8 + string
      */
     class IndexBlockMeta
     {

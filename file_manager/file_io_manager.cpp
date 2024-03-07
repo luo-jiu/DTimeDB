@@ -80,12 +80,21 @@ std::shared_ptr<std::fstream> FileIOManager::get_file_stream(
     }
 
     std::ios_base::openmode open_mode = std::ios::in; // 默认模式设置为只读
-    if (mode == "binary") {
+    if (mode == "binary")
+    {
         open_mode = std::ios::in | std::ios::out | std::ios::binary; // 二进制写入模式，同时支持读取
-    } else if (mode == "trunc") {
+    }
+    else if (mode == "trunc")
+    {
         open_mode = std::ios::in | std::ios::out | std::ios::trunc; // 覆盖写模式
-    } else if (mode == "append") {
+    }
+    else if (mode == "append")
+    {
         open_mode = std::ios::in | std::ios::out | std::ios::app; // 追加模式，同时支持读取
+    }
+    else if (mode == "binary-read")
+    {
+        open_mode = std::ios::in | std::ios::binary;
     }
 
     auto stream = std::make_shared<std::fstream>(file_path, open_mode);

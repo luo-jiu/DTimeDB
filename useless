@@ -1,17 +1,17 @@
 insert into school,local='学校',class='软工1班' '温度'=24.1,'出勤'=25
 insert into school,local='学校',class='软工1班' '温度'=24.1
 insert into school,local='学校',class='软工1班' '温度'=24.1,'出勤'=25 '2018-3-19'
-select * from school where local='中德'
+select * from school where local='学校'
 
 create database db_test
 use db_test
 create table school()engine=tsm
 
-insert into school,local='中德',class='软工1班' '温度'=24.1 '2018-3-19'
-insert into school,local='中德',class='软工1班' '温度'=24.1 '2018-2-19'
-insert into school,local='中德',class='软工1班' '温度'=24.1 '2018-1-19'
-insert into school,local='中德',class='软工1班' '温度'=23.1
-insert into school,local='中德',class='软工1班' '出勤'=25
+insert into school,local='学校',class='软工1班' '温度'=24.1 '2018-3-19'
+insert into school,local='学校',class='软工1班' '温度'=24.1 '2018-2-19'
+insert into school,local='学校',class='软工1班' '温度'=24.1 '2018-1-19'
+insert into school,local='学校',class='软工1班' '温度'=23.1
+insert into school,local='学校',class='软工1班' '出勤'=25
 
 select * from school
 select * from school where local='学校'
@@ -19,9 +19,10 @@ select '温度','出勤' from school where local='学校'
 select mean('温度'),'出勤' from school where local = '学校'  # 聚合函数查询
 select mean('字段1'),sum('字段2'),'字段3',min('字段4') from school where local = '学校'  # 聚合函数查询
 select sum('工资') from salary where time > '2024-2-25'
-select * from db_test.school where local = '中德' and time > '2018-1-21 12:10:27' and time < '2018-10-1 21:08:23'
-select * from db_test.school where local = '中德' and time > '2018-3-1 12:10:27' or time < '2018-2-1 21:08:23'
-select * from db_test.school where local = '中德' and time < '2018-1-1 12:10:27'
+select * from db_test.school where local = '学校' and time > '2018-1-21 12:10:27' and time < '2018-10-1 21:08:23'
+select * from db_test.school where local = '学校' and time > '2018-3-1 12:10:27' or time < '2018-2-1 21:08:23'
+select * from school where local = '学校' and time > '2018-1-21 12:10:27' and time < '2035-10-10 12:08:11'
+select * from db_test.school where local = '学校' and time < '2018-1-1 12:10:27'
 
 # show命令
 show databases

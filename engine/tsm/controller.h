@@ -49,7 +49,7 @@ namespace dt::tsm
         void analytic_expr_tree(const std::string & db_name, const std::string & measurement, const std::vector<std::pair<std::string, std::string>>& reduce_fields, const std::shared_ptr<impl::ExprNode>& expr_node);
         std::shared_ptr<impl::ExprNode> rebuild_tree_without_tags(const std::string & measurement, const std::shared_ptr<impl::ExprNode> & expr_node, std::vector<std::pair<std::string, std::string>> & tags);
         bool is_tag_comparison(const std::string & measurement, const std::shared_ptr<impl::ExprNode> & node);
-        RootIterator create_iterator_tree(const std::string & measurement, std::vector<std::string> & fields, std::vector<std::string> & shard_ids, std::vector<std::pair<std::string, std::string>> & tags);
+        RootIterator create_iterator_tree(const std::string & db_name, const std::string & measurement, std::vector<std::string> & fields, std::vector<std::string> & shard_ids, std::vector<std::pair<std::string, std::string>> & tags, const std::shared_ptr<impl::ExprNode> & expr_node);
         bool evaluate_condition(const std::string & shard_id, std::shared_ptr<impl::ExprNode> & expr_node);
         std::vector<std::string> filter_shards(const std::string & db_name, const std::string & measurement, std::shared_ptr<impl::ExprNode> & expr_node);
 

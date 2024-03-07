@@ -72,13 +72,13 @@ void Write::write(
             shard->set_database_name(m_db_name);
             shard->set_measurement(m_tb_name);
             shard->set_shard_id(shard_id);
-            std::cout << "唯一的set_shard被调用过=====================";
             m_mea_shard_map[shard_id] = std::move(shard);
         }
     }
 
     // 以及把shard中的当前文件传入写入程序中
-    field->write(shard_id, timestamp, data, db_name, tb_name);
+    string series_key_and_field_name = series_key + field_name;
+    field->write(shard_id, timestamp, data, db_name, tb_name, series_key_and_field_name);
 }
 
 /**
@@ -256,9 +256,9 @@ void Write::write(
 void create_tsm_file_init(const std::unique_ptr<Shard> & shard, const string & new_tsm_file_path)
 {
     shard->set_curr_file_path(new_tsm_file_path);
-    shard->set_curr_file_margin(DATA_BLOCK_MARGIN);
+    shard->set_curr_file_margin(DATA_BLOCK_MARGIN - 13);
     shard->set_curr_file_head_offset(5);
-    shard->set_curr_file_tail_offset(DATA_BLOCK_MARGIN);
+    shard->set_curr_file_tail_offset(DATA_BLOCK_MARGIN - 8);
 
     const std::string & file_path = new_tsm_file_path;
     size_t last_slash_pos = file_path.find_last_of('/');
@@ -322,8 +322,9 @@ void Write::queue_flush_disk()
             // 获取series_key + field_key
             string meta_key = m_field_map[field_name]->m_index_block_meta_key;
             // 计算大小(index(28) * index_num + meta(12 + (series_key + field_key).size()))
-            auto size = 28 * index_info.m_index_deque.size() + 12 + meta_key.size();
+            auto size = 28 * index_info.m_index_deque.size() + 8 + meta_key.size();
             std::cout << "meta_key大小: " << meta_key.size() << "\n";
+            std::cout << "tail_offset:" << tail_offset << "\n";
             // 生成meta
             auto meta = m_tsm.create_index_meta(m_field_map[field_name]->m_type, meta_key);
             // 偏移尾指针进行刷盘
@@ -412,7 +413,7 @@ void Write::queue_flush_disk()
                         else
                         {
                             string meta_key = m_field_map[field_name]->m_index_block_meta_key;
-                            auto size = 28 * indexs.second.m_index_deque.size() + 12 + meta_key.size();
+                            auto size = 28 * indexs.second.m_index_deque.size() + 8 + meta_key.size();
                             auto meta = m_tsm.create_index_meta(m_field_map[field_name]->m_type, meta_key);
                             m_tsm.write_series_index_block_to_file(indexs.second.m_index_deque, meta, curr_file_path, tail_offset);
                             tail_offset -= size;
@@ -438,7 +439,7 @@ void Write::queue_flush_disk()
                 m_tsm.write_footer_to_file(footer, curr_file_path, DATA_BLOCK_MARGIN);
 
                 // 初始化各项信息
-                margin = DATA_BLOCK_MARGIN;
+                margin = DATA_BLOCK_MARGIN - 13;
                 head_offset = 5;  // 跳过header
                 tail_offset = DATA_BLOCK_MARGIN - 8;  // 跳过footer
             }
@@ -449,11 +450,12 @@ void Write::queue_flush_disk()
             std::cout << "压缩前大小:" << data_block->m_size << std::endl;
             std::cout << "压缩后大小:" << use_size << std::endl;
 
+            // 创建index entry [唯一生成]
+            auto entry = m_tsm.create_index_entry(data_block->m_max_timestamp, data_block->m_min_timestamp, head_offset, use_size);
+
             margin -= use_size;  // 去除大小
             head_offset += use_size;  // 指针偏移
 
-            // 创建index entry [唯一生成]
-            auto entry = m_tsm.create_index_entry(data_block->m_max_timestamp, data_block->m_min_timestamp, head_offset, data_block->m_size);
             push_index_to_deque(shard_id, field_name, entry);  // 存入队列
             std::cout << "生成index entry,为其注册监控事件\n";
             field->notify(m_db_name, m_tb_name, shard_id, field_name, true, true);  // 注册监控事件监测index entry
@@ -463,7 +465,7 @@ void Write::queue_flush_disk()
             if (!field->get_mate_status())
             {
                 // 没生成过 || 已经刷到磁盘了
-                margin -= (12 + field->m_index_block_meta_key.size());  // 减去meta 大小(目的是预留写入位置)
+                margin -= (8 + field->m_index_block_meta_key.size());  // 减去meta 大小(目的是预留写入位置)
                 field->set_mate_status(true);
                 m_index_map[field_name].m_last_time = high_resolution_clock::now();  // 重置计时器
             }
@@ -622,6 +624,7 @@ std::shared_ptr<Field> Write::get_field(
     {
         if (!it->second->get_status())  // 判断状态
         {
+            // 监控线程到此止步
             return it->second;
         }
     }
@@ -647,6 +650,8 @@ std::shared_ptr<Field> Write::get_field(
     }
     // 设置key
     string meta_key = series_key + field_name;
+    std::cout << "Meta key: " << meta_key << std::endl;
+    std::cout << "Key size:" << meta_key.size() << std::endl;
     field->m_index_block_meta_key = meta_key;
 
     // 注册观察者

@@ -48,17 +48,17 @@ namespace dt::tsm
         bool create_tsm(const Header & header, const Footer & footer, const std::string & file_path);
 
         // 差值计算 &恢复差值
-        std::vector<std::chrono::nanoseconds> calculate_differences(const std::list<std::chrono::high_resolution_clock::time_point> & timestamps);
-        std::list<std::chrono::high_resolution_clock::time_point> restore_timestamps(const std::vector<std::chrono::nanoseconds> & differences);
+        static std::vector<std::chrono::nanoseconds> calculate_differences(const std::list<std::chrono::high_resolution_clock::time_point> & timestamps);
+        static std::list<std::chrono::high_resolution_clock::time_point> restore_timestamps(const std::vector<std::chrono::nanoseconds> & differences);
         // 序列化 &反序列化 timestamp
-        std::string serialize_differences(const std::vector<std::chrono::nanoseconds> & differences);
-        std::vector<std::chrono::nanoseconds> deserialize_differences(const std::string & serialized_data);
+        static std::string serialize_differences(const std::vector<std::chrono::nanoseconds> & differences);
+        static std::vector<std::chrono::nanoseconds> deserialize_differences(const std::string & serialized_data);
         // 序列化 &反序列化 string
-        std::string serialize_strings(const std::list<std::string> & strings);
-        std::list<std::string> deserialize_strings(const std::string & serialized);
+        static std::string serialize_strings(const std::list<std::string> & strings);
+        static std::list<std::string> deserialize_strings(const std::string & serialized);
         // snappy压缩 &解压
-        std::string compress_data(const std::string & serialized_data);
-        std::string decompress_data(const std::string & compressed_data);
+        static std::string compress_data(const std::string & serialized_data);
+        static std::string decompress_data(const std::string & compressed_data);
         // 计算timestamp &val 需要对空间
         std::string calculate_timestamp_size(const std::list<std::chrono::high_resolution_clock::time_point> & timestamps);
         std::string calculate_val_size(const std::list<std::string> & strings);

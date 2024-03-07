@@ -29,7 +29,7 @@ namespace dt::tsm
             m_data_block_callback = std::move(callback);
         }
 
-        void write(std::string & shard_id, std::chrono::high_resolution_clock::time_point timestamp, std::string & data, std::string & db_name, std::string & tb_name);
+        void write(std::string & shard_id, std::chrono::high_resolution_clock::time_point timestamp, std::string & data, std::string & db_name, std::string & tb_name, const std::string & series_key_and_field_name);
         bool get_status() const { return m_status; }
 
         bool should_flush_data(std::chrono::high_resolution_clock::time_point last_time, size_t sl_size);
@@ -77,6 +77,7 @@ namespace dt::tsm
         std::atomic<bool>                                                               m_create_meta{false};   // 是否生成mate
         std::list<dt::impl::ITableStateObserver*>                                       m_observers;            // 观察者列表
 
+        //         shard_id + series key + field_name
         std::unordered_map<std::string, std::unique_ptr<SkipList<std::string>>>         m_shard_skip_map;       // shard ID 和乱序窗口的映射
         std::unordered_map<std::string, std::shared_mutex>                              m_shard_skip_locks;     // 细粒度锁
 

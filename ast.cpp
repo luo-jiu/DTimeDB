@@ -27,17 +27,17 @@ int main()
 
     // 构建ast
     std::shared_ptr<dt::ast::Program> program = parser->parse_program();
-    auto ps = program->m_statements;
-    for (auto & p : ps)
-    {
-        // 递归构建执行计划
-        evaluator->eval(p, env.get(), root);
-
-        // 递归运行执行计划
-        executor->execute_plan(root);
-
-        root = std::make_shared<dt::execution::RootNode>();
-    }
+//    auto ps = program->m_statements;
+//    for (auto & p : ps)
+//    {
+//        // 递归构建执行计划
+//        evaluator->eval(p, env.get(), root);
+//
+//        // 递归运行执行计划
+//        executor->execute_plan(root);
+//
+//        root = std::make_shared<dt::execution::RootNode>();
+//    }
 
     Json json = program->json();
 
