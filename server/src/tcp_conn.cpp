@@ -106,10 +106,51 @@ void tcp_conn::handle_write()
 
 int tcp_conn::send_data(const char *data, int datalen, int cmdid)
 {
+//    确定是否有监听
+    bool need_listen = false;
+//    如果输出缓冲区为空，将标志位设置为true
+    if(!obuf.length()){
+        need_listen = true;
+    }
+    commu_head head;
+    head.cmdid = cmdid;
+    head.length = datalen;
+//    写入头部，向缓冲区发送数据
+    int ret = obuf.send_data((const char*) &head,COMMU_HEAD_LENGTH);
+    if(ret != 0){
+        return -1;
+    }
+//    写入数据
+    ret = obuf.send_data(data,datalen);
+    if (ret != 0){
+//        写入失败将之前写入的头部都要弹出
+        obuf.pop(COMMU_HEAD_LENGTH);
+        return -1;
+    }
+//    如果是第一次发送数据的话，需要注册EPOLLOUT事件，确保在套接字可写时再发送数据，避免数据因为套接字缓冲区已满而被阻塞
+    if (need_listen){
+        _loop->add_ioev(_connfd,tcp_wcb,EPOLLOUT, this);
+    }
+    return 0;
 
 }
-
+//清理tcp连接
 void tcp_conn::clean_conn()
 {
+//    调用建立连接的回调函数释放参数
+    if(tcp_server::){
 
+    }
+//    删除连接，在服务器中减少连接计数
+
+//  删除事件循环
+    _loop->del_ioev(_connfd);
+    _loop = NULL;
+//    清理输入输出缓冲区
+    ibuf.clear();
+    obuf.clear();
+    int fd = _connfd;
+    // 使连接文件描述符无效
+    _connfd = -1;
+    ::close(fd);
 }
