@@ -5,6 +5,7 @@
 #ifndef DTIMEDB_THREAD_POOL_H
 #define DTIMEDB_THREAD_POOL_H
 #include "../include/server_header.h"
+#include "thread_queue.h"
 //线程的入口函数
 extern void* thread_domain(void* args);
 class thread_pool{

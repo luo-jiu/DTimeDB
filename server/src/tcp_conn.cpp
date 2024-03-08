@@ -138,11 +138,11 @@ int tcp_conn::send_data(const char *data, int datalen, int cmdid)
 void tcp_conn::clean_conn()
 {
 //    调用建立连接的回调函数释放参数
-    if(tcp_server::){
-
+    if(tcp_server::connCloseCb){
+        tcp_server::connCloseCb(this);
     }
 //    删除连接，在服务器中减少连接计数
-
+    tcp_server::dec_conn();
 //  删除事件循环
     _loop->del_ioev(_connfd);
     _loop = NULL;

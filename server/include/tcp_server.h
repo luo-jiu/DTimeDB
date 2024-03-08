@@ -2,12 +2,12 @@
  *设定整体的服务端链接端口和客户端与服务端之间的网络信息封包过程
  */
 #include <netinet/in.h>
-#include "../include/server_header.h"
 #include "tcp_conn.h"
 #include "thread_pool.h"
 
 
 class tcp_server{
+public:
     //创建服务端
     tcp_server(event_loop* loop,const char * ip,unsigned short port);
     ~tcp_server();
@@ -19,7 +19,10 @@ class tcp_server{
     void add_msg_cb(int cmdid,msg_callback* msg_cb,void *usr_data = NULL){ dispatcher.add_msg_cb(cmdid,msg_cb,usr_data); }
     static void inc_conn();
     static void get_conn_num(int &cnt);
+    static void dec_conn();
+//     返回事件循环对象
     event_loop* loop(){ return _loop; }
+//     返回线程池对象
     thread_pool* threadPool() { return _thd_pool; }
 
 private:
