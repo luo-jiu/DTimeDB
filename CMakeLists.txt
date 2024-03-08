@@ -13,7 +13,8 @@ file(GLOB_RECURSE SOURCES "token/*.cpp" "lexer/*.cpp" "json/*.cpp" "ast/*.cpp"
         "parser/*.cpp" "engine/tsm/*.cpp"  "executor/*.cpp"
         "file_manager/*.cpp" "execution_plan/*.cpp" "evaluator/*.cpp" "thread_manager/*.cpp" "server/src/*.cpp")
 add_executable(client ${SOURCES} client.cpp)
-add_executable(ast ${SOURCES} ast.cpp)
+add_executable(ast ${SOURCES} ast.cpp
+        server/include/my_database.h)
 add_executable(eval_repl ${SOURCES} eval_repl.cpp)
 add_executable(token ${SOURCES} token.cpp)
 add_executable(tsm ${SOURCES} tsm.cpp)
