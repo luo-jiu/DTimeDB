@@ -10,7 +10,7 @@ void acceptor_cb(event_loop* loop,int fd,void *args)
 }
 
 //初始化
-tcp_conn** conn = NULL;
+tcp_conn** tcp_server::conns = NULL;
 int tcp_server::_conn_size = 0;
 int tcp_server::_curr_conns = 0;
 int tcp_server::_max_conns = 0;

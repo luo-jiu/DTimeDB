@@ -3,10 +3,11 @@
  */
 #ifndef DTIMEDB_THREAD_QUEUE_H
 #define DTIMEDB_THREAD_QUEUE_H
-#include "server_header.h"
 #include <queue>
 #include <sys/eventfd.h>
 #include <unistd.h>
+#include <mutex>
+#include "event_loop.h"
 
 template <typename T>
 class thread_queue{

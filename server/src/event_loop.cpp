@@ -1,22 +1,21 @@
 
-#include "server/include/event_loop.h"
-#include "server/include/print_error.h"
+#include "server/include/server_header.h"
 #include <sys/epoll.h>
 #include <cassert>
 //定时器事件回调函数，处理定时器超时事件
-//void timer_queue_cb(event_loop* loop,int fd,void *args){
-//    //存储触发的定时器事件
-//    std::vector<timer_event> fired_evs;
-//    //获取超时的定时器事件
-//    //流程是：
-//    //对应的事件对象loop
-//    loop->_timer_que->get_timo(fired_evs);
-//    //遍历回调函数，依次触发
-//    for (std::vector<timer_event>::iterator it = fired_evs.begin();
-//            it != fired_evs.end(); ++it) {
-//        it->time_cb(loop,it->cb_data);
-//    }
-//}
+void timer_queue_cb(event_loop* loop,int fd,void *args){
+    //存储触发的定时器事件
+    std::vector<timer_event> fired_evs;
+    //获取超时的定时器事件
+    //流程是：
+    //对应的事件对象loop
+    loop->_timer_que->get_timo(fired_evs);
+    //遍历回调函数，依次触发
+    for (std::vector<timer_event>::iterator it = fired_evs.begin();
+            it != fired_evs.end(); ++it) {
+        it->time_cb(loop,it->cb_data);
+    }
+}
 //构造函数的初始化，创建一个事件
 event_loop::event_loop() {
     //epoll实例
@@ -24,11 +23,11 @@ event_loop::event_loop() {
     //epoll创建错误处理
     exit_if(_epfd==-1,"error happened when epoll_create1()");
     //创建定时器队列
-//    _timer_que=new timer_queue();
-//    exit_if(_timer_que== nullptr,"error happened when timer create");
+    _timer_que=new timer_queue();
+    exit_if(_timer_que== nullptr,"error happened when timer create");
    //将定时器事件注册到事件循环中，是这些事件在特定时间下触发，从而执行相应的任务
    //参数意义：获取定时器队列相关的fd、回调函数、文件描述符可读触发事件的标志、定时器队列指针（对定时器队列的操作）
-//    add_ioev(_timer_que->notifier(),timer_queue_cb,EPOLLIN,_timer_que);
+    add_ioev(_timer_que->notifier(),timer_queue_cb,EPOLLIN,_timer_que);
 }
 
 /**
@@ -102,7 +101,8 @@ void event_loop::add_ioev(int fd, io_call_back *proc, int mask, void *args) {
         op = EPOLL_CTL_ADD;
     }
     //找到则修改以有的事件
-    else{
+    else
+    {
         f_mask = it->second.mask | mask;
         //修改以有事件
         op = EPOLL_CTL_MOD;
@@ -125,6 +125,7 @@ void event_loop::add_ioev(int fd, io_call_back *proc, int mask, void *args) {
     event.events = f_mask;
     event.data.fd = fd;
     int ret = ::epoll_ctl(_epfd, op,fd,&event);
+    error_if(ret == -1, "epoll_ctl");
     //加入到监听集合中
     listening.insert(fd);
 }
@@ -164,7 +165,7 @@ void event_loop::del_ioev(int fd, int mask) {
         event.events = o_mask;
         event.data.fd = fd;
         ret =  ::epoll_ctl(_epfd,EPOLL_CTL_DEL,fd, &event);
-        //eror_if
+        error_if(ret == -1, "epoll_ctl EPOLL_CTL_MOD");
     }
 }
 //添加任务
@@ -174,43 +175,43 @@ void event_loop::add_task(pendingFunc func, void *args) {
     //添加任务对象到任务队列
     _pending_func.push_back(item);
 }
-//
-////删除定时器事件
-//void event_loop::del_timer(int timer_id) {
-//    _timer_que->del_timer(timer_id);
-//}
-//
-////延迟运行定时器事件
-//int event_loop::run_after(time_call_back *cb, void *args, int sec, int mills) {
-//    struct timespec tpc;
-//    //获取当前时间
-//    clock_gettime(CLOCK_REALTIME, &tpc);
-//    //转换为毫秒
-//    uint64_t  ts = tpc.tv_sec * 1000 + tpc.tv_nsec / 1000000UL;
-//    // 计算延迟时间
-//    ts += sec * 1000 + mills;
-//    // 创建定时器事件对象
-//    timer_event te (cb,args,ts);
-//    return _timer_que->add_timer(te);
-//}
-////指定时间内运行定时器事件
-////定时器队列会不断检查ts并排序，到了时间就会执行
-//int event_loop::run_at(time_call_back *cb, void *args, uint64_t timestamp) {
-//    timer_event te(cb,args,timestamp);
-//    return _timer_que->add_timer(te);
-//}
-////每隔一段事件运行定时器事件
-//int event_loop::run_every(time_call_back *cb, void *args, int sec, int millis) {
-//    // 计算间隔时间
-//    uint32_t interval = sec * 1000 + millis;
-//    struct timespec tpc;
-//    //获取当前时间
-//    clock_gettime(CLOCK_REALTIME,&tpc);
-//    //下次运行时间
-//    uint64_t timestamp = tpc.tv_sec * 1000 +  tpc.tv_nsec / 1000000UL + interval;
-//    timer_event te(cb,args,timestamp,interval);
-//    return _timer_que->add_timer(te);
-//}
+
+//删除定时器事件
+void event_loop::del_timer(int timer_id) {
+    _timer_que->del_timer(timer_id);
+}
+
+//延迟运行定时器事件
+int event_loop::run_after(time_call_back *cb, void *args, int sec, int mills) {
+    struct timespec tpc;
+    //获取当前时间
+    clock_gettime(CLOCK_REALTIME, &tpc);
+    //转换为毫秒
+    uint64_t  ts = tpc.tv_sec * 1000 + tpc.tv_nsec / 1000000UL;
+    // 计算延迟时间
+    ts += sec * 1000 + mills;
+    // 创建定时器事件对象
+    timer_event te (cb,args,ts);
+    return _timer_que->add_timer(te);
+}
+//指定时间内运行定时器事件
+//定时器队列会不断检查ts并排序，到了时间就会执行
+int event_loop::run_at(time_call_back *cb, void *args, uint64_t timestamp) {
+    timer_event te(cb,args,timestamp);
+    return _timer_que->add_timer(te);
+}
+//每隔一段事件运行定时器事件
+int event_loop::run_every(time_call_back *cb, void *args, int sec, int millis) {
+    // 计算间隔时间
+    uint32_t interval = sec * 1000 + millis;
+    struct timespec tpc;
+    //获取当前时间
+    clock_gettime(CLOCK_REALTIME,&tpc);
+    //下次运行时间
+    uint64_t timestamp = tpc.tv_sec * 1000 +  tpc.tv_nsec / 1000000UL + interval;
+    timer_event te(cb,args,timestamp,interval);
+    return _timer_que->add_timer(te);
+}
 //运行任务
 void event_loop::run_task() {
     //创建迭代器

@@ -3,7 +3,7 @@
 //
 #include <unistd.h>
 #include <sys/ioctl.h>
-#include "../include/server_header.h"
+#include "server/include/server_header.h"
 /**
  *  为缓存池申请空间
  * @param N
@@ -155,6 +155,12 @@ buffer_pool::buffer_pool() :_total_mem(0){
     }
     _total_mem += 8192 * 10;
 }
+//  信息初始化!!!
+
+buffer_pool* buffer_pool::_ins = NULL;
+pthread_mutex_t buffer_pool::_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_once_t buffer_pool::_once = PTHREAD_ONCE_INIT;
+
 // 清空 TCP 缓冲区
 void tcp_buffer::clear() {
     if (_buf)

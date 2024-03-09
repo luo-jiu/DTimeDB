@@ -2,9 +2,9 @@
 // Created by illumwang on 24-2-26.
 //
 #include <list>
-#include <string.h>
-#include <assert.h>
-#include <stdint.h>
+#include <cstring>
+#include <cassert>
+#include <cstdint>
 #include <pthread.h>
 #include <ext/hash_map>
 #ifndef DTIMEDB_IO_BUFFER_H
