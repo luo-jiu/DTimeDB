@@ -17,7 +17,9 @@ public:
     int add_msg_cb(int cmdid,msg_callback* msg_cb,void *usr_data){
         // 检查是否已经存在相同命令ID的处理函数
         if (_dispatcher.find(cmdid) != _dispatcher.end())
+        {
             return -1;
+        }
         // 将消息处理函数与命令ID关联起来
         _dispatcher[cmdid] = msg_cb;
         // 将用户数据与命令ID关联起来

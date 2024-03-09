@@ -18,12 +18,15 @@ void buz(const char* data, uint32_t len, int cmdid, net_commu* commu, void* usr_
 {
 //    从客户端接收到的消息
     std::cout << data
-    <<"----sss"<< std::endl;
+    <<"sss"<< std::endl;
 //    在这里做解析数据的处理
     std::string answer = " from server";
     std::string rspStr = data + answer;
 //    处理结果发送回客户端
-    commu->send_data(rspStr.c_str(), rspStr.size(), cmdid);//回复消息
+    int recv = commu->send_data(rspStr.c_str(), rspStr.size(), cmdid);//回复消息
+    if (recv != 0){
+        std::cout << "Failed to send response." << std::endl;
+    }
 }
 int main(){
     printLogo();
@@ -34,7 +37,7 @@ int main(){
     short port = config_reader::ins()->GetNumber("reactor", "port", 12315);
 
     tcp_server server(&loop, ip.c_str(), port);//创建TCP服务器
-    server.add_msg_cb(1, buz);//设置：当收到消息id = 1的消息调用的回调函数  我们约定EchoString消息的ID是1
+    server.add_msg_cb(1, buz);
     loop.process_evs();
     return 0;
 }

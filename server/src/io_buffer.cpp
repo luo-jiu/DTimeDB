@@ -162,7 +162,8 @@ pthread_mutex_t buffer_pool::_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_once_t buffer_pool::_once = PTHREAD_ONCE_INIT;
 
 // 清空 TCP 缓冲区
-void tcp_buffer::clear() {
+void tcp_buffer::clear()
+{
     if (_buf)
     {
         buffer_pool::ins()->revert(_buf);
@@ -170,10 +171,12 @@ void tcp_buffer::clear() {
     }
 }
 // 弹出指定长度的数据
-void tcp_buffer::pop(int len) {
+void tcp_buffer::pop(int len)
+{
     assert(_buf && len <= _buf->length);
     _buf->pop(len);
-    if (!_buf->length){
+    if (!_buf->length)
+    {
         buffer_pool::ins()->revert(_buf);
         _buf = NULL;
     }

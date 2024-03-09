@@ -27,7 +27,13 @@ void tcp_conn::init(int connfd, event_loop *loop) {
     int ret = ::setsockopt(_connfd,IPPROTO_TCP, TCP_NODELAY,&opend, sizeof(opend));
     error_if(ret < 0,"setsockopt TCP_NODELAY");\
     // 调用用户设置的连接建立后回调函数，主要用于初始化连接参数
+    //调用用户设置的连接建立后回调函数,主要是用于初始化作为连接内变量的：parameter参数
+    if (tcp_server::connBuildCb)
+        tcp_server::connBuildCb(this);
 
+    _loop->add_ioev(_connfd, tcp_rcb, EPOLLIN, this);
+
+    tcp_server::inc_conn();
 }
 
 void tcp_conn::handle_read()
@@ -40,7 +46,9 @@ void tcp_conn::handle_read()
         error_log("read data from socket err");
         clean_conn();
         return;
-    } else if (ret == 0 ){
+    }
+    else if (ret == 0 )
+    {
         // 对端关闭连接，记录信息日志，关闭连接并返回
         info_log("connection closed by peer");
         clean_conn();
@@ -49,9 +57,10 @@ void tcp_conn::handle_read()
     // 定义通讯头部变量
     commu_head head;
     // 当输入缓冲区中的数据长度大于等于通讯头部长度时，循环处理数据
-    while (ibuf.length() >= COMMU_HEAD_LENGTH){
+    while (ibuf.length() >= COMMU_HEAD_LENGTH)
+    {
         // 从输入缓冲区中拷贝通讯头部数据到 head 变量
-        ::memcpy(&head,ibuf.data(),COMMU_HEAD_LENGTH);
+        ::memcpy(&head, ibuf.data(), COMMU_HEAD_LENGTH);
 //        通讯头部的长度不合法
         if (head.length >   MSG_LENGTH_LIMIT   ||    head.length<0){
             // 记录错误日志
@@ -67,7 +76,8 @@ void tcp_conn::handle_read()
             break;
         }
         // 在消息调度器中查找是否存在对应的消息处理回调函数
-        if (!tcp_server::dispatcher.is_exist(head.cmdid)){
+        if (!tcp_server::dispatcher.is_exist(head.cmdid))
+        {
             // 如果没有对应的回调函数，记录错误日志
             error_log("this message has no corresponding callback, close connection");
             // 关闭连接并跳出循环
@@ -109,7 +119,8 @@ int tcp_conn::send_data(const char *data, int datalen, int cmdid)
 //    确定是否有监听
     bool need_listen = false;
 //    如果输出缓冲区为空，将标志位设置为true
-    if(!obuf.length()){
+    if(!obuf.length())
+    {
         need_listen = true;
     }
     commu_head head;
@@ -132,7 +143,6 @@ int tcp_conn::send_data(const char *data, int datalen, int cmdid)
         _loop->add_ioev(_connfd,tcp_wcb,EPOLLOUT, this);
     }
     return 0;
-
 }
 //清理tcp连接
 void tcp_conn::clean_conn()

@@ -1,13 +1,10 @@
 #include <cerrno>
-#include <fcntl.h>
 #include <cassert>
-#include <csignal>
 #include <unistd.h>
 #include <cstring>
 #include <strings.h>
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "../include/server_header.h"
@@ -94,32 +91,32 @@ tcp_client::tcp_client(event_loop *loop, const char *ip, unsigned short port, co
 
 //连接
 void tcp_client::do_connect() {
-    if (_sock_fd != -1)
-    {
+    if (_sock_fd != -1) {
         ::close(_sock_fd);
+    }
 //       创建套接字
-        _sock_fd = ::socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, IPPROTO_TCP);
-        exit_if(_sock_fd == -1, "socket()");
+    _sock_fd = ::socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, IPPROTO_TCP);
+    exit_if(_sock_fd == -1, "socket()");
 //        连接服务器
-        int ret = ::connect(_sock_fd,(const struct sockaddr*)&servaddr, _addr_len);
-        if (ret == 0){
+    int ret = ::connect(_sock_fd,(const struct sockaddr*)&servaddr, _addr_len);
+    if (ret == 0){
 //            连接创建成功
-            net_ok = true;
-            call_onconnect();
-            info_log("connect %s:%d successfully", ::inet_ntoa(servaddr.sin_addr), ntohs(servaddr.sin_port));
+        net_ok = true;
+        call_onconnect();
+        info_log("connect %s:%d successfully", ::inet_ntoa(servaddr.sin_addr), ntohs(servaddr.sin_port));
+    }
+    else
+    {
+        if (errno == EINPROGRESS)
+        {
+            eventLoop->add_ioev(_sock_fd,connection_cb,EPOLLOUT,this);
         }
         else
         {
-            if (errno == EINPROGRESS)
-            {
-                eventLoop->add_ioev(_sock_fd,connection_cb,EPOLLOUT,this);
-            }
-            else
-            {
-                exit_log("error occur when client connect");
-            }
+            exit_log("error occur when client connect");
         }
     }
+
 }
 
 int tcp_client::send_data(const char *data, int datlen, int cmdid)
@@ -142,7 +139,7 @@ int tcp_client::send_data(const char *data, int datlen, int cmdid)
     ::memcpy(obuf.data + obuf.length, &head, COMMU_HEAD_LENGTH);
     obuf.length += COMMU_HEAD_LENGTH;
 //  将数据拷贝到输出缓冲区
-    ::memcpy(obuf.data + obuf.length, &head,COMMU_HEAD_LENGTH);
+    ::memcpy(obuf.data + obuf.length, data,COMMU_HEAD_LENGTH);
     obuf.length += datlen;
 //    如果需要写事件监听，则添加写事件
     if (need)

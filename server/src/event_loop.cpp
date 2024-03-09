@@ -12,7 +12,8 @@ void timer_queue_cb(event_loop* loop,int fd,void *args){
     loop->_timer_que->get_timo(fired_evs);
     //遍历回调函数，依次触发
     for (std::vector<timer_event>::iterator it = fired_evs.begin();
-            it != fired_evs.end(); ++it) {
+            it != fired_evs.end(); ++it)
+    {
         it->time_cb(loop,it->cb_data);
     }
 }
@@ -33,7 +34,8 @@ event_loop::event_loop() {
 /**
  * 事件处理的主循环函数
  */
-void event_loop::process_evs() {
+void event_loop::process_evs()
+{
     while (true){
         //处理io事件的迭代器，遍历事件映射列表io_evs
         io_ev_it it;
@@ -61,21 +63,24 @@ void event_loop::process_evs() {
             }
             //写事件
             else if (_fired_evs[i].events & EPOLLOUT){
-                void *args = event->read_args;
+                void *args = event->write_args;
                 event->write_cb(this,_fired_evs[i].data.fd,args);
             }
             //事件挂起错误
             else if (_fired_evs[i].events & (EPOLLHUP || EPOLLERR)){
-                if (event->read_cb){
+                if (event->read_cb)
+                {
                     void *args=event->read_args;
                     event->read_cb(this,_fired_evs[i].data.fd, args);
                 }
-                else if(event->write_cb){
+                else if(event->write_cb)
+                {
                     void *args=event->write_args;
                     event->write_cb(this, _fired_evs[i].data.fd, args);
                 }
                 //不存在读写回调
                 else{
+                    error_log("fd %d get error, delete it from epoll", _fired_evs[i].data.fd);
                     del_ioev(_fired_evs[i].data.fd);
                 }
             }
@@ -140,7 +145,8 @@ void event_loop::del_ioev(int fd) {
     ::epoll_ctl(_epfd, EPOLL_CTL_DEL,fd,nullptr);
 }
 //删除事件，保留对写事件的监听
-void event_loop::del_ioev(int fd, int mask) {
+void event_loop::del_ioev(int fd, int mask)
+{
     io_ev_it it = _io_evs.find(fd);
     if (it == _io_evs.end()){
         return;

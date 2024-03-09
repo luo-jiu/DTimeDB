@@ -26,15 +26,18 @@ struct io_buffer{
     }
     // 调整数据位置，将数据移动到缓冲区的开头
     void adjust(){
-        if (head) {
-            if (length) {
+        if (head)
+        {
+            if (length)
+            {
                 ::memmove(data, data + head, length);
             }
             head = 0;
         }
     }
     // 复制另一个缓冲区的数据到本缓冲区
-    void copy(const io_buffer* other){
+    void copy(const io_buffer* other)
+    {
         // 仅复制数据到自身缓冲区
         ::memcpy(data, other->data + other->head, other->length);
         head = 0;
@@ -129,7 +132,7 @@ public:
 class input_buffer : public tcp_buffer{
 public:
     int read_data(int fd);
-    const char* data() const {return _buf? _buf->data + _buf->head: nullptr;}
+    const char* data() const {return _buf? _buf->data + _buf->head: NULL;}
     void adjust() { if (_buf) _buf->adjust();}
 };
 

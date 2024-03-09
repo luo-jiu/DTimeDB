@@ -2,7 +2,7 @@
 #include <arpa/inet.h>
 #include "../include/server_header.h"
 
-//接受连接回调函数
+//接受连接回调函数，新连接到达的时候就会通知服务器程序
 void acceptor_cb(event_loop* loop,int fd,void *args)
 {
     tcp_server* server = (tcp_server*)args;
@@ -153,6 +153,9 @@ void tcp_server::do_accept() {
                     tcp_conn* conn = conns[connfd];
                     if (conn){
                         conn->init(connfd,_loop);
+                    }
+                    else{
+                        conn = new tcp_conn(connfd, _loop);
                         exit_if(conn == NULL, "new tcp_conn");
                         conns[connfd] = conn;
                     }
