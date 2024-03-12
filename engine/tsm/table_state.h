@@ -31,7 +31,7 @@ namespace dt::tsm
         void update(
                 const std::string & db_name,
                 const std::string & tb_name,
-                const std::string & shard_id,
+                const std::pair<std::string, std::string> & shard_id_and_series_info,
                 const std::string & field_name,
                 bool is_registered,
                 bool use_index_entry_map) override

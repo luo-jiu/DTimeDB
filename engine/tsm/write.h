@@ -36,7 +36,7 @@ class Write : public dt::impl::IShardStateSubject
         void init();
         void set_file_path_manager(dt::file::FilePathManager * file_path_manager);
 
-        void write(std::chrono::high_resolution_clock::time_point timestamp, std::string & series_key, std::string & data, DataBlock::Type type, std::string & field_name, std::string & db_name, std::string & tb_name, FieldState & tb_state, TableState & queue_state);
+        void write(std::chrono::high_resolution_clock::time_point timestamp, std::string & series_key, std::string & data, DataBlock::Type type, std::string & field_name, std::string & db_name, std::string & tb_name, FieldState & tb_state, TableState & queue_state, bool is_monitor_thread);
         void queue_flush_disk();
 
         bool should_flush_index(const std::string & field_name);
@@ -98,7 +98,7 @@ class Write : public dt::impl::IShardStateSubject
 
         TSM                                                                  m_tsm;
         std::list<std::string>                                               m_field_list;       // 该list 表明哪些字段有块待写入
-        std::set<std::string>                                                m_index_set;        // 该set 用于创建新TSM 刷入没处理完的meta 和entry
+//        std::set<std::string>                                                m_index_set;        // 该set 用于创建新TSM 刷入没处理完的meta 和entry
         std::unordered_map<std::string, std::shared_ptr<Field>>              m_field_map;
 
         std::deque<std::shared_ptr<DataBlock>>                               m_data_deque;       // 存储所有字段的 data block

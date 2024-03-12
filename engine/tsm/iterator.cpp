@@ -1,8 +1,13 @@
 #include "iterator.h"
+
+#include <utility>
 #include "snappy.h"
 #include "tsm.h"
 
 using namespace dt::tsm;
+
+TsmIOManagerCenter::TsmIOManagerCenter(std::string db_name, std::string tb_name) : m_io_manager(8), m_db_name(std::move(db_name)), m_tb_name(std::move(tb_name))
+{}
 
 void TsmIOManagerCenter::load_tsm_index_entry(const Shard & shard)
 {
@@ -44,6 +49,9 @@ void TsmIOManagerCenter::load_tsm_index_entry(const Shard & shard)
             file->read(reinterpret_cast<char*>(&index_meta.m_count), sizeof(index_meta.m_count));
             series_index_block.m_meta = index_meta;
 
+            // 清空数据
+            series_index_block.m_index_entries.clear();
+
             // 开始读取index entry
             for(int i = 0; i < index_meta.m_count; ++i)
             {
@@ -69,6 +77,7 @@ void TsmIOManagerCenter::load_tsm_index_entry(const Shard & shard)
             m_tsm_index[shard.shard_id()][series_key_and_field_name].push_back(series_index_block);
             curr_pos = file->tellg();
         }
+        m_io_manager.release_file_stream(tsm_path);
     }
 }
 
@@ -85,63 +94,47 @@ bool TsmIOManagerCenter::compare_index_block_meta(
 /**
  * 获取到下一个数据
  */
-SingleData TagSetIterator::next()
+std::optional<SingleData> TagSetIterator::next()
 {
-    // 还有数据
-    if (m_data_count != data_num)
+    // 这个块的数据已经加载结束
+    if (m_current_data_index >= m_timestamps.size())
     {
-        SingleData single_data;
-        single_data.m_timestamp = m_timestamps[m_data_count];
-        single_data.m_data = m_values[m_data_count];
-        ++m_data_count;
-        // 直接返回数据
-        return single_data;
-    }
-    else // 数据已经读完
-    {
-        auto& curr_series_block = m_series_blocks[m_series_count];  // 当前索引块
-        // 先判断是否还有块可以加载
-        if (curr_series_block.m_index_count != curr_series_block.m_index_entries.size() - 1)
+        // 是否还有剩余的块
+        if (m_current_data_index < m_series_blocks.size())
         {
-            // 还有块直接加载到内存
-            get_curr_tsm_file_data(curr_series_block.m_tsm_name, curr_series_block.m_index_entries[curr_series_block.m_index_count].get_offset());
-            ++curr_series_block.m_index_count;
-            return next();  // 自己调用自己
+            // 尝试加载数据
+            const auto& block = m_series_blocks[m_current_index++];
+            get_curr_tsm_file_data(block.m_tsm_name, block.m_index_entries[0].get_offset());
         }
         else
         {
-            // 再判断是否有新series 可以加载
-            if (m_series_count != m_series_blocks.size() - 1)
-            {
-                
-            }
-            else
-            {
-
-            }
+            return std::nullopt;  // 没有更多的数据块
         }
     }
 
-    if (m_is_ploy)
+    if (m_current_data_index < m_timestamps.size())
     {
-        // 不是聚合操作
-        SingleData data_point;
-        data_point.m_timestamp = m_timestamps[m_data_count];
-        data_point.m_data = m_values[m_data_count];
-        ++m_data_count;
+        // 提供当前数据块的下一个数据点
+        SingleData data{m_timestamps[m_current_data_index], m_values[m_current_data_index], m_type};
+        ++m_current_data_index;
+        return data;
     }
-    else
-    {
-        // 聚合操作()
-    }
+
+    return std::nullopt;  // 逻辑保护，理论上不应该到达这里
+}
+
+bool TagSetIterator::has_next()
+{
+    return m_current_data_index < m_timestamps.size() || m_current_index < m_series_blocks.size();
 }
 
 /**
  * 获取一个data block中的数据
  */
-void TagSetIterator::get_curr_tsm_file_data(const std::string & tsm_file_path, int64_t offset)
+void TagSetIterator::get_curr_tsm_file_data(const std::string & tsm_file_name, int64_t offset)
 {
-    auto file = m_tsm_io_manager->m_io_manager.get_file_stream(tsm_file_path, "binary-read");
+    std::string file_path = "./../dbs/" + m_tsm_io_manager->m_db_name + "/" + tsm_file_name;
+    auto file = m_tsm_io_manager->m_io_manager.get_file_stream(file_path, "binary-read");
     if (!file->is_open())
     {
         std::cerr << "Error: Could not open file for writing" << std::endl;
@@ -162,6 +155,8 @@ void TagSetIterator::get_curr_tsm_file_data(const std::string & tsm_file_path, i
     auto timestamps =  TSM::deserialize_differences(timestamp_serialize);
     data_block.m_timestamps.clear();
     data_block.m_timestamps = TSM::restore_timestamps(timestamps);
+    m_timestamps.clear();
+    m_timestamps = TSM::restore_timestamps_vector(timestamps);
 //    std::cout << "curr_offset:" << file->tellg() << std::endl;
 
     // 读取并解压值数据
@@ -171,25 +166,76 @@ void TagSetIterator::get_curr_tsm_file_data(const std::string & tsm_file_path, i
     snappy::Uncompress(compressed_val.data(), data_block.m_val_snappy_size, &val_serialize);
     data_block.m_values.clear();
     data_block.m_values = TSM::deserialize_strings(val_serialize);
+    m_values.clear();
+    m_values = TSM::deserialize_strings_vector(val_serialize);
 //    std::cout << "curr_offset:" << file->tellg() << std::endl;
 
-    data_num = m_timestamps.size();
+    m_current_data_index = 0;  // 重置计数器
+
+    // 给数据类型附上
+    if (data_block.m_type == DataBlock::DATA_STRING)
+    {
+        m_type = DataType::String;
+    }
+    else if (data_block.m_type == DataBlock::DATA_INTEGER)
+    {
+        m_type = DataType::Integer;
+    }
+    else if (data_block.m_type == DataBlock::DATA_FLOAT)
+    {
+        m_type = DataType::Float;
+    }
+    else
+    {
+        std::cout << "未知数据类型\n";
+    }
 }
+
+bool ShardIterator::has_next()
+{
+    // 尝试找到一个有数据的TagSetIterator
+    for (size_t i = m_current_tag_set_index; i < m_tag_set_iterators.size(); ++i)
+    {
+        if (m_tag_set_iterators[i]->has_next())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 /**
- * 检查是否还有更多数据点
- * 如果内部缓冲区为空，尝试从数据源加载更多数据
+ * 该next 就需要开始做出判断了
+ *
+ * 有两种情况:
+ * [情况一] 旗下的TagSetIterator 是需要聚合的
+ * [情况二] 旗下的TagSetIterator 不需要聚合
+ *
+ * 处理：
+ * 如果需要聚合，则直接对该TagSetIterator 中的数据全获取，进行同一聚合操作
+ * 如果不需要聚合，则按照
+ *
  */
+std::optional<SingleData> ShardIterator::next()
+{
+    while (m_current_tag_set_index < m_tag_set_iterators.size())
+    {
+        auto& current_tag_setIterator = m_tag_set_iterators[m_current_tag_set_index];
+        // 只要当前tag_set_iterators 有数据，就一直获取
+        if (current_tag_setIterator->has_next())
+        {
+            return current_tag_setIterator->next();
+        }
+        else
+        {
+            // 当前TagSetIterator 已经没有数据，移动到下一个
+            ++m_current_tag_set_index;
+        }
+    }
 
-
-/**
- * 返回当干数据点，并移动到下一个数据点
- * 如果内部缓冲区用尽，从数据源加载更多数据
- */
-
-/**
- * 从数据源加载数据到内部缓冲区
- */
-
+    // 当前shard 已经没有更多的数据了
+    return std::nullopt;
+}
 
 FieldIterator::FieldIterator(const std::string & field)
 {
@@ -197,35 +243,59 @@ FieldIterator::FieldIterator(const std::string & field)
 }
 
 /**
- * 对每个SortMergeIterator 执行next(),并根据逻辑合并结果
+ * 要是不是聚合函数，就正常返回一条数据
  */
-DataPoint FieldIterator::next()
+std::optional<SingleData> FieldIterator::next()
 {
-
+    if (m_current_shard_index < m_shard_iterators.size() && m_shard_iterators[m_current_shard_index]->has_next())
+    {
+        return m_shard_iterators[m_current_shard_index]->next();
+    }
+    // 没有数据后就直接返回空，RootIterator 会切换到下一个ShardIterator
+    return std::nullopt;
 }
 
 /**
  * 执行聚合操作
  */
-DataPoint FieldIterator::aggregate()
+SingleData FieldIterator::aggregate()
 {
     // 对 m_merges 中的数据进行聚合操作
-}
 
-//std::vector<RootIterator::SeriesIndexBlock> RootIterator::m_series_index_blocks = {};
 
-RootIterator::RootIterator()
-{
-    m_tsm_io_manager = std::make_shared<TsmIOManagerCenter>();
 }
 
 /**
- * 遍历m_root, 调用每个RootIterator 中的next 或aggregate()
- * 用于获取数据 然后对数据进行过滤
+ * 检查shard 是否还有更多数据
  */
-void RootIterator::next()
+bool FieldIterator::has_next_in_current_shard()
 {
+    if (m_current_shard_index < m_shard_iterators.size())
+    {
+        // 返回当前shard 是否还有数据
+        return m_shard_iterators[m_current_shard_index]->has_next();
+    }
+    return false;
+}
 
+/**
+ * 移动到下一个shard
+ */
+bool FieldIterator::move_to_next_shard()
+{
+    if (m_current_shard_index + 1 < m_shard_iterators.size())
+    {
+        ++m_current_shard_index;
+        return true;  // 成功移动到下一个shard
+    }
+
+    // 全部遍历结束
+    return false;
+}
+
+RootIterator::RootIterator(const std::string & db_name, const std::string & tb_name)
+{
+    m_tsm_io_manager = std::make_shared<TsmIOManagerCenter>(db_name, tb_name);
 }
 
 bool compare(
@@ -331,6 +401,37 @@ std::pair<DataPoint::Value, DataPoint::Value> type_conversion(
     return {converted_field_value, converted_compare_value};
 }
 
+std::pair<DataPoint::Value, DataPoint::Value> type_conversion_based_on_singledata(
+        const SingleData& field_data,
+        const std::string& compare_value_str)
+{
+    DataPoint::Value field_value, compare_value;
+
+    switch (field_data.m_type)
+    {
+        case DataType::String:
+        {
+            field_value = field_data.m_data;
+            compare_value = compare_value_str;
+            break;
+        }
+        case DataType::Integer:
+        {
+            field_value = std::stoi(field_data.m_data);
+            compare_value = std::stoi(compare_value_str);
+            break;
+        }
+        case DataType::Float:
+        {
+            field_value = std::stof(field_data.m_data);
+            compare_value = std::stof(compare_value_str);
+            break;
+        }
+    }
+
+    return {field_value, compare_value};
+}
+
 /**
  * 数据过滤函数
  *
@@ -369,10 +470,181 @@ bool RootIterator::evaluate_expr_node(
     }
 }
 
-/**
- * 添加字段迭代器
- */
-void RootIterator::add_field_iterator(const std::string & field)
+bool RootIterator::compare_timestamps(
+        const std::string & comparison_operator,
+        const std::chrono::system_clock::time_point & row_timestamp,
+        const std::string & condition_timestamp_str)
 {
-    m_field_iterators.push_back(std::make_unique<FieldIterator>(field));
+    // 解析条件时间戳字符串为std::time_t
+    std::time_t condition_time = impl::ExprNode::parse_timestamp(condition_timestamp_str);
+
+    // 获取RowNode的时间戳，并转换为std::time_t进行比较
+    std::time_t row_time = std::chrono::system_clock::to_time_t(row_timestamp);
+
+    if (comparison_operator == ">")
+    {
+        return row_time > condition_time;
+    }
+    else if (comparison_operator == "<")
+    {
+        return row_time < condition_time;
+    }
+    else if (comparison_operator == ">=")
+    {
+        return row_time >= condition_time;
+    }
+    else if (comparison_operator == "<=")
+    {
+        return row_time <= condition_time;
+    }
+    else if (comparison_operator == "==")
+    {
+        return row_time == condition_time;
+    }
+    else if (comparison_operator == "!=")
+    {
+        return row_time != condition_time;
+    }
+
+    throw std::invalid_argument("Unsupported comparison operator: " + comparison_operator);
 }
+
+/**
+ * 用于过滤数据
+ */
+bool RootIterator::evaluate_expr_node_for_row(
+        const std::shared_ptr<dt::impl::ExprNode> & node,
+        const RowNode & row_node)
+{
+    if (!node) return true; // 假设空节点不影响结果
+
+    if (node->m_left && node->m_left->m_val == "time")
+    {
+        // 对于时间戳的比较
+        return compare_timestamps(node->m_val, row_node.m_timestamp, node->m_right->m_val);
+    }
+    else if (node->m_val == "and")
+    {
+        return evaluate_expr_node_for_row(node->m_left, row_node) && evaluate_expr_node_for_row(node->m_right, row_node);
+    }
+    else if (node->m_val == "or")
+    {
+        return evaluate_expr_node_for_row(node->m_left, row_node) || evaluate_expr_node_for_row(node->m_right, row_node);
+    }
+    else
+    {
+        // 处理比较
+        auto it = row_node.m_columns.find(node->m_left->m_val);
+        if (it == row_node.m_columns.end())
+        {
+            // 指定的字段不再当前行中
+            return false;
+        }
+
+        // 从SingleData获取字段值和类型
+        const auto& field_data = it->second;
+        const auto& compare_value_str = node->m_right->m_val; // 假设这是一个字符串表示的比较值
+
+        // 使用类型信息进行适当的类型转换
+        auto [converted_field_value, converted_compare_value] = type_conversion_based_on_singledata(
+                field_data, compare_value_str);
+
+        // 使用转换后的值进行比较
+        return compare(node->m_val, converted_field_value, converted_compare_value);
+    }
+}
+
+/*
+ * 加载当前shard 中的所有数据
+ */
+bool RootIterator::load_curr_shard_data()
+{
+    // 如果已经加载直接返回
+    if (m_shard_data_loaded) return true;
+
+    bool has_data = false;
+    for (auto& iter : m_field_iterators)
+    {
+        while (iter->has_next_in_current_shard())
+        {
+            std::optional<SingleData> dp_opt = iter->next();
+            if (dp_opt.has_value())
+            {
+                const SingleData& dp = *dp_opt;
+
+                // 使用时间戳作为键，更新或插入RowNode
+                auto& node = m_row_nodes[dp.m_timestamp];
+                node.m_timestamp = dp.m_timestamp;
+                node.add_data_point(iter->m_field, dp);
+
+                has_data = true;
+            }
+            else
+            {
+                // 没有数据，停止循环
+                break;
+            }
+        }
+    }
+
+    // 根据是否成功加载了数据来更新m_shard_data_loaded 状态
+    m_shard_data_loaded = has_data;
+
+    return has_data;
+}
+
+RowNode RootIterator::next()
+{
+    if (m_row_nodes.empty() && !load_curr_shard_data())
+    {
+        if (!move_to_next_shard())  // 尝试移动到下一个shad 并加载数据
+        {
+            throw std::out_of_range("No more data available.");
+        }
+    }
+    // 获取map中的第一个元素（最早的时间戳对应的RowNode）
+    RowNode next_node = m_row_nodes.begin()->second;
+    m_row_nodes.erase(m_row_nodes.begin());
+
+    // 不需要检查m_row_nodes是否为空来决定m_shard_data_loaded的值
+    // 因为在下一次调用next()时，会自动尝试加载数据或移动到下一个分片
+
+    return next_node;
+}
+
+bool RootIterator::has_next()
+{
+    if (!m_row_nodes.empty()) return true;
+    if (m_shard_data_loaded) return false;
+    return move_to_next_shard();
+}
+
+bool RootIterator::move_to_next_shard()
+{
+    m_shard_data_loaded = false;  // 重置当前shard 标记
+    bool any_shard_left = false;
+    for (auto& iter : m_field_iterators)
+    {
+        if (iter->move_to_next_shard())
+        {
+            // 如果有数据
+            any_shard_left = true;
+        }
+    }
+
+    if (!any_shard_left)
+    {
+        // 没有shard 就退出了
+        return false;
+    }
+    return load_curr_shard_data();  // 尝试加载下一个shard 数据
+}
+
+
+
+
+
+
+
+
+

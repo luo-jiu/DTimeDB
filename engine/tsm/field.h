@@ -48,7 +48,7 @@ namespace dt::tsm
 
         void attach(dt::impl::ITableStateObserver * observer) override;  // 添加观察者
         void detach(dt::impl::ITableStateObserver * observer) override;  // 移除观察者
-        void notify(const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name, bool is_registered, bool use_index_entry_map) override;  // 通知所有观察者状态发生变化
+        void notify(const std::string & db_name, const std::string & tb_name, const std::pair<std::string, std::string> & shard_id_and_series_info, const std::string & field_name, bool is_registered, bool use_index_entry_map) override;  // 通知所有观察者状态发生变化
 
     public:
         std::string                                                                     m_field_name;           // 字段名
@@ -59,7 +59,6 @@ namespace dt::tsm
         DataBlockCallback                                                               m_data_block_callback;  // 存储回调函数
 
         SkipList<std::string>                                                           m_sl;                   // 跳表
-//        std::atomic<bool>                                        m_need_reset{true};     // 跳表是否需要重置
 
         bool                                                                            m_status;               // 状态
         std::chrono::high_resolution_clock::time_point                                  m_sl_last_time;         // 跳表刷块计时器
@@ -70,9 +69,6 @@ namespace dt::tsm
         mutable std::shared_mutex                                                       m_mutex;                // 有关观测者模式的读写锁
         mutable std::shared_mutex                                                       m_time_mutex;           // 有关时间戳的读写锁
 
-//        std::shared_ptr<DataBlock>                               m_current_data;         // 当前块
-
-//        std::deque<std::shared_ptr<DataBlock>>                   m_data_deque;           // data 队列
         std::deque<std::shared_ptr<IndexEntry>>                                         m_index_deque;          // index 队列
         std::atomic<bool>                                                               m_create_meta{false};   // 是否生成mate
         std::list<dt::impl::ITableStateObserver*>                                       m_observers;            // 观察者列表

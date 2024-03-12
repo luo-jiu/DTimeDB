@@ -10,9 +10,9 @@ Controller::Controller(): m_producer_thread_pool(8), m_consumer_thread_pool(6), 
     init();
     // 设置回调函数
     m_field_state.set_skip_condition_callback(
-            [this](const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name) {
+            [this](const std::string & db_name, const std::string & tb_name, const std::pair<std::string, std::string> & shard_id_and_series_info, const std::string & field_name) {
                 // skip_list 数据监控 回调处理函数
-                return is_ready_disk_write(db_name, tb_name, shard_id, field_name);
+                return is_ready_disk_write(db_name, tb_name, shard_id_and_series_info, field_name);
             });
     m_field_state.set_index_condition_callback(
             [this](const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name) {
@@ -138,10 +138,11 @@ bool Controller::insert(
         Type type,
         string & field_name,
         string & tb_name,
-        string & db_name)
+        string & db_name,
+        bool is_monitor_thread)
 {
     // 从线程池分配任务
-    m_producer_thread_pool.enqueue(&Controller::insert_thread, this, timestamp, tags_str, value, type, field_name, tb_name, db_name);
+    m_producer_thread_pool.enqueue(&Controller::insert_thread, this, timestamp, tags_str, value, type, field_name, tb_name, db_name, is_monitor_thread);
     return true;
 }
 
@@ -152,7 +153,8 @@ void Controller::insert_thread(
         Type type,
         string & field_name,
         string & tb_name,
-        string & db_name)
+        string & db_name,
+        bool is_monitor_thread)
 {
     std::unique_lock<std::shared_mutex> write_lock(m_mutex);
     std::cout << "tsm调用线程池处理插入任务..." << std::endl;
@@ -213,8 +215,13 @@ void Controller::insert_thread(
     }
 
     // 拼接seriesKey
-    string series_key = db_name + tags_str;  // measurement + tags
-    writer->write(timestamp, series_key, value, type_temp, field_name, db_name, tb_name, m_field_state, m_table_state);
+    string series_key;
+    if (!is_monitor_thread)
+    {
+        // 不是监控线程则需要拼接
+        series_key = tb_name + tags_str;  // measurement + tags
+    }
+    writer->write(timestamp, series_key, value, type_temp, field_name, db_name, tb_name, m_field_state, m_table_state, is_monitor_thread);
 }
 
 /**
@@ -285,6 +292,21 @@ bool Controller::get_range_data(
     return true;
 }
 
+void print_row_node(const RowNode & row)
+{
+    // 将时间戳转换为易读的字符串格式
+    auto timestamp = std::chrono::system_clock::to_time_t(row.m_timestamp);
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&timestamp), "%Y-%m-%d %H:%M:%S");
+
+    std::cout << "Timestamp: " << ss.str() << std::endl;
+
+    // 遍历并打印每个字段的名称和值
+    for (const auto& [field_name, single_data] : row.m_columns) {
+        std::cout << "Field: " << field_name << ", Value: " << single_data.m_data << "\n";
+    }
+}
+
 /**
  * 分离出tag 以及where
  */
@@ -322,10 +344,26 @@ void Controller::analytic_expr_tree(
     }
 
     // 构建迭代器树
-    auto root_iterator = create_iterator_tree(db_name, measurement, fields, shard_ids, tags, expr_node);
+    auto root_iterator = create_iterator_tree(db_name, measurement, fields, shard_ids, tags, new_expr_tree);
 
     // 开始运行迭代树
+    m_row_nodes.clear();
+    while (root_iterator.has_next())
+    {
+        RowNode row = root_iterator.next();
+        if (root_iterator.evaluate_expr_node_for_row(new_expr_tree, row))
+        {
+            // 该行数据符合条件
+            m_row_nodes.push_back(row);
+        }
+        // 不符合则跳过该行...
+    }
 
+    // 输出查询结果
+    for (const auto& row : m_row_nodes)
+    {
+        print_row_node(row);
+    }
 }
 
 /**
@@ -360,46 +398,41 @@ RootIterator Controller::create_iterator_tree(
     }
 
     // 在此需要判断哪个字段是需要聚合的
+    // 暂时不做
 
     std::unique_lock<std::shared_mutex> write_lock(m_mutex);  // 加锁
-    RootIterator root_iterator;
-    root_iterator.m_tsm_io_manager = std::make_shared<TsmIOManagerCenter>();
+    RootIterator root_iterator(db_name, measurement);
+    root_iterator.m_expr_node = expr_node;  // 配置表达式树
+
+    // 加载索引到内存
+    for (const auto& shard_id : shard_ids)
+    {
+        // 加载shard [该时间段内全部的data block索引]，按照series key + field_name 区分
+        auto shard = *(m_map[db_name].m_table_map[measurement].m_writer->get_shard(shard_id));
+        root_iterator.m_tsm_io_manager->load_tsm_index_entry(shard);
+    }
 
     // 遍历字段构建字段迭代器
-    for (const auto& field : fields)  // 构建第一层
+    for (const auto& field : fields)  // 构建第一层[FieldIterator]
     {
         auto field_iterator = std::make_shared<FieldIterator>(field);
-        field_iterator->m_field = field;
 
-        // 二三层合并为一层构建
-        for (const auto& shard_id : shard_ids)  // 构建第二层
+        for (const auto& shard_id : shard_ids)  // 构建第二层[ShardIterator]
         {
-            // 加载shard [该时间段内全部的data block索引]，按照series key + field_name 区分
-            auto shard = *(m_map[db_name].m_table_map[measurement].m_writer->get_shard(shard_id));
+            auto shard_iterator = std::make_shared<ShardIterator>();
 
             // std::set本就是有序的直接遍历
-            for (const auto& series_key : accumulated_intersection)  // 构建第三层
+            for (const auto& series_key : accumulated_intersection)  // 构建第三层[TagSetIterator]
             {
                 auto tag_set_iterator = std::make_shared<TagSetIterator>();
                 tag_set_iterator->m_series_key = series_key;
-                // 传入表达式树
-                tag_set_iterator->m_expr_node = expr_node;
+                tag_set_iterator->m_series_blocks = root_iterator.m_tsm_io_manager->m_tsm_index[shard_id][series_key + field];  // 传递索引
 
                 // 依赖注入
                 tag_set_iterator->m_tsm_io_manager = root_iterator.m_tsm_io_manager;
-
-                // 针对对应的TagSetIterator 加载对应的索引 [通过 series key + field_name]
-                tag_set_iterator->m_series_blocks = root_iterator.m_tsm_io_manager->m_tsm_index[shard_id][series_key + field];
-
-//                //  拷贝shard 并且把shard 对应的tsm 索引加载到内存
-//                tag_set_iterator->m_shard = *(m_map[db_name].m_table_map[measurement].m_writer->get_shard(shard_id));
-//                std::vector<std::string> items(tag_set_iterator->m_shard.tsm_file().begin(), tag_set_iterator->m_shard.tsm_file().end());
-//                std::sort(items.begin(), items.end());
-//                tag_set_iterator->m_curr_shard_tsm_files = std::move(items);
-
-                root_iterator.m_tsm_io_manager->load_tsm_index_entry(tag_set_iterator->m_shard);
-                field_iterator->m_tag_iterators.push_back(tag_set_iterator);
+                shard_iterator->m_tag_set_iterators.push_back(tag_set_iterator);
             }
+            field_iterator->m_shard_iterators.push_back(shard_iterator);
         }
         root_iterator.m_field_iterators.push_back(field_iterator);
     }
@@ -732,7 +765,7 @@ bool Controller::mea_field_exist(
 bool Controller::is_ready_disk_write(
         const string & db_name,
         const string & tb_name,
-        const string & shard_id,
+        const std::pair<std::string, std::string> & shard_id_and_series_info,
         const string & field_name)
 {
     std::shared_lock<std::shared_mutex> read_lock(m_mutex);
@@ -745,7 +778,7 @@ bool Controller::is_ready_disk_write(
             auto writer = tb_it->second.m_writer;
             if (writer)
             {
-                if (writer->skip_need_flush_data_block(shard_id, field_name))
+                if (writer->skip_need_flush_data_block(shard_id_and_series_info.first + shard_id_and_series_info.second, field_name))
                 {
                     std::cout << "---满足刷块\n";
                     // 刷跳表(传入空数据激活即可) 获取对应字段类型
@@ -754,7 +787,8 @@ bool Controller::is_ready_disk_write(
                     auto db = db_name;
                     // 利用插入数据语句,进入对应跳表激活判断逻辑引发刷块
                     m_producer_thread_pool.enqueue(&Controller::insert_thread,
-                                                   this, system_clock::from_time_t(Write::shard_key_to_timestamp(shard_id)), "", "", Type::DATA_STRING, fd, tb, db);
+                         // shard_id_and_series_info.first 是shard_id  |shard_id_and_series_info.second 是series_key + field_name
+                         this, system_clock::from_time_t(Write::shard_key_to_timestamp(shard_id_and_series_info.first)), "", shard_id_and_series_info.second, Type::DATA_STRING, fd, tb, db, true);
                     return true;
                 }
                 else

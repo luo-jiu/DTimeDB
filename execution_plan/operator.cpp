@@ -131,7 +131,7 @@ void InsertNode::execute(IEngine & engine)
             fv.erase(0, pos + 1);
         }
         value = fv;
-        tsm->insert(timestamp, tags_str, value, IEngine::Type::DATA_STRING, field, m_table, m_current_db);
+        tsm->insert(timestamp, tags_str, value, IEngine::Type::DATA_STRING, field, m_table, m_current_db, false);
     }
 
     // 制作内存索引

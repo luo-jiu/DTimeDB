@@ -11,13 +11,18 @@
 #include <memory>
 #include <set>
 #include <shared_mutex>
+#include <queue>
+#include <optional>
 
 namespace dt::tsm
 {
+    enum class DataType {Integer, Float, String};
+
     struct SingleData
     {
         std::chrono::system_clock::time_point m_timestamp;
         std::string m_data;
+        DataType m_type{DataType::String};  // 默认string
     };
 
     struct SeriesIndexBlock
@@ -28,23 +33,41 @@ namespace dt::tsm
         IndexBlockMeta                      m_meta;
     };
 
+    struct RowNode
+    {
+        std::chrono::system_clock::time_point m_timestamp;
+        std::map<std::string, SingleData> m_columns;  // 字段名映射到数据点
+
+        // 添加数据点到行节点
+        void add_data_point(const std::string & field_name, const SingleData & dp)
+        {
+            m_columns[field_name] = dp;
+        }
+
+        // 检查行节点是否包含指定的字段
+        bool containsField(const std::string& field_name) const
+        {
+            return m_columns.find(field_name) != m_columns.end();
+        }
+    };
+
     /**
      * 需要依赖注入到TagSetIterator
      */
     class TsmIOManagerCenter
     {
     public:
-        TsmIOManagerCenter() : m_io_manager(8){}
+        TsmIOManagerCenter(std::string  db_name, std::string  tb_name);
 
         // 加载tsm文件中的索引
         void load_tsm_index_entry(const Shard & shard);
 
         // 让每个TagSet存储对应的SeriesIndexBlock
-
         bool compare_index_block_meta(const SeriesIndexBlock & a, const SeriesIndexBlock & b);
 
     public:
-
+        std::string m_db_name;
+        std::string m_tb_name;
 
         mutable std::shared_mutex               m_mutex;       // 读写锁保证m_index_entry 安全
         dt::file::FileIOManager                 m_io_manager;
@@ -68,36 +91,32 @@ namespace dt::tsm
     class TagSetIterator
     {
     public:
-        SingleData next();
+        std::optional<SingleData> next();
+
+        bool has_next();
 
         // 获取当前tsm 文件中属于该series key的数据
-        void get_curr_tsm_file_data(const std::string & tsm_file_path, int64_t offset);
+        void get_curr_tsm_file_data(const std::string & tsm_file_name, int64_t offset);
 
     public:
-        bool                                                     m_is_ploy{false};  // 是否聚合
+        DataType                                                 m_type;  // 数据类型
+
         std::string                                              m_ploy;  // 聚合类型
-
-        bool                                                     m_data_empty{false};  // 该列是否为空
-
         std::string                                              m_measurement;
+
+        // 内存中的数据
         std::vector<std::chrono::system_clock::time_point>       m_timestamps;
         std::vector<std::string>                                 m_values;
-        int64_t                                                  m_data_count{0};
-        size_t                                                   data_num{0};
 
-//        std::vector<std::string>                                 m_curr_shard_tsm_files;  // 存储当前shard下所有的tsm 文件
-//        int64_t                                                  m_tsm_count{0};
-
-//        int64_t                                                  m_curr_tsm_file_offset;
+        size_t                                                   m_current_data_index = 0;
 
         Shard                                                    m_shard;
         std::string                                              m_series_key;
-        std::shared_ptr<impl::ExprNode>                          m_expr_node;  // 存储表达式树
         std::shared_ptr<TsmIOManagerCenter>                      m_tsm_io_manager;  // 依赖注入
 
         // 需要加载的全部索引
         std::vector<SeriesIndexBlock>                            m_series_blocks;
-        int64_t                                                  m_series_count{0};
+        int64_t                                                  m_current_index = 0;
     };
 
     /**
@@ -108,16 +127,18 @@ namespace dt::tsm
      *
      * [为每个shard 构建ShardIterator, 让ShardIterator 查询该shard 上的对应列值(field)的数据]
      */
-//    class ShardIterator
-//    {
-//    public:
-//
-//
-//
-//    public:
-//        Shard                                               m_shard;
-//        std::vector<std::shared_ptr<TagSetIterator>>        m_tag_set_iterators;
-//    };
+    class ShardIterator
+    {
+    public:
+        bool has_next();
+        std::optional<SingleData> next();
+
+    public:
+        Shard                                               m_shard;
+        // 需要存储有多少
+        std::vector<std::shared_ptr<TagSetIterator>>        m_tag_set_iterators;
+        size_t                                              m_current_tag_set_index = 0;
+    };
 
     /**
      * 字段迭代器
@@ -134,13 +155,24 @@ namespace dt::tsm
     public:
         explicit FieldIterator(const std::string & field);
 
-        DataPoint next();
-        DataPoint aggregate();
+        using FieldMap = std::unordered_map<std::string, int>;
+        using TimeSeriesData = std::map<int, FieldMap>;
 
+        std::optional<SingleData> next();
+        SingleData aggregate();
+
+        bool has_next_in_current_shard();
+        bool move_to_next_shard();
 
     public:
         std::string m_field;  // 字段名
-        std::vector<std::shared_ptr<TagSetIterator>> m_tag_iterators;
+        std::string m_type;  // 字段类型
+        bool m_is_aggregate;  // 是否聚合
+        bool m_data_empty{false};  // 该列是否为空
+
+        // 需要排序shard,让shard有序
+        std::vector<std::shared_ptr<ShardIterator>> m_shard_iterators;
+        size_t m_current_shard_index = -1;  // 正在处理的FieldIterator 对应的字段名
     };
 
 
@@ -153,16 +185,22 @@ namespace dt::tsm
     class RootIterator
     {
     public:
-        RootIterator();
+        RootIterator(const std::string & db_name, const std::string & tb_name);
 
-        void next();
-
+        RowNode next();
         bool evaluate_expr_node(const std::shared_ptr<dt::impl::ExprNode> & node, const DataPoint & data_point);
-        void add_field_iterator(const std::string & field);
+        bool compare_timestamps(const std::string & comparison_operator, const std::chrono::system_clock::time_point & row_timestamp, const std::string & condition_timestamp_str);
+        bool evaluate_expr_node_for_row(const std::shared_ptr<dt::impl::ExprNode> & node, const RowNode & row_node);
 
+        bool load_curr_shard_data();
+        bool move_to_next_shard();
+        bool has_next();
 
     public:
         std::vector<std::shared_ptr<FieldIterator>> m_field_iterators;
+        std::map<std::chrono::system_clock::time_point, RowNode> m_row_nodes;
+        bool m_shard_data_loaded = false; // 表示是否已加载当前shard的数据
+
         std::vector<DataPoint> m_data_points;  // 数据 集合
         std::set<std::string> m_load_tsm_finished;
         std::unordered_map<std::string, std::string> m_field_type;  // 字段类型
@@ -175,7 +213,7 @@ namespace dt::tsm
 
         // 存储加载tsm_index_entry
         std::vector<SeriesIndexBlock> m_series_index_blocks;
-
+        std::shared_ptr<impl::ExprNode> m_expr_node;  // 存储表达式树
         std::shared_ptr<TsmIOManagerCenter> m_tsm_io_manager;  // 文件管理器
     };
 }

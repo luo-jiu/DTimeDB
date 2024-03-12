@@ -56,13 +56,13 @@ namespace dt::tsm
             m_observers.remove(observer);
         }
 
-        void notify(const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name, bool is_registered, bool use_index_entry_map) override
+        void notify(const std::string & db_name, const std::string & tb_name, const std::pair<std::string, std::string> & shard_id_and_series_info, const std::string & field_name, bool is_registered, bool use_index_entry_map) override
         {
             std::shared_lock<std::shared_mutex> lock(m_mutex);
             // 通知所有观察者发生变化
             for (auto observer : m_observers)
             {
-                observer->update(db_name, tb_name, shard_id, field_name, is_registered, use_index_entry_map);
+                observer->update(db_name, tb_name, shard_id_and_series_info, field_name, is_registered, use_index_entry_map);
             }
         }
 

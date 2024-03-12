@@ -35,8 +35,8 @@ namespace dt::tsm
         bool create_database(std::string & db_name) override;
         bool create_table(std::string & tb_name, std::string & db_name) override;
 
-        bool insert(std::chrono::high_resolution_clock::time_point timestamp, std::string & tags_str, std::string value, Type type, std::string & field_name, std::string & tb_name, std::string & db_name) override;
-        void insert_thread(std::chrono::high_resolution_clock::time_point timestamp, const std::string & tags_str, std::string value, Type type, std::string & field_name, std::string & tb_name, std::string & db_name);
+        bool insert(std::chrono::high_resolution_clock::time_point timestamp, std::string & tags_str, std::string value, Type type, std::string & field_name, std::string & tb_name, std::string & db_name, bool is_monitor_thread) override;
+        void insert_thread(std::chrono::high_resolution_clock::time_point timestamp, const std::string & tags_str, std::string value, Type type, std::string & field_name, std::string & tb_name, std::string & db_name, bool is_monitor_thread);
         bool create_index(std::string & measurement, std::list<std::string> & tags) override;
         void create_index_thread(std::string & measurement, std::list<std::string> & tags);
         bool update(std::chrono::high_resolution_clock::time_point timestamp, std::string value, Type type, std::string & table_name) override;
@@ -70,7 +70,7 @@ namespace dt::tsm
         bool mea_field_exist(const std::string & db_name, const std::string & tb_name, const std::string & field);
 
         // 回调函数
-        bool is_ready_disk_write(const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name);
+        bool is_ready_disk_write(const std::string & db_name, const std::string & tb_name, const std::pair<std::string, std::string> & shard_id_and_series_info, const std::string & field_name);
         bool is_ready_index_write(const std::string & db_name, const std::string & tb_name, const std::string & shard_id, const std::string & field_name);
         bool disk_write(const std::string & db_name, const std::string & tb_name);
         bool flush_shard_meta();
@@ -112,6 +112,8 @@ namespace dt::tsm
         Index                                                       m_index;                 // 倒排索引
         //                 db_name
         std::unordered_map<std::string, Measurement>                m_db_mea_map;            // 存储测量中所有的字段
+
+        std::vector<RowNode>                                        m_row_nodes;             // 存储查询后的结果
     };
 }
 

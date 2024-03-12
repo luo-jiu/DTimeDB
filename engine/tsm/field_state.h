@@ -19,6 +19,7 @@ namespace dt::tsm
         std::string m_tb_name;
         std::string m_shard_id;
         std::string m_field_name;
+        std::string m_series_key_and_field_name;
     };
 
     /**
@@ -28,14 +29,15 @@ namespace dt::tsm
     class FieldState : public impl::ITableStateObserver
     {
     public:
-        using ConditionCallback = std::function<bool(const std::string&, const std::string&, const std::string&, const std::string&)>;
+        using SkipListConditionCallback = std::function<bool(const std::string&, const std::string&, const std::pair<std::string, std::string> &, const std::string&)>;
+        using IndexEntryConditionCallback = std::function<bool(const std::string&, const std::string&, const std::string&, const std::string&)>;
 
         // 设置回调函数
-        void set_skip_condition_callback(ConditionCallback callback)
+        void set_skip_condition_callback(SkipListConditionCallback callback)
         {
             m_skip_condition_callback = std::move(callback);
         }
-        void set_index_condition_callback(ConditionCallback callback)
+        void set_index_condition_callback(IndexEntryConditionCallback callback)
         {
             m_index_condition_callback = std::move(callback);
         }
@@ -43,7 +45,7 @@ namespace dt::tsm
         void update(
                 const std::string & db_name,
                 const std::string & tb_name,
-                const std::string & shard_id,
+                const std::pair<std::string, std::string> & shard_id_and_series_info,
                 const std::string & field_name,
                 bool is_registered,
                 bool use_index_entry_map) override
@@ -51,7 +53,7 @@ namespace dt::tsm
             // 更新状态逻辑
             if (is_registered)
             {
-                check_and_register(db_name, tb_name, shard_id, field_name, use_index_entry_map);
+                check_and_register(db_name, tb_name, shard_id_and_series_info, field_name, use_index_entry_map);
             }
             else
             {
@@ -63,7 +65,7 @@ namespace dt::tsm
         bool check_and_register(
                 const std::string & db_name,
                 const std::string & tb_name,
-                const std::string & shard_id,
+                const std::pair<std::string, std::string> & shard_id_and_series_info,
                 const std::string & field_name,
                 bool use_index_entry_map)
         {
@@ -96,7 +98,12 @@ namespace dt::tsm
             if (!field_status.m_is_registered.load())
             {
                 field_status.m_is_registered.store(true);
-                field_status.m_shard_id = shard_id;
+                field_status.m_shard_id = shard_id_and_series_info.first;
+                if (!use_index_entry_map)  // 只给m_skip_list_state_map 赋值
+                {
+                    std::cout<< "===============================: " << shard_id_and_series_info.second << "\n";
+                    field_status.m_series_key_and_field_name = shard_id_and_series_info.second;
+                }
                 return true;
             }
             // 字段已注册
@@ -149,7 +156,7 @@ namespace dt::tsm
                             if (field_pair.second.m_is_registered.load())
                             {
                                 // 说明该字段已注册，先存储起来
-                                items_to_process.emplace_back(Info{db_name, tb_name, field_pair.second.m_shard_id, field_name});
+                                items_to_process.emplace_back(Info{db_name, tb_name, field_pair.second.m_shard_id, field_name, field_pair.second.m_series_key_and_field_name});
                             }
                         }
                     }
@@ -161,6 +168,7 @@ namespace dt::tsm
             {
                 const auto& db_name = item.m_db_name;
                 const auto& tb_name = item.m_tb_name;
+                std::pair<std::string, std::string> series_key_info = {item.m_shard_id, item.m_series_key_and_field_name};
                 const auto& shard_id = item.m_shard_id;
                 const auto& field_name = item.m_field_name;
 
@@ -169,8 +177,9 @@ namespace dt::tsm
                 if (!use_index_entry_map)
                 {
 //                    std::cout << "监控到跳表注册事件(skip_list)：" << db_name << "，表：" << tb_name << "，字段：" << field_name << std::endl;
+//                    std::cout << "监控到跳表注册事件(skip_list)：" << db_name << ",shard：" << series_key_info.first << "，series_key_add_field：" << series_key_info.second << std::endl;
                     // 执行回调函数获取时间
-                    if (m_skip_condition_callback && m_skip_condition_callback(db_name, tb_name, shard_id, field_name))
+                    if (m_skip_condition_callback && m_skip_condition_callback(db_name, tb_name, series_key_info, field_name))
                     {
                         // 添加到移除列表
                         remove_status(db_name, tb_name, field_name, use_index_entry_map);
@@ -192,12 +201,13 @@ namespace dt::tsm
         }
 
     private:
-        ConditionCallback m_skip_condition_callback;  // 存储回调函数
-        ConditionCallback m_index_condition_callback;
+        SkipListConditionCallback m_skip_condition_callback;  // 存储回调函数
+        IndexEntryConditionCallback m_index_condition_callback;
 
         struct FieldInfo
         {
             std::string m_shard_id;
+            std::string m_series_key_and_field_name;
             std::atomic<bool> m_is_registered{};
         };
 

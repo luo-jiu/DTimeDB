@@ -122,7 +122,8 @@ namespace dt::impl
                 IEngine::Type type,
                 std::string & field_name,
                 std::string & tb_name,
-                std::string & db_name) = 0;
+                std::string & db_name,
+                bool is_monitor_thread) = 0;
 
 
         /**
