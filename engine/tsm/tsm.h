@@ -5,7 +5,7 @@
 #include "file_manager/file_io_manager.h"
 #include "proto/Shard.pb.h"
 
-#include <snappy.h>
+#include <externals/snappy/snappy.h>
 #include <deque>
 #include <shared_mutex>
 

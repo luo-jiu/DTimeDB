@@ -1,7 +1,7 @@
 #include "iterator.h"
 
 #include <utility>
-#include "snappy.h"
+#include <externals/snappy/snappy.h>
 #include "tsm.h"
 
 using namespace dt::tsm;
