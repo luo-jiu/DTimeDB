@@ -31,7 +31,7 @@ class Write : public dt::impl::IShardStateSubject
     {
     public:
         Write() = default;
-        Write(std::string & db_name, std::string & tb_name) : m_tb_name(tb_name), m_db_name(db_name), m_head_offset(8), m_tail_offset(DATA_BLOCK_MARGIN), m_margin(DATA_BLOCK_MARGIN), m_is_ready(0){}
+        Write(std::string & db_name, std::string & tb_name) : m_tb_name(tb_name), m_db_name(db_name) {}
 
         void init();
         void set_file_path_manager(dt::file::FilePathManager * file_path_manager);
@@ -79,8 +79,6 @@ class Write : public dt::impl::IShardStateSubject
         std::string                                                          m_db_name;          // 数据库名
         std::string                                                          m_tb_name;          // 测量值/表名
 
-        int64_t                                                              m_head_offset;      // 头指针偏移量
-        int64_t                                                              m_tail_offset;      // 尾指针偏移量
         uint64_t                                                             m_margin;           // data block 空间余量
         std::string                                                          m_curr_file_path;   // 当前需要刷写的文件
 
@@ -92,13 +90,11 @@ class Write : public dt::impl::IShardStateSubject
         std::mutex                                                           m_field_list_mutex;
         mutable std::shared_mutex                                            m_filed_map_mutex;  // 针对m_field_map 安全的读写所
         std::condition_variable                                              m_cv;
-        int                                                                  m_is_ready;
 
         dt::file::FilePathManager *                                          m_file_path;        // 依赖注入，文件管理器
 
         TSM                                                                  m_tsm;
         std::list<std::string>                                               m_field_list;       // 该list 表明哪些字段有块待写入
-//        std::set<std::string>                                                m_index_set;        // 该set 用于创建新TSM 刷入没处理完的meta 和entry
         std::unordered_map<std::string, std::shared_ptr<Field>>              m_field_map;
 
         std::deque<std::shared_ptr<DataBlock>>                               m_data_deque;       // 存储所有字段的 data block

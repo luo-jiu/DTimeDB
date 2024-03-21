@@ -20,7 +20,6 @@ namespace dt::execution
         void set_child(std::shared_ptr<ExecutionPlanNode> child) override { m_child = child; }
 
     public:
-        std::string                            m_engine;  // 表示该执行计划需要在哪个引擎下执行
         std::shared_ptr<ExecutionPlanNode>     m_child;
     };
 
@@ -56,11 +55,10 @@ namespace dt::execution
         void set_child(std::shared_ptr<ExecutionPlanNode> child) override {}
 
     public:
-        std::string                                 m_type;    // database or table
-        std::string                                 m_engine;  // 引擎
-        std::list<std::string>                      m_field;   // 字段[clt引擎需要]
-        std::string                                 m_name;
-        std::shared_ptr<ExecutionPlanNode>          m_child;
+        std::string                                         m_type;    // database or table
+        std::list<std::pair<std::string, std::string>>      m_field;   // 字段[clt引擎需要]
+        std::string                                         m_name;
+        std::shared_ptr<ExecutionPlanNode>                  m_child;
     };
 
     /**

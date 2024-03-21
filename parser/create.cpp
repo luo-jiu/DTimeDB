@@ -25,7 +25,7 @@ std::shared_ptr<Expression> Parser::parse_create()
         return nullptr;
     }
 
-    // 后面都是建表语句 create table xxx(field_1=varchar, field_2=float, field_3=integer)engine=clt;
+    // 后面都是建表语句 create table xxx(field_1 varchar, field_2 float, field_3 integer)engine=clt;
     // 按道理TSM 是没有建表语句的,为了统一和CLT 引擎的切换，也做出调整
     // create table xxx(/* 注意没有任何字段 */)engine=tsm;
     e->m_name = m_peek.literal();
@@ -35,9 +35,20 @@ std::shared_ptr<Expression> Parser::parse_create()
     if (m_curr.type() == Token::TOKEN_LPAREN)  // 如果是 '('
     {
         // 读取field 和类型
-        while (m_peek.type() != Token::TOKEN_RPAREN && m_curr.type() != Token::TOKEN_EOF)  // 防止语法写错给代码崩了
+        next_token();  // skip '('
+        while (m_curr.type() != Token::TOKEN_RPAREN && m_curr.type() != Token::TOKEN_EOF)  // 防止语法写错给代码崩了
         {
+            std::pair<std::string, std::string> field;
+            field.first = m_curr.literal();
             next_token();
+            field.second = m_curr.literal();
+            next_token();
+            e->m_fields.push_back(field);
+
+            if (curr_token_is(Token::TOKEN_COMMA))  // 如果是 ‘,’
+            {
+                next_token();
+            }
         }
         if (m_peek.type() == Token::TOKEN_RPAREN) next_token();
         if (m_curr.type() == Token::TOKEN_EOF)

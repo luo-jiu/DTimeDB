@@ -105,6 +105,7 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval(
         {
             auto create = std::dynamic_pointer_cast<ast::Create>(node);
             auto c = eval_create(create);
+            root->m_engine = c->m_engine;  // 设置引擎
             root->set_child(c);
             return c;
         }

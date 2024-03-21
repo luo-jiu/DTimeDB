@@ -99,7 +99,7 @@ bool TableEngineManager::create_table(
         std::string & engine)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
-    if (db_name.empty() && tb_name.empty())
+    if (db_name.empty() || tb_name.empty())
     {
         std::cout << "database or table name is empty\n";
         return false;

@@ -28,6 +28,7 @@ std::shared_ptr<ExecutionPlanNode> Evaluator::eval_create(
             return nullptr;
         }
     }
+    i->m_engine = node->m_engine;
     i->m_name = node->m_name;
 
     return i;

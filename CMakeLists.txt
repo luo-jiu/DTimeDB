@@ -14,7 +14,7 @@ add_subdirectory(proto)
 file(GLOB_RECURSE SOURCES "token/*.cpp" "lexer/*.cpp" "json/*.cpp" "ast/*.cpp"
         "parser/*.cpp" "engine/tsm/*.cpp" "engine/circularList/*.cpp" "executor/*.cpp"
         "file_manager/*.cpp" "execution_plan/*.cpp" "evaluator/*.cpp" "thread_manager/*.cpp"
-        "wal/*.cpp" "proto/*.cpp" "server/src/*.cpp")
+        "wal/*.cpp" "proto/*.cpp" "server/src/*.cpp" )
 
 # 链接静态库
 link_libraries(proto)

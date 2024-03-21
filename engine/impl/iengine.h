@@ -42,55 +42,6 @@ namespace dt::impl
         virtual bool create_database(
                 std::string & db_name) = 0;
 
-        /**
-         * 创建表
-         */
-        virtual bool create_table(
-                std::string & tb_name,
-                std::string & db_name) = 0;
-
-
-        virtual bool update(
-                std::chrono::high_resolution_clock::time_point timestamp,
-                std::string value,
-                Type type,
-                std::string & table_name) = 0;
-
-
-        /**
-         * 获取下一条数据 (不使用索引)
-         * 最基本的接口，允许逐条数据遍历表中的数据
-         *
-         * 通常用于[全表扫描] 和没有可用索引时的操作
-         */
-        virtual bool get_next_data(
-                std::string & data) = 0;
-
-
-        /**
-         * 获取准确的数据 (通过索引 [时间戳timestamp])
-         * @param timestamp
-         */
-        virtual void begin_indexed_scan(
-                const std::chrono::high_resolution_clock::time_point & timestamp,
-                std::string & data) = 0;
-
-
-        /**
-         * 获取范围数据 (通过索引 [时间戳timestamp])
-         */
-        virtual bool get_range_data(
-                const std::chrono::high_resolution_clock::time_point & start,
-                const std::chrono::high_resolution_clock::time_point & end,
-                std::vector<std::string> & data) = 0;
-
-
-        /**
-         * 全表扫描
-         */
-        virtual std::list<std::string> scan_full_table(
-                const std::string & db_name,
-                const std::string & tb_name) = 0;
     };
 }
 

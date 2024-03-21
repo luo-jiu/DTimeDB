@@ -1,4 +1,4 @@
-#ifndef DTIMEDB_CONTROLLER_H
+#ifndef DTIMEDB_CLT_CONTROLLER_H
 #define DTIMEDB_CONTROLLER_H
 
 #include "thread_manager/thread_pool.h"
@@ -39,11 +39,6 @@ namespace dt::tsm
         void insert_thread(std::chrono::high_resolution_clock::time_point timestamp, const std::string & tags_str, std::string value, Type type, std::string & field_name, std::string & tb_name, std::string & db_name, bool is_monitor_thread);
         bool create_index(std::string & measurement, std::list<std::string> & tags) override;
         void create_index_thread(std::string & measurement, std::list<std::string> & tags);
-        bool update(std::chrono::high_resolution_clock::time_point timestamp, std::string value, Type type, std::string & table_name) override;
-
-        bool get_next_data(std::string & data) override;
-        void begin_indexed_scan(const std::chrono::high_resolution_clock::time_point & timestamp, std::string & data) override;
-        bool get_range_data(const std::chrono::high_resolution_clock::time_point & start, const std::chrono::high_resolution_clock::time_point & end, std::vector<std::string> & data) override;
         bool get_range_data(const std::string & db_name, const std::string & measurement, std::vector<std::pair<std::string, std::string>> reduce_fields, std::shared_ptr<impl::ExprNode> expr_node) override;
 
         void analytic_expr_tree(const std::string & db_name, const std::string & measurement, const std::vector<std::pair<std::string, std::string>>& reduce_fields, const std::shared_ptr<impl::ExprNode>& expr_node);
@@ -52,8 +47,6 @@ namespace dt::tsm
         RootIterator create_iterator_tree(const std::string & db_name, const std::string & measurement, std::vector<std::string> & fields, std::vector<std::string> & shard_ids, std::vector<std::pair<std::string, std::string>> & tags, const std::shared_ptr<impl::ExprNode> & expr_node);
         bool evaluate_condition(const std::string & shard_id, std::shared_ptr<impl::ExprNode> & expr_node);
         std::vector<std::string> filter_shards(const std::string & db_name, const std::string & measurement, std::shared_ptr<impl::ExprNode> & expr_node);
-
-        std::list<std::string> scan_full_table(const std::string & db_name, const std::string & tb_name) override;
 
         bool sys_show_file(std::string & db_name, std::string & tb_name) override;
         bool sys_update_file(std::string & db_name, std::string & tb_name, const std::string & where) override;
@@ -117,4 +110,4 @@ namespace dt::tsm
     };
 }
 
-#endif //DTIMEDB_CONTROLLER_H
+#endif //DTIMEDB_CLT_CONTROLLER_H

@@ -30,7 +30,7 @@ namespace dt::file
         FilePathManager(std::string engine): m_default_base_path("./../dbs"), m_engine(std::move(engine)), m_io_file(10) {}
 
         std::string create_database(const std::string & db_name);
-        bool create_table(const std::string & tb_name, const std::string & db_name, const std::string & engine);
+        bool create_table(const std::string & tb_name, const std::string & db_name);
         std::string create_file(const std::string & tb_name, const std::string & db_name, const std::string & engine_abbrev);
         std::string create_sys_tfile(const std::string & tb_name, const std::string & db_name, const std::string & engine_abbrev);
         std::string create_sys_dfile(const std::string & tb_name, const std::string & db_name, const std::string & engine_abbrev);

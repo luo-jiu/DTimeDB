@@ -1,1 +1,1 @@
-select * from db_test.school where local = '中德' and time > '2018-1-21 12:10:27' and time < '2018-10-1 21:08:23'
+select '温度' from school where local = '学校' and time > '2018-1-21 12:10:27' and time < '2035-10-10 12:08:11'

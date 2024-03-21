@@ -64,6 +64,10 @@ namespace dt::execution
         virtual std::shared_ptr<ExecutionPlanNode> get_child() const = 0;
         virtual void set_child(std::shared_ptr<ExecutionPlanNode> child) = 0;
 
+    public:
+        std::string                              m_engine;
+
+
     protected:
         static std::string                       m_current_db;
 

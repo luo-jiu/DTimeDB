@@ -100,6 +100,7 @@ void Field::write(
         sl->m_current_data->m_size = data_size;
         sl->m_current_data->m_num = sl->size();
         sl->m_current_data->m_shard_id = shard_id;
+        sl->m_current_data->series_key_and_field_name = series_key_and_field_name;
 
         // 存放在队列中
         push_data_to_deque(sl->m_current_data);

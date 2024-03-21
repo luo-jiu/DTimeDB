@@ -8,11 +8,14 @@ namespace dt::impl
 {
     class ICLT
     {
+    public:
+
         /**
          * 创建表
          */
         virtual bool create_table(
-                std::list<std::string> field,
+                std::list<std::pair<std::string, std::string>> & fields,
+                std::string db_name,
                 std::string tb_name) = 0;
 
     };

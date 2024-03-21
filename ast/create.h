@@ -25,10 +25,10 @@ namespace dt::ast
         }
 
     public:
-        Type                         m_type;    // 创建类型
-        std::string                  m_name;    // 名称
-        std::list<std::string>       m_fields;  // 字段名
-        std::string                  m_engine;  // 引擎
+        Type                                                 m_type;    // 创建类型
+        std::string                                          m_name;    // 名称
+        std::list<std::pair<std::string, std::string>>       m_fields;  // 字段名
+        std::string                                          m_engine;  // 引擎
     };
 }
 

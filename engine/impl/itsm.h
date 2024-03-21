@@ -142,6 +142,13 @@ namespace dt::impl
                 const std::string & measurement,
                 std::vector<std::pair<std::string, std::string>> reduce_fields,
                 std::shared_ptr<ExprNode> expr_node) = 0;
+
+        /**
+        * 创建表
+        */
+        virtual bool create_table(
+                std::string & tb_name,
+                std::string & db_name) = 0;
     };
 }
 

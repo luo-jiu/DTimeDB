@@ -20,9 +20,6 @@ string FilePathManager::create_database(
     // 检查路径是否已经存在
     if (fs::exists(db_path))
     {
-        // 创建文件夹
-//        fs::create_directory(db_path);
-
         // 初始化数据库条目,如果已经存在,这行代码不会有任何影响
         m_map[db_name] = std::map<string, TableInfo>();
 
@@ -40,8 +37,7 @@ string FilePathManager::create_database(
  */
 bool FilePathManager::create_table(
         const std::string & tb_name,
-        const std::string & db_name,
-        const std::string & engine)
+        const std::string & db_name)
 {
     std::shared_lock<std::shared_mutex> map_lock(m_mutex);  // 先锁整个m_map[读锁]
 
@@ -60,14 +56,9 @@ bool FilePathManager::create_table(
     // 创建表(创建系统表文件就行)
     string sys_file_path;
     // 这里需要修改为map映射，以便于未来多个引擎不会造成if-else if-else 逻辑冗余
-    if (engine == "tsm")
-    {
-        sys_file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
-    }
-    else
-    {
-        sys_file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".clt";
-    }
+
+    sys_file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + "." + m_engine;
+
     int fd = open(sys_file_path.c_str(), O_CREAT | O_WRONLY, 0666);
     if (fd == -1)
     {
@@ -391,7 +382,7 @@ dt::tsm::SystemInfo FilePathManager::load_system_info(
         const string & db_name,
         const string & tb_name)
 {
-    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + "." + m_engine;
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
@@ -430,7 +421,7 @@ bool FilePathManager::create_tsm_file_update_sys_info(
         const string & file_name,
         uint64_t margin)
 {
-    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + "." + m_engine;
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
@@ -464,7 +455,7 @@ bool FilePathManager::update_system_file_name(
         const string & tb_name,
         const string & file_name)
 {
-    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + "." + m_engine;
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
@@ -491,7 +482,7 @@ bool FilePathManager::update_system_file_margin(
         const string & tb_name,
         uint64_t margin)
 {
-    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + "." + m_engine;
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
@@ -515,7 +506,7 @@ bool FilePathManager::update_system_file_offset(
         const std::string & type,
         int64_t offset)
 {
-    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + "." + m_engine;
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
@@ -551,7 +542,7 @@ bool FilePathManager::sys_show_file(
         const string & db_name,
         const string & tb_name)
 {
-    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + "." + m_engine;
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
@@ -583,7 +574,7 @@ bool FilePathManager::sys_clear_file(
         const string & db_name,
         const string & tb_name)
 {
-    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + "." + m_engine;
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {
@@ -591,17 +582,9 @@ bool FilePathManager::sys_clear_file(
         return false;
     }
     int64_t offset = 0;
-//    uint64_t margin = 0;
     uint16_t length = 0;
     file->seekp(std::ios::beg);
-//    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
-//    file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
-//    // 写margin
-//    file->write(reinterpret_cast<const char*>(&margin), sizeof(uint64_t));
-//    // 写file_name
-//    file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
 
-//    file->seekp(200);
     offset = 10;  // 偏移量
     file->write(reinterpret_cast<const char*>(&offset), sizeof(int64_t));
     file->write(reinterpret_cast<const char*>(&length), sizeof(uint16_t));
@@ -616,7 +599,7 @@ std::set<std::string> FilePathManager::load_mea_fields(
         const std::string & tb_name)
 {
     std::lock_guard<std::mutex> lock(m_table_meta_mutex);
-    std::string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    std::string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + "." + m_engine;
     std::ifstream file(file_path, std::ios::binary);
     if (!file.is_open())
     {
@@ -656,7 +639,7 @@ void FilePathManager::insert_field_to_file(
         const std::string & field)
 {
     std::lock_guard<std::mutex> lock(m_table_meta_mutex);
-    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + ".tsm";
+    string file_path = m_default_base_path + "/" + db_name + "/sys-" + tb_name + "." + m_engine;
     auto file = m_io_file.get_file_stream(file_path, "binary");
     if (!file->is_open())
     {

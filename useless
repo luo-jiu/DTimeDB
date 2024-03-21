@@ -1,4 +1,5 @@
 insert into school,local='学校',class='软工1班' '温度'=24.1,'出勤'=25
+insert into school,local='家' '温度'=24.1
 insert into school,local='学校',class='软工1班' '温度'=24.1
 insert into school,local='学校',class='软工1班' '温度'=24.1,'出勤'=25 '2018-3-19'
 select * from school where local='学校'
@@ -6,6 +7,7 @@ select * from school where local='学校'
 create database db_test
 use db_test
 create table school()engine=tsm
+create table xxx(field1_name field_type, field2_name field_type)engine=clt
 
 insert into school,local='xxx',class='软工1班' '温度'=24.1 '2018-3-19'
 insert into school,local='学校',class='软工1班' '温度'=24.1 '2018-2-19'
@@ -22,6 +24,7 @@ select sum('工资') from salary where time > '2024-2-25'
 select * from db_test.school where local = '学校' and time > '2018-1-21 12:10:27' and time < '2018-10-1 21:08:23'
 select * from db_test.school where local = '学校' and time > '2018-3-1 12:10:27' or time < '2018-2-1 21:08:23'
 select * from school where local = '学校' and time > '2018-1-21 12:10:27' and time < '2035-10-10 12:08:11'
+select * from school where local = '家' and time > '2018-1-21 12:10:27' and time < '2035-10-10 12:08:11'
 select '温度' from school where local = '学校' and time > '2018-1-21 12:10:27' and time < '2035-10-10 12:08:11'
 select * from db_test.school where local = '学校' and time < '2018-1-1 12:10:27'
 

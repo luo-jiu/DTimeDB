@@ -110,6 +110,7 @@ namespace dt::tsm
     public:
         int32_t                                                          m_size;  // 大小(不存入磁盘)
         std::string                                                      m_field_name;  // 字段名(不存)
+        std::string                                                      series_key_and_field_name;
         std::chrono::high_resolution_clock::time_point                   m_max_timestamp;
         std::chrono::high_resolution_clock::time_point                   m_min_timestamp;
         std::string                                                      m_shard_id;

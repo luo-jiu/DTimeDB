@@ -36,14 +36,18 @@ void Executor::execute_plan(
         // 遍历引擎
         for (auto & engine_it : m_engine_map)
         {
+            node->m_engine = engine_it.first;
             node->execute(*engine_it.second);
         }
     }
     else
     {
         // 执行当前节点的操作(抉择是哪个引擎)
-        auto m_tsm = m_engine_map["tsm"];  // 先写死tsm
-        node->execute(*m_tsm);
+        if (!node->m_engine.empty())
+        {
+            auto m_tsm = m_engine_map[node->m_engine];
+            node->execute(*m_tsm);
+        }
     }
 
     // 递归执行子节点

@@ -6,7 +6,10 @@
 #include "engine/impl/iengine.h"
 #include "engine/impl/isystem.h"
 #include "engine/impl/itsm.h"
+
 #include "engine/tsm/controller.h"
+#include "engine/circularList/clt_controller.h"
+
 
 #include <memory>
 
@@ -27,10 +30,13 @@ namespace dt::executor
         {
             // 为多个引擎的调用提供映射
             auto tsm = std::make_shared<tsm::Controller>();
-            // 设置回调函数
+            auto clt = std::make_shared<clt::Controller>();
 
+            // 设置回调函数
             m_engine_map["tsm"] = tsm;
+            m_engine_map["clt"] = clt;
         }
+
         void execute_plan(const std::shared_ptr<execution::ExecutionPlanNode>& node);
 
     private:

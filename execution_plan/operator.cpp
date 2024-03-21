@@ -33,7 +33,7 @@ void SysNode::execute(IEngine & engine)
 
 void CreateNode::execute(IEngine & engine)
 {
-    bool res;
+    bool res = false;
     if (m_type == "database")
     {
         res = engine.create_database(m_name);
@@ -43,11 +43,23 @@ void CreateNode::execute(IEngine & engine)
         // 表才区分引擎
         if (m_engine == "clt")
         {
-//            engine.create_table();
+            auto * clt = dynamic_cast<ICLT*>(&engine);
+            if (clt == nullptr)
+            {
+                std::cout << "IEngine -> ITSM 指针转换失败\n";
+                return;
+            }
+            res = clt->create_table(m_field, m_current_db, m_name);
         }
         else  // 默认tsm 引擎
         {
-            res = engine.create_table(m_name, m_current_db);
+            auto * tsm = dynamic_cast<ITSM*>(&engine);
+            if (tsm == nullptr)
+            {
+                std::cout << "IEngine -> ITSM 指针转换失败\n";
+                return;
+            }
+            res = tsm->create_table(m_name, m_current_db);
         }
     }
     if (res)
@@ -72,7 +84,7 @@ void UseNode::execute(IEngine & engine)
     // 遍历map 加载对应表
     for (auto & tables : m_tb_engine)
     {
-        if (engine.load_database(m_database_name, tables.second))  // 加载对应数据库
+        if (tables.first == m_engine && engine.load_database(m_database_name, tables.second))  // 加载对应数据库
         {
             std::cout << "use: " << m_database_name << "\n";
         }

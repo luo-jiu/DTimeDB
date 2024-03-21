@@ -123,7 +123,7 @@ bool Controller::create_table(
     }
 
     // 创建表
-    return m_file.create_table(tb_name, db_name, "tsm");
+    return m_file.create_table(tb_name, db_name);
 }
 
 /**
@@ -243,37 +243,25 @@ void Controller::create_index_thread(
     m_index.create_index(measurement, tags);
 }
 
-/**
- * 修改操作
- */
-bool Controller::update(
-        high_resolution_clock::time_point timestamp,
-        string value,
-        Type type,
-        string & table_name)
-{
-
-}
-
-bool Controller::get_next_data(string & data)
-{
-
-}
-
-void Controller::begin_indexed_scan(
-        const high_resolution_clock::time_point & timestamp,
-        string & data)
-{
-
-}
-
-bool Controller::get_range_data(
-        const high_resolution_clock::time_point & start,
-        const high_resolution_clock::time_point & end,
-        std::vector<string> & data)
-{
-
-}
+//bool Controller::get_next_data(string & data)
+//{
+//
+//}
+//
+//void Controller::begin_indexed_scan(
+//        const high_resolution_clock::time_point & timestamp,
+//        string & data)
+//{
+//
+//}
+//
+//bool Controller::get_range_data(
+//        const high_resolution_clock::time_point & start,
+//        const high_resolution_clock::time_point & end,
+//        std::vector<string> & data)
+//{
+//
+//}
 
 /**
  * 查询数据
@@ -542,19 +530,6 @@ bool Controller::is_tag_comparison(
         return m_index.whether_tag(measurement, node->m_left->m_val);
     }
     return false;
-}
-
-/**
- * 范围扫描拿出集合
- */
-std::list<string> Controller::scan_full_table(
-        const string & db_name,
-        const string & tb_name)
-{
-    std::cout << "Scan full table, db_name:'" << db_name << "',tb_name:" << tb_name << std::endl;
-    // 单独开启一个线程去执行
-    std::list<string> result;
-    return result;
 }
 
 bool Controller::sys_show_file(

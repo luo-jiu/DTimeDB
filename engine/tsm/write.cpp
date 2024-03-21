@@ -7,8 +7,8 @@ using std::string;
 void Write::init()
 {
     auto sys_info =  m_file_path->load_system_info(m_db_name, m_tb_name);
-    m_head_offset = sys_info.m_head_offset;
-    m_tail_offset = sys_info.m_tail_offset;
+//    m_head_offset = sys_info.m_head_offset;
+//    m_tail_offset = sys_info.m_tail_offset;
     m_margin = sys_info.m_margin;
     if (m_margin == 0)  // 没有容量把路径置位空自动生成新文件(其他数据都会刷新)
         m_curr_file_path = "";
@@ -91,6 +91,7 @@ void Write::write(
         std::cout << "series_key_and_field_name:" << series_key_and_field_name << "\n";
     }
 
+    field->m_index_block_meta_key = series_key_and_field_name;
     field->write(shard_id, timestamp, data, db_name, tb_name, series_key_and_field_name);
 }
 
@@ -170,6 +171,7 @@ void Write::queue_flush_disk()
             string meta_key = m_field_map[field_name]->m_index_block_meta_key;
             // 计算大小(index(28) * index_num + meta(12 + (series_key + field_key).size()))
             auto size = 28 * index_info.m_index_deque.size() + 8 + meta_key.size();
+            std::cout << "meta_key: " << meta_key << "\n";
             std::cout << "meta_key大小: " << meta_key.size() << "\n";
             std::cout << "tail_offset:" << tail_offset << "\n";
             // 生成meta
@@ -246,7 +248,7 @@ void Write::queue_flush_disk()
             if (!curr_file_path.empty())
             {
                 // 文件大小不够[至少要预留series index block 和data block 大小的空间]
-                if (margin < (predict_size + 40 + field->m_index_block_meta_key.size()))
+                if (margin < (predict_size + 40 + data_block->series_key_and_field_name.size()))
                 {
                     need_create_file = true;  // 需要创建新文件
                     // 开始刷写所有的series index block 和更新footer
@@ -368,11 +370,6 @@ std::shared_ptr<Field> Write::get_field(
         std::cerr << "Error : Unknown type " << type << std::endl;
         return nullptr;
     }
-    // 设置key
-    string meta_key = series_key + field_name;
-    std::cout << "Meta key: " << meta_key << std::endl;
-    std::cout << "Key size:" << meta_key.size() << std::endl;
-    field->m_index_block_meta_key = meta_key;
 
     // 注册观察者
     field->attach(&queue_state);
